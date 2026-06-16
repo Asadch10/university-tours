@@ -1,0 +1,32 @@
+{
+  "name": "university-campus-private-tours",
+  "version": "1.0.0",
+  "private": true,
+  "description": "University Campus Private Tours — two-sided marketplace monorepo (backend, worker, admin, website, mobile + shared packages)",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @ucpt/db generate",
+    "db:migrate": "pnpm --filter @ucpt/db migrate",
+    "db:seed": "pnpm --filter @ucpt/db seed",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "ioredis": "5.10.1"
+    }
+  }
+}

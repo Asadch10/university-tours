@@ -1,0 +1,563 @@
+// University Campus Private Tours — PostgreSQL logical model (Part IV).
+// PostgreSQL is the system of record; money is integer cents, timestamps are UTC,
+// financial history is immutable (commission snapshot + append-only ledger).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum UserRole {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum AdminRoleName {
+  SUPER_ADMIN
+  MANAGER
+  SUPPORT
+}
+
+enum ServiceType {
+  CAMPUS_TOUR
+  VIDEO_CONSULTATION
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SUSPENDED
+}
+
+enum ApplicationStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  EXPIRED
+  CANCELLED
+  COMPLETED
+}
+
+enum LedgerEntryType {
+  CAPTURE
+  REFUND
+}
+
+enum QuestionnaireStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum QuestionType {
+  TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  FILE
+}
+
+enum DocumentAccessLevel {
+  ADMIN_ONLY
+  PRIVATE
+  PUBLIC
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+}
+
+enum CampaignSegment {
+  ALL
+  BUYERS
+  GUIDES
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+// ----------------------------------------------------------------------------
+// Identity
+// ----------------------------------------------------------------------------
+
+model User {
+  id              String         @id @default(cuid())
+  role            UserRole
+  email           String         @unique
+  name            String         @default("")
+  passwordHash    String         @map("password_hash")
+  status          UserStatus     @default(ACTIVE)
+  emailVerifiedAt DateTime?      @map("email_verified_at")
+  adminRoleName   AdminRoleName? @map("admin_role_name")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  sellerProfile   SellerProfile?
+  devices         Device[]
+  listings        Listing[]      @relation("SellerListings")
+  buyerBookings   Booking[]      @relation("BuyerBookings")
+  sellerBookings  Booking[]      @relation("SellerBookings")
+  buyerConvos     Conversation[] @relation("BuyerConversations")
+  sellerConvos    Conversation[] @relation("SellerConversations")
+  messages        Message[]
+  buyerReviews    Review[]       @relation("BuyerReviews")
+  sellerReviews   Review[]       @relation("SellerReviews")
+  documents       Document[]
+  applications    Application[]
+  payouts         Payout[]
+  refundsCreated  Refund[]
+  auditLogs       AuditLog[]
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model SellerProfile {
+  userId            String            @id @map("user_id")
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo             String?
+  phone             String?
+  dob               DateTime?
+  schoolId          String?           @map("school_id")
+  school            School?           @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  major             String?
+  gradYear          Int?              @map("grad_year")
+  bio               String?
+  enrollmentDocId   String?           @unique @map("enrollment_doc_id")
+  enrollmentDoc     Document?         @relation("EnrollmentDoc", fields: [enrollmentDocId], references: [id], onDelete: SetNull)
+  applicationStatus ApplicationStatus @default(NOT_SUBMITTED) @map("application_status")
+  approvedAt        DateTime?         @map("approved_at")
+  ratingAvg         Float             @default(0) @map("rating_avg")
+  ratingCount       Int               @default(0) @map("rating_count")
+
+  @@index([schoolId])
+  @@map("seller_profiles")
+}
+
+model Device {
+  id        String         @id @default(cuid())
+  userId    String         @map("user_id")
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform  DevicePlatform
+  pushToken String         @map("push_token")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("devices")
+}
+
+model AdminRole {
+  role            AdminRoleName @id
+  permissionsJson Json          @map("permissions_json")
+
+  @@map("admin_roles")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String   @map("admin_id")
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  action     String
+  entity     String
+  beforeJson Json?    @map("before_json")
+  afterJson  Json?    @map("after_json")
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([adminId])
+  @@index([entity])
+  @@map("audit_logs")
+}
+
+// ----------------------------------------------------------------------------
+// Catalog
+// ----------------------------------------------------------------------------
+
+model School {
+  id         String  @id @default(cuid())
+  name       String
+  slug       String  @unique
+  logo       String?
+  location   String?
+  seoContent String? @map("seo_content")
+  enabled    Boolean @default(true)
+
+  sellerProfiles SellerProfile[]
+  listings       Listing[]
+
+  @@index([name])
+  @@map("schools")
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  sellerId    String        @map("seller_id")
+  seller      User          @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Restrict)
+  schoolId    String        @map("school_id")
+  school      School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  serviceType ServiceType   @map("service_type")
+  title       String
+  description String?
+  status      ListingStatus @default(ACTIVE)
+
+  options  ListingOption[]
+  bookings Booking[]
+
+  @@index([schoolId, serviceType, status])
+  @@index([sellerId])
+  @@map("listings")
+}
+
+model ListingOption {
+  id              String    @id @default(cuid())
+  listingId       String    @map("listing_id")
+  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  durationMinutes Int       @map("duration_minutes")
+  priceCents      Int       @map("price_cents")
+
+  bookings Booking[]
+
+  @@index([listingId])
+  @@map("listing_options")
+}
+
+model ServicePriceBound {
+  serviceType      ServiceType @id @map("service_type")
+  minCents         Int         @map("min_cents")
+  maxCents         Int         @map("max_cents")
+  suggested1hCents Int         @map("suggested_1h_cents")
+  suggested2hCents Int         @map("suggested_2h_cents")
+
+  @@map("service_price_bounds")
+}
+
+// ----------------------------------------------------------------------------
+// Booking & money
+// ----------------------------------------------------------------------------
+
+model Booking {
+  id                    String        @id @default(cuid())
+  buyerId               String        @map("buyer_id")
+  buyer                 User          @relation("BuyerBookings", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId              String        @map("seller_id")
+  seller                User          @relation("SellerBookings", fields: [sellerId], references: [id], onDelete: Restrict)
+  listingId             String        @map("listing_id")
+  listing               Listing       @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  optionId              String        @map("option_id")
+  option                ListingOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  serviceType           ServiceType   @map("service_type")
+  schoolId              String?       @map("school_id")
+  scheduledDate         DateTime      @map("scheduled_date")
+  scheduledTime         String?       @map("scheduled_time")
+  guestCount            Int           @default(1) @map("guest_count")
+  noteForGuide          String?       @map("note_for_guide")
+  status                BookingStatus @default(PENDING)
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  grossCents            Int           @map("gross_cents")
+  commissionPctSnapshot Float?        @map("commission_pct_snapshot")
+  commissionCents       Int?          @map("commission_cents")
+  sellerNetCents        Int?          @map("seller_net_cents")
+  videoLink             String?       @map("video_link")
+  requestedAt           DateTime      @default(now()) @map("requested_at")
+  expiresAt             DateTime?     @map("expires_at")
+  confirmedAt           DateTime?     @map("confirmed_at")
+  completedAt           DateTime?     @map("completed_at")
+  reviewedAt            DateTime?     @map("reviewed_at")
+
+  events  BookingEvent[]
+  ledger  LedgerEntry[]
+  refunds Refund[]
+  review  Review?
+  convo   Conversation?
+
+  @@index([sellerId, status])
+  @@index([buyerId, status])
+  @@index([scheduledDate])
+  @@index([status, expiresAt])
+  @@map("bookings")
+}
+
+model BookingEvent {
+  id        String        @id @default(cuid())
+  bookingId String        @map("booking_id")
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromState BookingStatus? @map("from_state")
+  toState   BookingStatus @map("to_state")
+  actor     String
+  reason    String?
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("booking_events")
+}
+
+model LedgerEntry {
+  id             String          @id @default(cuid())
+  bookingId      String          @map("booking_id")
+  booking        Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  type           LedgerEntryType
+  grossCents     Int             @map("gross_cents")
+  commissionPct  Float           @map("commission_pct")
+  commissionCents Int            @map("commission_cents")
+  sellerNetCents Int             @map("seller_net_cents")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("ledger_entries")
+}
+
+model Payout {
+  id             String   @id @default(cuid())
+  sellerId       String   @map("seller_id")
+  seller         User     @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  amountCents    Int      @map("amount_cents")
+  method         String
+  reference      String?
+  note           String?
+  createdByAdmin String   @map("created_by_admin")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([sellerId])
+  @@map("payouts")
+}
+
+model Refund {
+  id            String   @id @default(cuid())
+  bookingId     String   @map("booking_id")
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  amountCents   Int      @map("amount_cents")
+  stripeRefundId String? @map("stripe_refund_id")
+  reason        String?
+  createdBy     String   @map("created_by")
+  createdByUser User     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("refunds")
+}
+
+// ----------------------------------------------------------------------------
+// Onboarding
+// ----------------------------------------------------------------------------
+
+model Questionnaire {
+  id      String              @id @default(cuid())
+  version Int                 @unique
+  status  QuestionnaireStatus @default(DRAFT)
+
+  questions    QuestionnaireQuestion[]
+  applications Application[]
+
+  @@map("questionnaires")
+}
+
+model QuestionnaireQuestion {
+  id              String        @id @default(cuid())
+  questionnaireId String        @map("questionnaire_id")
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  type            QuestionType
+  label           String
+  required        Boolean       @default(false)
+  order           Int
+  optionsJson     Json?         @map("options_json")
+
+  @@index([questionnaireId])
+  @@map("questionnaire_questions")
+}
+
+model Application {
+  id                     String            @id @default(cuid())
+  sellerId               String            @map("seller_id")
+  seller                 User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  questionnaireVersionId String            @map("questionnaire_version_id")
+  questionnaire          Questionnaire     @relation(fields: [questionnaireVersionId], references: [id], onDelete: Restrict)
+  status                 ApplicationStatus @default(SUBMITTED)
+  reason                 String?
+  submittedAt            DateTime          @default(now()) @map("submitted_at")
+
+  answers ApplicationAnswer[]
+
+  @@index([sellerId])
+  @@index([status])
+  @@map("applications")
+}
+
+model ApplicationAnswer {
+  id                   String      @id @default(cuid())
+  applicationId        String      @map("application_id")
+  application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionLabelSnapshot String     @map("question_label_snapshot")
+  optionsSnapshot      Json?       @map("options_snapshot")
+  value                String?
+  fileId               String?     @map("file_id")
+  file                 Document?   @relation("AnswerFile", fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
+  @@map("application_answers")
+}
+
+// ----------------------------------------------------------------------------
+// Engagement
+// ----------------------------------------------------------------------------
+
+model Conversation {
+  id        String    @id @default(cuid())
+  buyerId   String    @map("buyer_id")
+  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId  String    @map("seller_id")
+  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  bookingId String?   @unique @map("booking_id")
+  booking   Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  messages Message[]
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id")
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  body           String?
+  imageId        String?      @map("image_id")
+  image          Document?    @relation("MessageImage", fields: [imageId], references: [id], onDelete: SetNull)
+  masked         Boolean      @default(false)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique @map("booking_id")
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  buyerId   String   @map("buyer_id")
+  buyer     User     @relation("BuyerReviews", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId  String   @map("seller_id")
+  seller    User     @relation("SellerReviews", fields: [sellerId], references: [id], onDelete: Restrict)
+  rating    Int
+  text      String?
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([sellerId, hidden])
+  @@map("reviews")
+}
+
+model Document {
+  id          String              @id @default(cuid())
+  ownerId     String              @map("owner_id")
+  owner       User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  type        String
+  s3Key       String              @map("s3_key")
+  accessLevel DocumentAccessLevel @default(ADMIN_ONLY) @map("access_level")
+  encrypted   Boolean             @default(true)
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  enrollmentFor SellerProfile?      @relation("EnrollmentDoc")
+  answers       ApplicationAnswer[] @relation("AnswerFile")
+  messages      Message[]           @relation("MessageImage")
+
+  @@index([ownerId])
+  @@map("documents")
+}
+
+// ----------------------------------------------------------------------------
+// Platform
+// ----------------------------------------------------------------------------
+
+model CmsBlock {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  type        String
+  contentJson Json    @map("content_json")
+  published   Boolean @default(false)
+
+  @@map("cms_blocks")
+}
+
+model AppConfig {
+  id                  String  @id @default(cuid())
+  featureFlagsJson    Json    @map("feature_flags_json")
+  minSupportedVersion String  @map("min_supported_version")
+  forceUpdateMessage  String? @map("force_update_message")
+  maintenanceBanner   String? @map("maintenance_banner")
+
+  @@map("app_config")
+}
+
+model Settings {
+  id                String  @id @default("singleton")
+  commissionPct     Float   @map("commission_pct")
+  refundWindowsJson Json    @map("refund_windows_json")
+  requestExpiryHours Int    @map("request_expiry_hours")
+  maskingEnabled    Boolean @default(true) @map("masking_enabled")
+
+  @@map("settings")
+}
+
+model NotificationTemplate {
+  id      String              @id @default(cuid())
+  key     String              @unique
+  channel NotificationChannel
+  subject String?
+  body    String
+
+  @@map("notification_templates")
+}
+
+model PushCampaign {
+  id          String          @id @default(cuid())
+  segment     CampaignSegment
+  title       String
+  body        String
+  scheduledAt DateTime?       @map("scheduled_at")
+  status      CampaignStatus  @default(DRAFT)
+
+  @@map("push_campaigns")
+}
+
+model WebhookEvent {
+  stripeEventId String   @id @map("stripe_event_id")
+  type          String
+  processedAt   DateTime @default(now()) @map("processed_at")
+
+  @@map("webhook_events")
+}

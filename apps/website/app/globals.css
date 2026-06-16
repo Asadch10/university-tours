@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-h: 4.5rem;
+  }
+
+  * {
+    @apply border-ink-200/60;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--header-h);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-ivory text-ink-900 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-maroon-900 text-ivory;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display text-ink-900;
+    text-wrap: balance;
+  }
+
+  /* Premium focus ring for keyboard nav (WCAG) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold-500 ring-offset-2 ring-offset-ivory rounded-sm;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply container max-w-[1280px];
+  }
+
+  /* Eyebrow / kicker label */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-maroon-800;
+  }
+
+  /* Gold gradient text accent */
+  .text-gold-gradient {
+    @apply bg-gold-sheen bg-clip-text text-transparent;
+  }
+
+  /* Frosted card */
+  .card-surface {
+    @apply rounded-3xl border border-ink-200/70 bg-white shadow-card;
+  }
+
+  /* Subtle grid/paper texture for hero backgrounds */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+}
+
+@layer utilities {
+  .animation-delay-100 { animation-delay: 0.1s; }
+  .animation-delay-200 { animation-delay: 0.2s; }
+  .animation-delay-300 { animation-delay: 0.3s; }
+  .animation-delay-500 { animation-delay: 0.5s; }
+
+  /* Hide scrollbar for carousels */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

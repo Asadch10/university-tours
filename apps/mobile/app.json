@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "University Campus Private Tours",
+    "slug": "ucpt-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "ucpt",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ucpt.mobile"
+    },
+    "android": {
+      "package": "com.ucpt.mobile"
+    },
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "apiBaseUrl": "http://localhost:4000"
+    }
+  }
+}

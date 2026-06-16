@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-w: 17rem;
+    --sidebar-w-collapsed: 4.5rem;
+    --topbar-h: 4rem;
+  }
+
+  * {
+    @apply border-ink-200/60;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-cream text-ink-900 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-maroon-900 text-ivory;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display text-ink-900;
+    text-wrap: balance;
+  }
+
+  /* Premium focus ring for keyboard nav (WCAG AA) */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold-500 ring-offset-2 ring-offset-ivory rounded-sm;
+  }
+}
+
+@layer components {
+  /* Eyebrow / kicker label */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-maroon-800;
+  }
+
+  .text-gold-gradient {
+    @apply bg-gold-sheen bg-clip-text text-transparent;
+  }
+
+  /* Standard console surface */
+  .card-surface {
+    @apply rounded-2xl border border-ink-200/70 bg-white shadow-soft;
+  }
+
+  /* Sidebar paper texture */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+@layer utilities {
+  /* Loading shimmer for skeletons */
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+  .shimmer::after {
+    @apply absolute inset-0 -translate-x-full;
+    content: '';
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.55),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Thin branded scrollbar for the main console area */
+  .scroll-branded::-webkit-scrollbar { width: 10px; height: 10px; }
+  .scroll-branded::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-300/50;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  .scroll-branded::-webkit-scrollbar-thumb:hover { @apply bg-ink-400/60; background-clip: content-box; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
