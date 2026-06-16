@@ -144,7 +144,7 @@ export default function HowItWorksPage() {
       <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
         <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
         <div
-          className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
+          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
           aria-hidden
         />
         <div className="container-page relative py-20 sm:py-28">
@@ -252,7 +252,7 @@ export default function HowItWorksPage() {
           <div className="relative overflow-hidden rounded-4xl bg-maroon-gradient px-8 py-16 text-center text-ivory shadow-lift sm:px-12 sm:py-20">
             <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
             <div
-              className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-500/15 blur-3xl"
+              className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-500/15 blur-3xl"
               aria-hidden
             />
             <div className="relative mx-auto max-w-2xl">

@@ -1,33 +1,59 @@
-<svg width="120" height="140" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="University Campus Private Tours crest">
+<svg width="200" height="240" viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="University Campus Private Tours crest">
   <defs>
-    <linearGradient id="crest" x1="0" y1="0" x2="0" y2="140" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7a1a32"/>
-      <stop offset="1" stop-color="#6b1521"/>
-    </linearGradient>
+    <path id="uniArc" d="M54 82 Q100 44 146 82" />
+    <clipPath id="fieldClip">
+      <path d="M40 44 Q100 30 160 44 L160 116 C160 167 131 196 100 217 C69 196 40 167 40 116 Z" />
+    </clipPath>
   </defs>
-  <!-- Shield -->
-  <path d="M60 4 L112 18 V70 C112 102 90 124 60 136 C30 124 8 102 8 70 V18 Z" fill="url(#crest)"/>
-  <path d="M60 12 L104 24 V69 C104 96 86 116 60 127 C34 116 16 96 16 69 V24 Z" fill="none" stroke="#f3e1a8" stroke-width="1.5" opacity="0.85"/>
-  <!-- Banner -->
-  <path d="M22 34 H98 L92 46 H28 Z" fill="#3d0a12"/>
-  <text x="60" y="44" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="11" letter-spacing="2.5" fill="#fbf8f3">UNIVERSITY</text>
-  <text x="60" y="57" text-anchor="middle" font-family="Inter, sans-serif" font-weight="600" font-size="5.5" letter-spacing="2" fill="#eccb72">CAMPUS PRIVATE TOURS</text>
-  <!-- Quartered field divider -->
-  <line x1="60" y1="64" x2="60" y2="116" stroke="#f3e1a8" stroke-width="1.2" opacity="0.6"/>
-  <line x1="24" y1="90" x2="96" y2="90" stroke="#f3e1a8" stroke-width="1.2" opacity="0.6"/>
-  <!-- Open book (top-left) -->
-  <path d="M32 78 C36 75 42 75 45 77 V87 C42 85 36 85 32 88 Z" fill="#fbf8f3"/>
-  <path d="M58 77 C55 75 49 75 45 77 V87 C49 85 55 85 58 87 Z" fill="#fbf8f3" opacity="0.9"/>
-  <!-- Graduation cap (top-right) -->
-  <path d="M75 78 L90 82 L75 86 L60 82 Z" fill="#fbf8f3"/>
-  <path d="M68 84 V90 C68 92 82 92 82 90 V84" stroke="#fbf8f3" stroke-width="1.6" fill="none"/>
-  <!-- Torch (bottom-left) -->
-  <path d="M44 100 C44 96 40 94 40 98 C40 94 36 96 36 100 C36 103 38 104 40 104 C42 104 44 103 44 100 Z" fill="#eccb72"/>
-  <rect x="39" y="104" width="2" height="10" fill="#fbf8f3"/>
-  <!-- Column (bottom-right) -->
-  <rect x="70" y="100" width="20" height="2.5" fill="#fbf8f3"/>
-  <rect x="72" y="103" width="2.5" height="11" fill="#fbf8f3"/>
-  <rect x="78.75" y="103" width="2.5" height="11" fill="#fbf8f3"/>
-  <rect x="85.5" y="103" width="2.5" height="11" fill="#fbf8f3"/>
-  <rect x="70" y="114" width="20" height="2.5" fill="#fbf8f3"/>
+
+  <!-- Outer edge -->
+  <path d="M26 33 Q100 16 174 33 L174 118 C174 177 140 209 100 235 C60 209 26 177 26 118 Z" fill="#4d0e18"/>
+  <!-- Maroon frame -->
+  <path d="M31 37 Q100 21 169 37 L169 117 C169 173 137 204 100 228 C63 204 31 173 31 117 Z" fill="#6b1521"/>
+
+  <!-- Quartered field (clipped to inner shield) -->
+  <g clip-path="url(#fieldClip)">
+    <rect x="30" y="108" width="140" height="132" fill="#fbf8f3"/>
+    <!-- checker: maroon top-left + bottom-right -->
+    <rect x="30" y="108" width="70" height="50" fill="#6b1521"/>
+    <rect x="100" y="158" width="70" height="82" fill="#6b1521"/>
+    <!-- cross dividers -->
+    <line x1="100" y1="108" x2="100" y2="220" stroke="#fbf8f3" stroke-width="2.4"/>
+    <line x1="40" y1="158" x2="160" y2="158" stroke="#fbf8f3" stroke-width="2.4"/>
+  </g>
+
+  <!-- Inner cream border -->
+  <path d="M40 44 Q100 30 160 44 L160 116 C160 167 131 196 100 217 C69 196 40 167 40 116 Z" fill="none" stroke="#f3e1a8" stroke-width="2.4" opacity="0.9"/>
+
+  <!-- Arched wordmark -->
+  <text font-family="Georgia, 'Times New Roman', serif" font-weight="800" font-size="25" letter-spacing="0.5" fill="#fbf8f3">
+    <textPath href="#uniArc" startOffset="50%" text-anchor="middle">UNIVERSITY</textPath>
+  </text>
+
+  <!-- Gold ribbon line -->
+  <line x1="58" y1="95" x2="70" y2="95" stroke="#eccb72" stroke-width="1.6"/>
+  <line x1="130" y1="95" x2="142" y2="95" stroke="#eccb72" stroke-width="1.6"/>
+  <text x="100" y="98" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="8" letter-spacing="1.5" fill="#eccb72">campus private tours</text>
+
+  <!-- Top-left: open book (cream on maroon) -->
+  <path d="M46 127 C53 124 61 125 65 128 L65 143 C61 140 53 139 46 142 Z" fill="#fbf8f3"/>
+  <path d="M84 127 C77 124 69 125 65 128 L65 143 C69 140 77 139 84 142 Z" fill="#fbf8f3" opacity="0.92"/>
+
+  <!-- Top-right: graduation cap (maroon on cream) -->
+  <path d="M118 131 L135 124 L152 131 L135 138 Z" fill="#6b1521"/>
+  <path d="M126 135 L126 142 C126 145 144 145 144 142 L144 135" stroke="#6b1521" stroke-width="2.2" fill="none"/>
+  <line x1="152" y1="131" x2="152" y2="140" stroke="#6b1521" stroke-width="1.6"/>
+  <circle cx="152" cy="141" r="1.8" fill="#6b1521"/>
+
+  <!-- Bottom-left: torch (maroon stem, gold flame, on cream) -->
+  <path d="M65 170 C60 175 61 181 65 184 C69 181 70 175 65 170 Z" fill="#eccb72"/>
+  <rect x="63" y="184" width="4" height="13" fill="#6b1521"/>
+  <rect x="57" y="197" width="16" height="3.2" rx="1" fill="#6b1521"/>
+
+  <!-- Bottom-right: column (cream on maroon) -->
+  <rect x="123" y="176" width="24" height="3.2" rx="1" fill="#fbf8f3"/>
+  <rect x="126.5" y="180" width="2.8" height="15" fill="#fbf8f3"/>
+  <rect x="133.6" y="180" width="2.8" height="15" fill="#fbf8f3"/>
+  <rect x="140.7" y="180" width="2.8" height="15" fill="#fbf8f3"/>
+  <rect x="123" y="195" width="24" height="3.2" rx="1" fill="#fbf8f3"/>
 </svg>

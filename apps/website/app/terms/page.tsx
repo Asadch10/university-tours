@@ -14,7 +14,7 @@ export default function TermsPage() {
       <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
         <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
         <div
-          className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
+          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
           aria-hidden
         />
         <div className="container-page relative py-16 sm:py-20">

@@ -56,7 +56,7 @@ export default function FaqPage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
         <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
-        <div className="absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
+        <div className="pointer-events-none absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
         <div className="container-page relative py-16 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold-200 ring-1 ring-inset ring-white/15 backdrop-blur">

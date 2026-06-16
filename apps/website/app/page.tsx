@@ -299,7 +299,7 @@ export default function HomePage() {
         <Reveal>
           <div className="relative overflow-hidden rounded-4xl bg-maroon-gradient px-8 py-16 text-center text-ivory shadow-lift sm:px-12 sm:py-20">
             <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
-            <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-500/15 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-500/15 blur-3xl" aria-hidden />
             <div className="relative mx-auto max-w-2xl">
               <ShieldCheck className="mx-auto text-gold-300" size={36} />
               <h2 className="mt-5 font-display text-3xl font-semibold sm:text-4xl lg:text-[2.75rem]">

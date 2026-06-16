@@ -48,11 +48,11 @@ export default function ContactPage() {
       <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
         <div className="bg-grid absolute inset-0 opacity-40" aria-hidden />
         <div
-          className="absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl"
+          className="pointer-events-none absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl"
           aria-hidden
         />
         <div
-          className="absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl"
+          className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl"
           aria-hidden
         />
         <div className="container-page relative py-16 sm:py-24 lg:py-28">

@@ -96,8 +96,8 @@ export default function BecomeAGuidePage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
         <div className="bg-grid absolute inset-0 opacity-40" aria-hidden />
-        <div className="absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
-        <div className="absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl" aria-hidden />
+        <div className="pointer-events-none absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl" aria-hidden />
         <div className="container-page relative py-16 sm:py-24 lg:py-28">
           <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
@@ -318,7 +318,7 @@ export default function BecomeAGuidePage() {
           <div className="relative overflow-hidden rounded-4xl bg-maroon-gradient px-8 py-16 text-center text-ivory shadow-lift sm:px-12 sm:py-20">
             <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
             <div
-              className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-500/15 blur-3xl"
+              className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gold-500/15 blur-3xl"
               aria-hidden
             />
             <div className="relative mx-auto max-w-2xl">

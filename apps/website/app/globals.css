@@ -26,8 +26,12 @@
     @apply bg-maroon-900 text-ivory;
   }
 
+  /* Headings inherit their color from the nearest context (ink on light
+     surfaces via <body>, ivory on dark hero/CTA sections) so titles stay
+     legible everywhere. Components that need a specific color set it explicitly. */
   h1, h2, h3, h4 {
-    @apply font-display text-ink-900;
+    @apply font-display;
+    color: inherit;
     text-wrap: balance;
   }
 
@@ -57,8 +61,10 @@
     @apply rounded-3xl border border-ink-200/70 bg-white shadow-card;
   }
 
-  /* Subtle grid/paper texture for hero backgrounds */
+  /* Subtle grid/paper texture for hero backgrounds. Purely decorative —
+     never let it intercept clicks meant for the content above it. */
   .bg-grid {
+    pointer-events: none;
     background-image:
       linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);

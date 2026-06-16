@@ -26,12 +26,12 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
   }
 
   return (
-    <div className={cn('w-full', variant === 'hero' && 'mx-auto max-w-3xl')}>
+    <div className={cn('w-full', variant === 'hero' && 'mx-auto max-w-4xl')}>
       <form
         onSubmit={submit}
         className="flex flex-col gap-2 rounded-3xl border border-white/15 bg-white/95 p-2 shadow-lift backdrop-blur-xl sm:flex-row sm:items-center sm:rounded-full sm:p-1.5"
       >
-        <label className="flex flex-1 items-center gap-2.5 rounded-2xl px-4 py-2.5 sm:rounded-full">
+        <label className="flex min-w-0 flex-[2] items-center gap-2.5 rounded-2xl px-4 py-2.5 sm:rounded-full">
           <GraduationCap size={18} className="shrink-0 text-maroon-800" />
           <span className="sr-only">University</span>
           <input
@@ -39,7 +39,7 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search a university…"
-            className="w-full bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none"
+            className="w-full min-w-0 bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none"
           />
           <datalist id="uni-list">
             {universities.map((u) => (

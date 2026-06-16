@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin, Users, ArrowUpRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/ui/star-rating';
@@ -11,21 +12,33 @@ export function UniversityCard({ u }: { u: University }) {
       href={`/universities/${u.slug}`}
       className="group relative flex flex-col overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1"
     >
-      {/* Crest band */}
+      {/* Campus banner */}
       <div
-        className="relative h-32 overflow-hidden"
+        className="relative aspect-[16/9] overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${u.accent} 0%, #3d0a12 120%)` }}
       >
-        <div className="bg-grid absolute inset-0 opacity-50" aria-hidden />
+        <Image
+          src={u.image}
+          alt={`${u.name} campus`}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
+        />
+        {/* Maroon wash keeps the badge + crest on-brand and text legible */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: `linear-gradient(180deg, ${u.accent}33 0%, ${u.accent}cc 100%)` }}
+          aria-hidden
+        />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.svg"
           alt=""
-          className="absolute -right-4 -top-3 h-36 w-36 opacity-20 transition-transform duration-500 ease-premium group-hover:scale-110"
+          className="absolute -right-4 -top-3 h-28 w-28 opacity-20 transition-transform duration-500 ease-premium group-hover:scale-110"
         />
         <div className="absolute bottom-3 left-5 right-5 flex items-center justify-between">
           <Badge variant="light">{u.state}</Badge>
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-ivory ring-1 ring-inset ring-white/25 backdrop-blur transition-transform duration-300 group-hover:rotate-45">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-ivory ring-1 ring-inset ring-white/30 backdrop-blur transition-transform duration-300 group-hover:rotate-45">
             <ArrowUpRight size={16} />
           </span>
         </div>

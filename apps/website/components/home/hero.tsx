@@ -17,8 +17,8 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
       <div className="bg-grid absolute inset-0 opacity-40" aria-hidden />
-      <div className="absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
-      <div className="absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl" aria-hidden />
       {/* Floating crest */}
       <motion.img
         src="/logo.svg"
@@ -30,7 +30,7 @@ export function Hero() {
       />
 
       <div className="container-page relative py-16 sm:py-24 lg:py-28">
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="mx-auto max-w-4xl text-center">
           <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold-200 ring-1 ring-inset ring-white/15 backdrop-blur">
               <ShieldCheck size={14} /> Verified students · 50+ universities
@@ -42,7 +42,7 @@ export function Hero() {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="mt-6 font-display text-4xl font-semibold leading-[1.08] text-ivory sm:text-5xl lg:text-6xl"
+            className="mx-auto mt-6 max-w-3xl font-display text-4xl font-semibold leading-[1.08] text-ivory sm:text-5xl lg:text-6xl"
           >
             See the <span className="text-gold-gradient">real campus</span>
             <br className="hidden sm:block" /> before you decide.

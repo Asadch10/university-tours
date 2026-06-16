@@ -9,6 +9,7 @@ export interface University {
   location: string;
   state: string;
   accent: string; // brand tint for cards
+  image: string; // campus banner/hero photo
   ambassadors: number;
   toursFrom: number; // cents
   rating: number;
@@ -46,12 +47,12 @@ export interface Testimonial {
 }
 
 export const universities: University[] = [
-  { slug: 'stanford', name: 'Stanford University', location: 'Stanford, CA', state: 'California', accent: '#7a1a32', ambassadors: 48, toursFrom: 6500, rating: 4.9, reviews: 312, tags: ['Engineering', 'Business', 'Pre-Med'], blurb: 'Walk Palm Drive and the Main Quad with students living it every day.' },
-  { slug: 'harvard', name: 'Harvard University', location: 'Cambridge, MA', state: 'Massachusetts', accent: '#6b1521', ambassadors: 53, toursFrom: 7000, rating: 4.9, reviews: 401, tags: ['Law', 'Liberal Arts', 'Research'], blurb: 'From Harvard Yard to the river houses with insider perspective.' },
-  { slug: 'ucla', name: 'UCLA', location: 'Los Angeles, CA', state: 'California', accent: '#7a1a32', ambassadors: 61, toursFrom: 5000, rating: 4.8, reviews: 287, tags: ['Film', 'Athletics', 'Sciences'], blurb: 'Royce Hall, Bruin Walk, and the real LA student experience.' },
-  { slug: 'nyu', name: 'New York University', location: 'New York, NY', state: 'New York', accent: '#6b1521', ambassadors: 44, toursFrom: 6000, rating: 4.7, reviews: 219, tags: ['Arts', 'Finance', 'Tech'], blurb: 'A campus woven into the city — explore it like a local.' },
-  { slug: 'umich', name: 'University of Michigan', location: 'Ann Arbor, MI', state: 'Michigan', accent: '#7a1a32', ambassadors: 39, toursFrom: 4500, rating: 4.8, reviews: 176, tags: ['Engineering', 'Public Health', 'Sports'], blurb: 'The Diag, the Big House, and a classic college town.' },
-  { slug: 'utexas', name: 'UT Austin', location: 'Austin, TX', state: 'Texas', accent: '#6b1521', ambassadors: 36, toursFrom: 4000, rating: 4.8, reviews: 154, tags: ['CS', 'Business', 'Music'], blurb: 'Hook ’em — the Tower, the Drag, and Austin energy.' },
+  { slug: 'stanford', name: 'Stanford University', location: 'Stanford, CA', state: 'California', accent: '#7a1a32', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Stanford_University_campus_in_2016.jpg/1280px-Stanford_University_campus_in_2016.jpg', ambassadors: 48, toursFrom: 6500, rating: 4.9, reviews: 312, tags: ['Engineering', 'Business', 'Pre-Med'], blurb: 'Walk Palm Drive and the Main Quad with students living it every day.' },
+  { slug: 'harvard', name: 'Harvard University', location: 'Cambridge, MA', state: 'Massachusetts', accent: '#6b1521', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Harvard_Yard%2C_Harvard_University%2C_Cambridge_MA.jpg/1280px-Harvard_Yard%2C_Harvard_University%2C_Cambridge_MA.jpg', ambassadors: 53, toursFrom: 7000, rating: 4.9, reviews: 401, tags: ['Law', 'Liberal Arts', 'Research'], blurb: 'From Harvard Yard to the river houses with insider perspective.' },
+  { slug: 'ucla', name: 'UCLA', location: 'Los Angeles, CA', state: 'California', accent: '#7a1a32', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/2019_UCLA_Royce_Hall_1.jpg/1280px-2019_UCLA_Royce_Hall_1.jpg', ambassadors: 61, toursFrom: 5000, rating: 4.8, reviews: 287, tags: ['Film', 'Athletics', 'Sciences'], blurb: 'Royce Hall, Bruin Walk, and the real LA student experience.' },
+  { slug: 'nyu', name: 'New York University', location: 'New York, NY', state: 'New York', accent: '#6b1521', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Washington_Square_Park_in_2012.jpg/1280px-Washington_Square_Park_in_2012.jpg', ambassadors: 44, toursFrom: 6000, rating: 4.7, reviews: 219, tags: ['Arts', 'Finance', 'Tech'], blurb: 'A campus woven into the city — explore it like a local.' },
+  { slug: 'umich', name: 'University of Michigan', location: 'Ann Arbor, MI', state: 'Michigan', accent: '#7a1a32', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/University_of_Michigan_Museum_of_Art%2C_University_of_Michigan%2C_State_Street_and_University_Avenue%2C_Ann_Arbor%2C_MI.jpg/1280px-University_of_Michigan_Museum_of_Art%2C_University_of_Michigan%2C_State_Street_and_University_Avenue%2C_Ann_Arbor%2C_MI.jpg', ambassadors: 39, toursFrom: 4500, rating: 4.8, reviews: 176, tags: ['Engineering', 'Public Health', 'Sports'], blurb: 'The Diag, the Big House, and a classic college town.' },
+  { slug: 'utexas', name: 'UT Austin', location: 'Austin, TX', state: 'Texas', accent: '#6b1521', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/University_of_texas_at_austin_main_building_2014.jpg/1280px-University_of_texas_at_austin_main_building_2014.jpg', ambassadors: 36, toursFrom: 4000, rating: 4.8, reviews: 154, tags: ['CS', 'Business', 'Music'], blurb: 'Hook ’em — the Tower, the Drag, and Austin energy.' },
 ];
 
 export const ambassadors: Ambassador[] = [

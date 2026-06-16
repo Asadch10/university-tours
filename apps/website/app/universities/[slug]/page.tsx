@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MapPin, Users, Star, ChevronRight, ShieldCheck, Check, ArrowRight } from 'lucide-react';
 import { AmbassadorCard } from '@/components/cards/ambassador-card';
 import { SectionHeading } from '@/components/ui/section-heading';
@@ -46,6 +47,22 @@ export default async function UniversityDetailPage({
         className="relative overflow-hidden pt-[var(--header-h)] text-ivory"
         style={{ background: `linear-gradient(135deg, ${u.accent} 0%, #3d0a12 120%)` }}
       >
+        {/* Campus banner photo with maroon overlay for text readability */}
+        <Image
+          src={u.image}
+          alt={`${u.name} campus`}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${u.accent}e6 0%, ${u.accent}cc 40%, #3d0a12f2 120%)`,
+          }}
+          aria-hidden
+        />
         <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -65,7 +82,7 @@ export default async function UniversityDetailPage({
           <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <Badge variant="light">{u.state}</Badge>
-              <h1 className="mt-4 font-display text-4xl font-semibold sm:text-5xl">{u.name}</h1>
+              <h1 className="mt-4 font-display text-4xl font-semibold text-ivory sm:text-5xl">{u.name}</h1>
               <p className="mt-3 inline-flex items-center gap-2 text-ivory/80">
                 <MapPin size={16} /> {u.location}
               </p>
