@@ -25,8 +25,18 @@ const inputClasses =
   'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
 
 const roleOptions: { value: Role; icon: typeof Users; label: string; hint: string }[] = [
-  { value: 'BUYER', icon: Users, label: 'Buyer', hint: 'Book campus tours' },
-  { value: 'SELLER', icon: GraduationCap, label: 'Seller', hint: 'Host tours & earn' },
+  {
+    value: 'BUYER',
+    icon: Users,
+    label: 'Family / Student',
+    hint: 'Explore universities — book tours, consultations & admissions guidance',
+  },
+  {
+    value: 'SELLER',
+    icon: GraduationCap,
+    label: 'Current Student',
+    hint: 'Offer campus tours, consultations & mentorship as an ambassador',
+  },
 ];
 
 function passwordStrength(value: string): { score: number; label: string; tone: string } {
@@ -47,7 +57,7 @@ function passwordStrength(value: string): { score: number; label: string; tone: 
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [role, setRole] = useState<Role>('BUYER');
+  const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +69,7 @@ export default function RegisterPage() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!name || !email || !password || !agree) {
+    if (!role || !name || !email || !password || !agree) {
       setStatus('error');
       return;
     }
@@ -96,7 +106,7 @@ export default function RegisterPage() {
 
         <div className="mt-8 rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card sm:p-8">
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            {/* Role: Buyer / Seller */}
+            {/* Role: Family / Student (BUYER) vs Current Student (SELLER) */}
             <fieldset>
               <legend className="mb-2 text-sm font-medium text-ink-800">I want to join as</legend>
               <div className="grid grid-cols-2 gap-3">
@@ -144,7 +154,7 @@ export default function RegisterPage() {
                 className="flex items-center gap-2.5 rounded-xl border border-maroon-200 bg-maroon-50 px-4 py-3 text-sm text-maroon-900"
               >
                 <AlertCircle size={16} className="shrink-0" />
-                Please complete all fields and accept the terms.
+                Please choose an account type, complete all fields, and accept the terms.
               </div>
             )}
 

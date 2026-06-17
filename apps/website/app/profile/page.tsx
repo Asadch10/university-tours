@@ -206,7 +206,7 @@ export default function ProfilePage() {
       return;
     }
     if (isSeller && !doc) {
-      setErrorMsg('As a seller, please upload proof of your current enrollment to get verified.');
+      setErrorMsg('As a current student, please upload proof of your enrollment to get verified.');
       setStatus('error');
       return;
     }
@@ -306,7 +306,7 @@ export default function ProfilePage() {
                         : 'bg-maroon-50 text-maroon-800 ring-maroon-100',
                     )}
                   >
-                    {isSeller ? 'Seller' : 'Buyer'}
+                    {isSeller ? 'Current Student' : 'Family / Student'}
                   </span>
                 </div>
 

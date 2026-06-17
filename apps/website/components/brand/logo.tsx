@@ -26,7 +26,7 @@ export function Logo({
         <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
       </span>
       {showWordmark && (
-        <span className="flex flex-col leading-none">
+        <span className="flex flex-col gap-1 leading-none">
           <span
             className={cn(
               'font-display text-[1.05rem] font-bold tracking-tight',
