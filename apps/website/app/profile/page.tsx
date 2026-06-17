@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   User,
   Mail,
@@ -23,11 +24,40 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
+  Pencil,
+  BadgeCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type Role = 'BUYER' | 'SELLER';
+
+/**
+ * DEMO MODE — for the client demo we bypass the admin "Profile under review"
+ * gate and present the profile as already approved, pre-filled and editable.
+ * Set DEMO_MODE = false (and restore the "Profile under review" screen marked
+ * further below) once the backend admin-approval workflow is connected.
+ */
+const DEMO_MODE = true;
+
+// Pre-filled demo content so the profile looks complete and "approved" out of
+// the box. Remove this (or guard it behind DEMO_MODE) when the real profile is
+// loaded from the backend via @ucpt/sdk.
+const DEMO_DEFAULTS = {
+  dob: '2004-03-18',
+  gender: 'Prefer not to say',
+  phone: '+1 (555) 204-7788',
+  location: 'San Francisco, CA',
+  educationLevel: 'Undergraduate',
+  gradYear: '2026',
+  school: 'Stanford University',
+  study: 'Computer Science',
+  languages: 'English, Spanish',
+  rate: '65',
+  bio: 'Passionate about helping families experience campus life authentically — I love sharing the hidden study spots, real student stories, and honest advice that official tours skip.',
+};
+const DEMO_INTERESTS = ['Photography', 'Travel', 'Music', 'Volunteering'];
+const DEMO_PHOTO = 'https://i.pravatar.cc/300?img=47';
 
 const inputClasses =
   'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
@@ -55,12 +85,14 @@ function Field({
   label,
   icon: Icon,
   hint,
+  error,
   children,
 }: {
   id: string;
   label: string;
   icon: typeof User;
   hint?: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -77,6 +109,12 @@ function Field({
         />
         {children}
       </div>
+      {error && (
+        <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-maroon-700">
+          <AlertCircle size={13} className="shrink-0" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -98,6 +136,29 @@ function SectionHeader({
       <div>
         <h2 className="font-display text-lg font-semibold text-ink-900">{title}</h2>
         <p className="text-sm text-ink-500">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+/** Read-only labelled value used on the approved profile view. */
+function DetailItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof User;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-ink-100 bg-ivory/40 p-4">
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+        <Icon size={16} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</p>
+        <p className="mt-0.5 truncate text-sm font-semibold text-ink-900">{value || '—'}</p>
       </div>
     </div>
   );
@@ -126,6 +187,10 @@ export default function ProfilePage() {
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  // Per-field validation messages, keyed by field name (also 'doc' for upload).
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // The "approved & live" banner shows briefly each time the profile is saved.
+  const [showApprovedBanner, setShowApprovedBanner] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);
 
@@ -133,25 +198,51 @@ export default function ProfilePage() {
     try {
       const r = localStorage.getItem('ucpt_role');
       if (r === 'SELLER' || r === 'BUYER') setRole(r);
+      const name = localStorage.getItem('ucpt_name') ?? '';
+      const email = localStorage.getItem('ucpt_email') ?? '';
+      // DEMO MODE: pre-fill the rest so the profile presents as complete.
       setFields((f) => ({
         ...f,
-        name: localStorage.getItem('ucpt_name') ?? '',
-        email: localStorage.getItem('ucpt_email') ?? '',
+        ...(DEMO_MODE ? DEMO_DEFAULTS : {}),
+        name: name || f.name,
+        email: email || f.email,
       }));
+      if (DEMO_MODE) {
+        setInterests((prev) => (prev.length ? prev : DEMO_INTERESTS));
+        setPhoto((p) => p ?? DEMO_PHOTO);
+      }
     } catch {
       /* storage unavailable — start with empty defaults */
     }
   }, []);
 
-  // When the profile is submitted, jump back to the top so the review message
-  // is visible instead of leaving the user scrolled down by the footer.
+  // On save, jump to the top and flash the "approved & live" banner for a few
+  // seconds (it re-appears every time the profile is saved again).
   useEffect(() => {
-    if (status === 'success') window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (status !== 'success') return;
+    // Jump instantly to the top so the approved card is shown, not the footer.
+    // (CSS sets html { scroll-behavior: smooth }, which would otherwise animate
+    // up from the bottom and flash the footer — disable it just for this jump.)
+    const html = document.documentElement;
+    const prev = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 0);
+    html.style.scrollBehavior = prev;
+    setShowApprovedBanner(true);
+    const t = setTimeout(() => setShowApprovedBanner(false), 2500);
+    return () => clearTimeout(t);
   }, [status]);
 
   function set<K extends keyof typeof fields>(key: K, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
     if (status === 'error') setStatus('idle');
+    // Clear this field's inline error once the user edits it.
+    setFieldErrors((e) => {
+      if (!e[key]) return e;
+      const next = { ...e };
+      delete next[key];
+      return next;
+    });
   }
 
   function addInterest(value: string) {
@@ -200,22 +291,197 @@ export default function ProfilePage() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!fields.name || !fields.dob || !fields.educationLevel || !fields.study) {
-      setErrorMsg('Please fill in your name, date of birth, education level, and field of study.');
+
+    // Collect inline messages for each missing required field.
+    const errors: Record<string, string> = {};
+    if (!fields.name) errors.name = 'Please enter your full name.';
+    if (!fields.dob) errors.dob = 'Please enter your date of birth.';
+    if (!fields.educationLevel) errors.educationLevel = 'Please select your education level.';
+    if (!fields.study) errors.study = 'Please enter your field of study.';
+    if (isSeller && !doc) errors.doc = 'Please upload proof of your enrollment to get verified.';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setErrorMsg('Please complete the required fields highlighted below.');
       setStatus('error');
       return;
     }
-    if (isSeller && !doc) {
-      setErrorMsg('As a current student, please upload proof of your enrollment to get verified.');
-      setStatus('error');
-      return;
-    }
+
+    setFieldErrors({});
     setStatus('loading');
     // Simulated save — wire to @ucpt/sdk profile + verification endpoints later.
     setTimeout(() => setStatus('success'), 1000);
   }
 
   if (status === 'success') {
+    // DEMO MODE: present the profile as already approved & live, skipping the
+    // admin review gate. The original "Profile under review" screen is kept
+    // commented out below — restore it when DEMO_MODE is set to false.
+    if (DEMO_MODE) {
+      return (
+        <main className="relative min-h-dvh bg-ivory pb-20 pt-[calc(var(--header-h)+2.5rem)]">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-radial-fade" aria-hidden />
+          <div className="relative mx-auto w-full max-w-5xl px-5">
+            {/* Approved banner */}
+            <AnimatePresence>
+              {showApprovedBanner && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, y: 0, height: 'auto', marginBottom: '1.5rem' }}
+                  exit={{ opacity: 0, y: -8, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex items-center gap-2 overflow-hidden rounded-2xl border border-verified/30 bg-verified/10 px-4 py-3.5"
+                >
+                  <CheckCircle2 size={18} className="shrink-0 text-verified" />
+                  <p className="text-sm font-medium text-ink-800">
+                    Your profile is approved and live.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Profile card */}
+            <div className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+              <div className="p-6 sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <span className="inline-flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-maroon-gradient font-display text-2xl font-bold text-ivory shadow-soft">
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photo} alt="Your profile" className="h-full w-full object-cover" />
+                      ) : (
+                        initials
+                      )}
+                    </span>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="font-display text-2xl font-semibold text-ink-900">
+                          {fields.name || 'Your name'}
+                        </h1>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-verified/10 px-2.5 py-1 text-xs font-semibold text-verified ring-1 ring-inset ring-verified/30">
+                          <BadgeCheck size={13} /> Verified
+                        </span>
+                      </div>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-500">
+                        <span className="font-medium text-maroon-800">
+                          {isSeller ? 'Current Student' : 'Family / Student'}
+                        </span>
+                        {fields.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={14} /> {fields.location}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Simple icon edit button */}
+                  <button
+                    type="button"
+                    onClick={() => setStatus('idle')}
+                    aria-label="Edit profile"
+                    title="Edit profile"
+                    className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition-colors hover:border-maroon-800/40 hover:bg-maroon-50 hover:text-maroon-900 cursor-pointer"
+                  >
+                    <Pencil size={16} />
+                    <span className="hidden sm:inline">Edit profile</span>
+                  </button>
+                </div>
+
+                {/* Quick facts */}
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {fields.study && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-maroon-50 px-3 py-1.5 text-sm font-medium text-maroon-900 ring-1 ring-inset ring-maroon-100">
+                      <BookOpen size={14} /> {fields.study}
+                    </span>
+                  )}
+                  {fields.school && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-maroon-50 px-3 py-1.5 text-sm font-medium text-maroon-900 ring-1 ring-inset ring-maroon-100">
+                      <GraduationCap size={14} /> {fields.school}
+                    </span>
+                  )}
+                  {fields.gradYear && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-maroon-50 px-3 py-1.5 text-sm font-medium text-maroon-900 ring-1 ring-inset ring-maroon-100">
+                      <CalendarDays size={14} /> Class of {fields.gradYear}
+                    </span>
+                  )}
+                </div>
+
+                {/* About */}
+                {fields.bio && (
+                  <section className="mt-8">
+                    <h2 className="font-display text-lg font-semibold text-ink-900">About</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-600">{fields.bio}</p>
+                  </section>
+                )}
+
+                {/* Details */}
+                <section className="mt-8">
+                  <h2 className="font-display text-lg font-semibold text-ink-900">Details</h2>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <DetailItem icon={Mail} label="Email" value={fields.email} />
+                    <DetailItem icon={Phone} label="Phone" value={fields.phone} />
+                    <DetailItem icon={Cake} label="Date of birth" value={fields.dob} />
+                    <DetailItem icon={User} label="Gender" value={fields.gender} />
+                    <DetailItem
+                      icon={GraduationCap}
+                      label="Education level"
+                      value={fields.educationLevel}
+                    />
+                    <DetailItem icon={CalendarDays} label="Graduation year" value={fields.gradYear} />
+                    {isSeller && (
+                      <>
+                        <DetailItem icon={Languages} label="Languages" value={fields.languages} />
+                        <DetailItem
+                          icon={DollarSign}
+                          label="Tour rate (USD)"
+                          value={fields.rate ? `$${fields.rate}` : ''}
+                        />
+                      </>
+                    )}
+                  </div>
+                </section>
+
+                {/* Interests */}
+                {interests.length > 0 && (
+                  <section className="mt-8">
+                    <h2 className="font-display text-lg font-semibold text-ink-900">Interests</h2>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {interests.map((h) => (
+                        <span
+                          key={h}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-ink-50 px-3 py-1.5 text-sm font-medium text-ink-700 ring-1 ring-inset ring-ink-100"
+                        >
+                          <Heart size={13} className="text-maroon-700" /> {h}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Verification (demo: approved) */}
+                {isSeller && (
+                  <section className="mt-8 flex items-start gap-3 rounded-2xl border border-verified/30 bg-verified/5 p-4">
+                    <ShieldCheck size={18} className="mt-0.5 shrink-0 text-verified" />
+                    <div>
+                      <p className="text-sm font-semibold text-ink-900">Enrollment verified</p>
+                      <p className="mt-0.5 text-sm text-ink-600">
+                        Your current-student status has been approved — your guide profile is visible
+                        to families.
+                      </p>
+                    </div>
+                  </section>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    /* ===== ORIGINAL "PROFILE UNDER REVIEW" SCREEN ======================
+       Restore this block (and set DEMO_MODE = false above) once the backend
+       admin-approval workflow is connected and profiles require approval.
     return (
       <main className="relative min-h-dvh overflow-hidden bg-ivory pb-20 pt-[calc(var(--header-h)+3rem)]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-radial-fade" aria-hidden />
@@ -246,6 +512,7 @@ export default function ProfilePage() {
         </div>
       </main>
     );
+    ===== END "PROFILE UNDER REVIEW" SCREEN =========================== */
   }
 
   return (
@@ -383,7 +650,7 @@ export default function ProfilePage() {
             <section className="space-y-5">
               <SectionHeader step={1} title="Personal details" desc="The basics about you." />
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field id="name" label="Full name" icon={User}>
+                <Field id="name" label="Full name" icon={User} error={fieldErrors.name}>
                   <input
                     id="name"
                     type="text"
@@ -406,7 +673,7 @@ export default function ProfilePage() {
                     className={cn(inputClasses, 'pl-10')}
                   />
                 </Field>
-                <Field id="dob" label="Date of birth" icon={Cake}>
+                <Field id="dob" label="Date of birth" icon={Cake} error={fieldErrors.dob}>
                   <input
                     id="dob"
                     type="date"
@@ -462,7 +729,12 @@ export default function ProfilePage() {
             <section className="space-y-5">
               <SectionHeader step={2} title="Education" desc="Where and what you study." />
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field id="educationLevel" label="Education level" icon={GraduationCap}>
+                <Field
+                  id="educationLevel"
+                  label="Education level"
+                  icon={GraduationCap}
+                  error={fieldErrors.educationLevel}
+                >
                   <select
                     id="educationLevel"
                     required
@@ -503,7 +775,7 @@ export default function ProfilePage() {
                     className={cn(inputClasses, 'pl-10')}
                   />
                 </Field>
-                <Field id="study" label="Field of study" icon={BookOpen}>
+                <Field id="study" label="Field of study" icon={BookOpen} error={fieldErrors.study}>
                   <input
                     id="study"
                     type="text"
@@ -639,10 +911,21 @@ export default function ProfilePage() {
                         if (file) {
                           setDoc(file.name);
                           if (status === 'error') setStatus('idle');
+                          setFieldErrors((er) => {
+                            if (!er.doc) return er;
+                            const next = { ...er };
+                            delete next.doc;
+                            return next;
+                          });
                         }
                       }}
                     />
                   </div>
+                  {fieldErrors.doc && (
+                    <p className="flex items-center gap-1 text-xs font-medium text-maroon-700">
+                      <AlertCircle size={13} className="shrink-0" /> {fieldErrors.doc}
+                    </p>
+                  )}
                   <p className="text-xs text-ink-500">
                     Your document is used only to verify enrollment and is never shown publicly.
                   </p>

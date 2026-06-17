@@ -17,6 +17,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { signIn } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 type Role = 'BUYER' | 'SELLER';
@@ -74,14 +75,9 @@ export default function RegisterPage() {
       return;
     }
     setStatus('loading');
-    // Simulated sign-up — no real backend. Hand off basics to the profile step.
-    try {
-      localStorage.setItem('ucpt_role', role);
-      localStorage.setItem('ucpt_name', name);
-      localStorage.setItem('ucpt_email', email);
-    } catch {
-      /* storage may be unavailable — profile still works with empty defaults */
-    }
+    // Simulated sign-up — no real backend. Persist the account (which also
+    // marks the user as logged in for the header) and hand off to the profile.
+    signIn({ name, email, role });
     setTimeout(() => router.push('/profile'), 700);
   }
 

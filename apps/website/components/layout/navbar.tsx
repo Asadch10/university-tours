@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X, ChevronRight, User as UserIcon, LogOut } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { Button, ButtonLink } from '@/components/ui/button';
+import { UserMenu } from '@/components/layout/user-menu';
+import { useAuthUser, signOut, initialsOf } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -20,6 +22,14 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const user = useAuthUser();
+
+  function handleLogout() {
+    setOpen(false);
+    signOut();
+    router.push('/');
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -73,12 +83,18 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <ButtonLink href="/login" variant="ghost" size="sm">
-            Log in
-          </ButtonLink>
-          <ButtonLink href="/register" variant="primary" size="sm">
-            Get started
-          </ButtonLink>
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <>
+              <ButtonLink href="/login" variant="ghost" size="sm">
+                Log in
+              </ButtonLink>
+              <ButtonLink href="/register" variant="primary" size="sm">
+                Get started
+              </ButtonLink>
+            </>
+          )}
         </div>
 
         <button
@@ -116,12 +132,38 @@ export function Navbar() {
                 ))}
               </ul>
               <div className="mt-4 flex flex-col gap-2.5">
-                <ButtonLink href="/login" variant="outline" size="lg">
-                  Log in
-                </ButtonLink>
-                <ButtonLink href="/register" variant="primary" size="lg">
-                  Get started
-                </ButtonLink>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 rounded-2xl border border-ink-200/70 bg-white px-4 py-3">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-maroon-gradient font-display text-sm font-bold text-ivory">
+                        {initialsOf(user.name, user.email)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink-900">
+                          {user.name || user.email.split('@')[0] || 'Account'}
+                        </p>
+                        {user.email && (
+                          <p className="truncate text-xs text-ink-500">{user.email}</p>
+                        )}
+                      </div>
+                    </div>
+                    <ButtonLink href="/profile" variant="outline" size="lg">
+                      <UserIcon size={18} /> Profile
+                    </ButtonLink>
+                    <Button variant="primary" size="lg" onClick={handleLogout}>
+                      <LogOut size={18} /> Log out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <ButtonLink href="/login" variant="outline" size="lg">
+                      Log in
+                    </ButtonLink>
+                    <ButtonLink href="/register" variant="primary" size="lg">
+                      Get started
+                    </ButtonLink>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

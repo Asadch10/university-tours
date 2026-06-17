@@ -1,14 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SlidersHorizontal, X, SearchX } from 'lucide-react';
 import { AmbassadorCard } from '@/components/cards/ambassador-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import { cn, formatPrice } from '@/lib/utils';
 import { ambassadors, universities, type Ambassador } from '@/lib/data';
 
 type Sort = 'recommended' | 'rating' | 'price-asc' | 'price-desc';
+
+const PAGE_SIZE = 6;
 
 export function SearchResults({
   initialQuery = '',
@@ -23,6 +26,8 @@ export function SearchResults({
   const [minRating, setMinRating] = useState(0);
   const [sort, setSort] = useState<Sort>('recommended');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const topRef = useRef<HTMLDivElement>(null);
 
   const results = useMemo(() => {
     let list = ambassadors.filter((a) => {
@@ -44,6 +49,21 @@ export function SearchResults({
     });
     return list;
   }, [query, service, maxPrice, minRating, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+
+  // Snap back to the first page whenever the filtered/sorted set changes.
+  useEffect(() => {
+    setPage(1);
+  }, [query, service, maxPrice, minRating, sort]);
+
+  const current = Math.min(page, totalPages);
+  const pageItems = results.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+
+  function goToPage(p: number) {
+    setPage(p);
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   const reset = () => {
     setQuery('');
@@ -140,6 +160,7 @@ export function SearchResults({
       </aside>
 
       <div>
+        <div ref={topRef} className="scroll-mt-[calc(var(--header-h)+1.5rem)]" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-ink-600">
             <span className="font-semibold text-ink-900">{results.length}</span> guide
@@ -178,11 +199,20 @@ export function SearchResults({
         </div>
 
         {results.length > 0 ? (
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {results.map((a) => (
-              <AmbassadorCard key={a.id} a={a} />
-            ))}
-          </div>
+          <>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {pageItems.map((a) => (
+                <AmbassadorCard key={a.id} a={a} />
+              ))}
+            </div>
+            {/* Pagination — sits above the footer */}
+            <Pagination
+              currentPage={current}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              className="mt-12"
+            />
+          </>
         ) : (
           <div className="mt-10 flex flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-white/60 px-6 py-20 text-center">
             <SearchX size={40} className="text-ink-300" />

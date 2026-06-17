@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
-import { UniversityCard } from '@/components/cards/university-card';
-import { Reveal, RevealGroup } from '@/components/ui/reveal';
-import { universities } from '@/lib/data';
+import { UniversityExplorer } from '@/components/universities/university-explorer';
 
 export const metadata: Metadata = {
   title: 'Universities',
@@ -28,17 +26,8 @@ export default function UniversitiesPage() {
         </div>
       </section>
 
-      <section className="py-14 sm:py-20">
-        <div className="container-page">
-          <RevealGroup className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {universities.map((u) => (
-              <Reveal as="div" key={u.slug}>
-                <UniversityCard u={u} />
-              </Reveal>
-            ))}
-          </RevealGroup>
-        </div>
-      </section>
+      {/* Search + USA state filters, results grid, and pagination */}
+      <UniversityExplorer />
     </>
   );
 }

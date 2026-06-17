@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Eye,
   EyeOff,
@@ -13,12 +14,14 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { signIn } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 const inputClasses =
   'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -32,8 +35,13 @@ export default function LoginPage() {
       return;
     }
     setStatus('loading');
-    // Simulated auth — no real backend.
-    setTimeout(() => setStatus('success'), 1100);
+    // Simulated auth — no real backend. Mark the user logged in (updates the
+    // header) and hand off to the profile.
+    setTimeout(() => {
+      signIn({ email });
+      setStatus('success');
+      setTimeout(() => router.push('/profile'), 700);
+    }, 1100);
   }
 
   return (
