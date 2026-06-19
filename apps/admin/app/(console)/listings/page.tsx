@@ -6,7 +6,6 @@ import {
   Pencil,
   Ban,
   CheckCircle2,
-  MoreHorizontal,
   MapPin,
   CalendarCheck,
 } from 'lucide-react';
@@ -20,7 +19,6 @@ import { Select, Input, Field } from '@/components/ui/input';
 import { DataTable, type Column } from '@/components/ui/table';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { Dropdown, type MenuAction } from '@/components/ui/dropdown';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
@@ -194,30 +192,49 @@ export default function ListingsPage() {
       key: 'actions',
       header: '',
       align: 'right',
-      cell: (l) => {
-        const items: (MenuAction | 'separator')[] = [
-          { label: 'View details', icon: <Eye size={15} />, onClick: () => openDetails(l) },
-          { label: 'Edit', icon: <Pencil size={15} />, onClick: () => openDetails(l) },
-          'separator',
-          l.status === 'DISABLED'
-            ? { label: 'Enable', icon: <CheckCircle2 size={15} />, onClick: () => handleEnable(l) }
-            : { label: 'Disable', icon: <Ban size={15} />, tone: 'danger', onClick: () => handleDisable(l) },
-        ];
-        return (
-          <Can perm="listings.moderate" fallback={<StatusBadge status={l.status} size="sm" />}>
-            <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-              <Dropdown
-                trigger={
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800">
-                    <MoreHorizontal size={18} />
-                  </span>
-                }
-                items={items}
-              />
-            </div>
-          </Can>
-        );
-      },
+      cell: (l) => (
+        <Can perm="listings.moderate">
+          <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="View details"
+              onClick={() => openDetails(l)}
+            >
+              <Eye size={15} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Edit"
+              onClick={() => openDetails(l)}
+            >
+              <Pencil size={14} />
+            </Button>
+            {l.status === 'DISABLED' ? (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Enable"
+                className="text-success hover:bg-success/10"
+                onClick={() => handleEnable(l)}
+              >
+                <CheckCircle2 size={15} />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Disable"
+                className="text-danger hover:bg-danger/10"
+                onClick={() => handleDisable(l)}
+              >
+                <Ban size={15} />
+              </Button>
+            )}
+          </div>
+        </Can>
+      ),
     },
   ];
 

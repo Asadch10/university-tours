@@ -52,9 +52,6 @@ export const listingStatusToApi = (s: ListingStatus): string =>
 const qType = (t: string): Questionnaire['questions'][number]['type'] =>
   t === 'TEXT' ? 'SHORT_TEXT' : t === 'SINGLE_CHOICE' ? 'SINGLE_SELECT' : t === 'MULTI_CHOICE' ? 'MULTI_SELECT' : (t as 'LONG_TEXT' | 'FILE');
 
-const qStatus = (s: string): Questionnaire['status'] =>
-  s === 'ACTIVE' ? 'PUBLISHED' : (s as 'DRAFT' | 'ARCHIVED');
-
 // ─── Dashboard ──────────────────────────────────────────────────────────────
 
 export interface DashboardData {
@@ -127,17 +124,15 @@ export function useApplicationActions() {
   };
 }
 
-// ─── Questionnaires ───────────────────────────────────────────────────────────
+// ─── Questionnaire (singleton) ────────────────────────────────────────────────
 
-export function useQuestionnaires() {
+export function useQuestionnaire() {
   return useQuery({
-    queryKey: ['questionnaires'],
-    queryFn: async (): Promise<Questionnaire[]> => {
-      const res = await adminApi.questionnaires();
-      return res.map((q) => ({
+    queryKey: ['questionnaire'],
+    queryFn: async (): Promise<Questionnaire> => {
+      const q = await adminApi.questionnaire();
+      return {
         id: q.id,
-        version: q.version,
-        status: qStatus(q.status),
         updatedAt: nowIso(),
         questions: (q.questions ?? []).map((qq) => ({
           id: qq.id,
@@ -146,17 +141,34 @@ export function useQuestionnaires() {
           required: qq.required,
           options: qq.optionsJson ?? undefined,
         })),
-      }));
+      };
     },
   });
 }
 
 export function useQuestionnaireActions() {
   const qc = useQueryClient();
-  const inv = () => qc.invalidateQueries({ queryKey: ['questionnaires'] });
+  const inv = () => qc.invalidateQueries({ queryKey: ['questionnaire'] });
   return {
-    publish: useMutation({ mutationFn: (id: string) => adminApi.questionnairePublish(id), onSuccess: inv }),
-    create: useMutation({ mutationFn: (questions: unknown[]) => adminApi.questionnaireCreate(questions), onSuccess: inv }),
+    addQuestion: useMutation({
+      mutationFn: ({ id, question }: { id: string; question: { type: string; label: string; required: boolean; options?: string[] } }) =>
+        adminApi.questionnaireAddQuestion(id, question),
+      onSuccess: inv,
+    }),
+    updateQuestion: useMutation({
+      mutationFn: ({ id, qid, data }: { id: string; qid: string; data: { type?: string; label?: string; required?: boolean; options?: string[] | null } }) =>
+        adminApi.questionnaireUpdateQuestion(id, qid, data),
+      onSuccess: inv,
+    }),
+    deleteQuestion: useMutation({
+      mutationFn: ({ id, qid }: { id: string; qid: string }) => adminApi.questionnaireDeleteQuestion(id, qid),
+      onSuccess: inv,
+    }),
+    reorderQuestions: useMutation({
+      mutationFn: ({ id, orderedIds }: { id: string; orderedIds: string[] }) =>
+        adminApi.questionnaireReorderQuestions(id, orderedIds),
+      onSuccess: inv,
+    }),
   };
 }
 
@@ -427,7 +439,6 @@ export function useSchools() {
         ambassadors: s._count?.sellerProfiles ?? 0,
         bookings: s._count?.listings ?? 0,
         rating: 0,
-        seoContent: s.seoContent ?? '',
       }));
     },
   });
@@ -437,7 +448,7 @@ export function useSchoolActions() {
   const qc = useQueryClient();
   const inv = () => qc.invalidateQueries({ queryKey: ['schools'] });
   return {
-    create: useMutation({ mutationFn: (b: { name: string; slug: string; location?: string; seoContent?: string; enabled?: boolean }) => adminApi.schoolCreate(b), onSuccess: inv }),
+    create: useMutation({ mutationFn: (b: { name: string; slug: string; location?: string; enabled?: boolean }) => adminApi.schoolCreate(b), onSuccess: inv }),
     update: useMutation({ mutationFn: (v: { id: string; data: Record<string, unknown> }) => adminApi.schoolUpdate(v.id, v.data), onSuccess: inv }),
   };
 }

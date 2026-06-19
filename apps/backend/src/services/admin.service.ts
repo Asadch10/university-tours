@@ -129,45 +129,78 @@ export async function decideApplication(id: string, decision: 'APPROVED' | 'REJE
   return { ok: true };
 }
 
-// ─── Questionnaires ───────────────────────────────────────────────────────────
+// ─── Questionnaire (singleton) ────────────────────────────────────────────────
+// There is exactly one questionnaire. This function returns it, creating an
+// empty one on first call if the table is empty.
 
-export async function listQuestionnaires() {
-  return prisma.questionnaire.findMany({ include: { questions: { orderBy: { order: 'asc' } }, _count: { select: { applications: true } } }, orderBy: { version: 'desc' } });
-}
-
-export async function getQuestionnaire(id: string) {
-  const q = await prisma.questionnaire.findUnique({ where: { id }, include: { questions: { orderBy: { order: 'asc' } } } });
-  if (!q) throw new HttpError(404, 'not_found', 'Questionnaire not found');
-  return q;
-}
-
-export async function createQuestionnaire(data: { questions: { type: string; label: string; required: boolean; order: number; options?: string[] }[] }) {
-  const latest = await prisma.questionnaire.findFirst({ orderBy: { version: 'desc' } });
-  const nextVersion = (latest?.version ?? 0) + 1;
+export async function getOrCreateQuestionnaire() {
+  const existing = await prisma.questionnaire.findFirst({
+    include: { questions: { orderBy: { order: 'asc' } } },
+    orderBy: { version: 'asc' },
+  });
+  if (existing) return existing;
   return prisma.questionnaire.create({
-    data: {
-      version: nextVersion,
-      status: 'DRAFT',
-      questions: {
-        create: data.questions.map((q) => ({
-          type: q.type as never,
-          label: q.label,
-          required: q.required,
-          order: q.order,
-          optionsJson: q.options !== undefined ? q.options : Prisma.DbNull,
-        })),
-      },
-    },
-    include: { questions: true },
+    data: { version: 1, status: 'ACTIVE', questions: {} },
+    include: { questions: { orderBy: { order: 'asc' } } },
   });
 }
 
-export async function publishQuestionnaire(id: string, adminId?: string) {
-  await prisma.$transaction(async (tx) => {
-    await tx.questionnaire.updateMany({ where: { status: 'ACTIVE' }, data: { status: 'ARCHIVED' } });
-    await tx.questionnaire.update({ where: { id }, data: { status: 'ACTIVE' } });
-    if (adminId) await tx.auditLog.create({ data: { adminId, action: 'questionnaire.publish', entity: `questionnaires/${id}`, ip: '127.0.0.1' } });
+// ─── Questionnaire question CRUD ───────────────────────────────────────────────
+
+export async function addQuestion(
+  questionnaireId: string,
+  data: { type: string; label: string; required: boolean; options?: string[] },
+) {
+  const q = await prisma.questionnaire.findUnique({
+    where: { id: questionnaireId },
+    select: { _count: { select: { questions: true } } },
   });
+  if (!q) throw new HttpError(404, 'not_found', 'Questionnaire not found');
+  return prisma.questionnaireQuestion.create({
+    data: {
+      questionnaireId,
+      type: data.type as never,
+      label: data.label,
+      required: data.required ?? false,
+      order: q._count.questions,
+      optionsJson: data.options !== undefined ? data.options : Prisma.DbNull,
+    },
+  });
+}
+
+export async function updateQuestion(
+  questionnaireId: string,
+  questionId: string,
+  data: { type?: string; label?: string; required?: boolean; options?: string[] | null },
+) {
+  const existing = await prisma.questionnaireQuestion.findFirst({ where: { id: questionId, questionnaireId } });
+  if (!existing) throw new HttpError(404, 'not_found', 'Question not found');
+  return prisma.questionnaireQuestion.update({
+    where: { id: questionId },
+    data: {
+      ...(data.type !== undefined && { type: data.type as never }),
+      ...(data.label !== undefined && { label: data.label }),
+      ...(data.required !== undefined && { required: data.required }),
+      ...(data.options !== undefined && { optionsJson: data.options === null ? Prisma.DbNull : data.options }),
+    },
+  });
+}
+
+export async function deleteQuestion(questionnaireId: string, questionId: string) {
+  const existing = await prisma.questionnaireQuestion.findFirst({ where: { id: questionId, questionnaireId } });
+  if (!existing) throw new HttpError(404, 'not_found', 'Question not found');
+  await prisma.questionnaireQuestion.delete({ where: { id: questionId } });
+  return { ok: true };
+}
+
+export async function reorderQuestions(questionnaireId: string, orderedIds: string[]) {
+  const q = await prisma.questionnaire.findUnique({ where: { id: questionnaireId }, select: { id: true } });
+  if (!q) throw new HttpError(404, 'not_found', 'Questionnaire not found');
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      prisma.questionnaireQuestion.updateMany({ where: { id, questionnaireId }, data: { order: index } }),
+    ),
+  );
   return { ok: true };
 }
 
@@ -494,13 +527,13 @@ export async function listSchools(opts: { q?: string; enabled?: boolean; page?: 
   return { data, total, page, limit };
 }
 
-export async function createSchool(data: { name: string; slug: string; location?: string; seoContent?: string; enabled?: boolean }) {
+export async function createSchool(data: { name: string; slug: string; location?: string; enabled?: boolean }) {
   const existing = await prisma.school.findUnique({ where: { slug: data.slug } });
   if (existing) throw new HttpError(409, 'slug_in_use', 'A school with that slug already exists');
   return prisma.school.create({ data });
 }
 
-export async function updateSchool(id: string, data: { name?: string; location?: string; seoContent?: string; enabled?: boolean }, adminId?: string) {
+export async function updateSchool(id: string, data: { name?: string; location?: string; enabled?: boolean }, adminId?: string) {
   const school = await prisma.school.findUnique({ where: { id } });
   if (!school) throw new HttpError(404, 'not_found', 'School not found');
   const updated = await prisma.school.update({ where: { id }, data });

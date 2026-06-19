@@ -3,9 +3,14 @@ import { Router } from 'express';
 import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import * as svc from '../services/admin.service.js';
+import { questionnaireApiRouter } from './api/questionnaire.js';
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth);
+
+// Question-level CRUD (add/edit/delete/reorder) — must be registered before
+// the broader /questionnaires routes so sub-paths are matched first.
+adminRouter.use('/questionnaires', questionnaireApiRouter);
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
@@ -43,24 +48,10 @@ adminRouter.post('/applications/:id/request-changes', requirePermission('applica
   res.json(await svc.decideApplication(req.params['id'] as string, 'CHANGES_REQUESTED', reason, req.user!.id));
 }));
 
-// ─── Questionnaires ───────────────────────────────────────────────────────────
+// ─── Questionnaire (singleton) ────────────────────────────────────────────────
 
 adminRouter.get('/questionnaires', requirePermission('questionnaires.manage'), asyncHandler(async (_req, res) => {
-  res.json(await svc.listQuestionnaires());
-}));
-
-adminRouter.get('/questionnaires/:id', requirePermission('questionnaires.manage'), asyncHandler(async (req, res) => {
-  res.json(await svc.getQuestionnaire(req.params['id'] as string));
-}));
-
-adminRouter.post('/questionnaires', requirePermission('questionnaires.manage'), asyncHandler(async (req, res) => {
-  const body = req.body as { questions: { type: string; label: string; required: boolean; order: number; options?: string[] }[] };
-  if (!body.questions?.length) throw new HttpError(400, 'validation_error', 'questions[] required');
-  res.status(201).json(await svc.createQuestionnaire(body));
-}));
-
-adminRouter.post('/questionnaires/:id/publish', requirePermission('questionnaires.manage'), asyncHandler(async (req, res) => {
-  res.json(await svc.publishQuestionnaire(req.params['id'] as string, req.user!.id));
+  res.json(await svc.getOrCreateQuestionnaire());
 }));
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -183,13 +174,13 @@ adminRouter.get('/schools', requirePermission('universities.manage'), asyncHandl
 }));
 
 adminRouter.post('/schools', requirePermission('universities.manage'), asyncHandler(async (req, res) => {
-  const body = req.body as { name: string; slug: string; location?: string; seoContent?: string; enabled?: boolean };
+  const body = req.body as { name: string; slug: string; location?: string; enabled?: boolean };
   if (!body.name || !body.slug) throw new HttpError(400, 'validation_error', 'name and slug required');
   res.status(201).json(await svc.createSchool(body));
 }));
 
 adminRouter.patch('/schools/:id', requirePermission('universities.manage'), asyncHandler(async (req, res) => {
-  res.json(await svc.updateSchool(req.params['id'] as string, req.body as { name?: string; location?: string; seoContent?: string; enabled?: boolean }, req.user!.id));
+  res.json(await svc.updateSchool(req.params['id'] as string, req.body as { name?: string; location?: string; enabled?: boolean }, req.user!.id));
 }));
 
 // ─── CMS ──────────────────────────────────────────────────────────────────────

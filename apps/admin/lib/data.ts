@@ -32,17 +32,16 @@ export interface School {
   ambassadors: number;
   bookings: number;
   rating: number;
-  seoContent: string;
 }
 
 export const schools: School[] = [
-  { id: 's1', name: 'Stanford University', slug: 'stanford', location: 'Stanford, CA', state: 'California', enabled: true, ambassadors: 48, bookings: 312, rating: 4.9, seoContent: 'Walk Palm Drive and the Main Quad with students living it every day.' },
-  { id: 's2', name: 'Harvard University', slug: 'harvard', location: 'Cambridge, MA', state: 'Massachusetts', enabled: true, ambassadors: 53, bookings: 401, rating: 4.9, seoContent: 'From Harvard Yard to the river houses with insider perspective.' },
-  { id: 's3', name: 'UCLA', slug: 'ucla', location: 'Los Angeles, CA', state: 'California', enabled: true, ambassadors: 61, bookings: 287, rating: 4.8, seoContent: 'Royce Hall, Bruin Walk, and the real LA student experience.' },
-  { id: 's4', name: 'New York University', slug: 'nyu', location: 'New York, NY', state: 'New York', enabled: true, ambassadors: 44, bookings: 219, rating: 4.7, seoContent: 'A campus woven into the city — explore it like a local.' },
-  { id: 's5', name: 'University of Michigan', slug: 'umich', location: 'Ann Arbor, MI', state: 'Michigan', enabled: true, ambassadors: 39, bookings: 176, rating: 4.8, seoContent: 'The Diag, the Big House, and a classic college town.' },
-  { id: 's6', name: 'UT Austin', slug: 'utexas', location: 'Austin, TX', state: 'Texas', enabled: true, ambassadors: 36, bookings: 154, rating: 4.8, seoContent: 'Hook ’em — the Tower, the Drag, and Austin energy.' },
-  { id: 's7', name: 'University of Washington', slug: 'uw', location: 'Seattle, WA', state: 'Washington', enabled: false, ambassadors: 0, bookings: 0, rating: 0, seoContent: 'Cherry blossoms on the Quad and Pacific Northwest energy.' },
+  { id: 's1', name: 'Stanford University', slug: 'stanford', location: 'Stanford, CA', state: 'California', enabled: true, ambassadors: 48, bookings: 312, rating: 4.9 },
+  { id: 's2', name: 'Harvard University', slug: 'harvard', location: 'Cambridge, MA', state: 'Massachusetts', enabled: true, ambassadors: 53, bookings: 401, rating: 4.9 },
+  { id: 's3', name: 'UCLA', slug: 'ucla', location: 'Los Angeles, CA', state: 'California', enabled: true, ambassadors: 61, bookings: 287, rating: 4.8 },
+  { id: 's4', name: 'New York University', slug: 'nyu', location: 'New York, NY', state: 'New York', enabled: true, ambassadors: 44, bookings: 219, rating: 4.7 },
+  { id: 's5', name: 'University of Michigan', slug: 'umich', location: 'Ann Arbor, MI', state: 'Michigan', enabled: true, ambassadors: 39, bookings: 176, rating: 4.8 },
+  { id: 's6', name: 'UT Austin', slug: 'utexas', location: 'Austin, TX', state: 'Texas', enabled: true, ambassadors: 36, bookings: 154, rating: 4.8 },
+  { id: 's7', name: 'University of Washington', slug: 'uw', location: 'Seattle, WA', state: 'Washington', enabled: false, ambassadors: 0, bookings: 0, rating: 0 },
 ];
 
 // ─────────────────────────────────────────────────────────── Users
@@ -100,7 +99,7 @@ export const applications: Application[] = [
     answers: [
       { question: 'Why do you want to be a campus guide?', answer: 'I love sharing the parts of Stanford the official tours skip, and helping families feel at home.' },
       { question: 'How many hours per week can you commit?', answer: '6–8 hours, flexible around classes.' },
-      { question: 'Describe a memorable campus spot.', answer: 'The Main Quad at golden hour — it’s where I decided to enroll.' },
+      { question: 'Describe a memorable campus spot.', answer: "The Main Quad at golden hour — it's where I decided to enroll." },
     ],
   },
   {
@@ -114,7 +113,7 @@ export const applications: Application[] = [
   {
     id: 'app3', applicant: 'Hannah Cho', email: 'hannah.c@ucla.edu', school: 'UCLA', major: 'Communications', gradYear: 2027, status: 'CHANGES_REQUESTED', submittedAt: '2026-06-10T12:00:00Z', avatar: 'https://i.pravatar.cc/150?img=16', enrollmentDoc: 'enrollment-hannah-cho.pdf', reason: 'Enrollment document is blurry — please re-upload a clearer scan.',
     answers: [
-      { question: 'Why do you want to be a campus guide?', answer: 'I’m an orientation leader and love welcoming new families.' },
+      { question: 'Why do you want to be a campus guide?', answer: "I'm an orientation leader and love welcoming new families." },
       { question: 'How many hours per week can you commit?', answer: '5 hours.' },
       { question: 'Describe a memorable campus spot.', answer: 'Janss Steps on game day.' },
     ],
@@ -148,15 +147,13 @@ export interface Question {
 }
 export interface Questionnaire {
   id: string;
-  version: number;
-  status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
   updatedAt: string;
   questions: Question[];
 }
 
 export const questionnaires: Questionnaire[] = [
   {
-    id: 'q3', version: 3, status: 'PUBLISHED', updatedAt: '2026-05-20T08:00:00Z',
+    id: 'q1', updatedAt: '2026-05-20T08:00:00Z',
     questions: [
       { id: 'qq1', type: 'SHORT_TEXT', label: 'Full legal name', required: true },
       { id: 'qq2', type: 'SINGLE_SELECT', label: 'Expected graduation year', required: true, options: ['2026', '2027', '2028', '2029'] },
@@ -166,8 +163,6 @@ export const questionnaires: Questionnaire[] = [
       { id: 'qq6', type: 'FILE', label: 'Proof of current enrollment', required: true },
     ],
   },
-  { id: 'q2', version: 2, status: 'ARCHIVED', updatedAt: '2026-01-10T08:00:00Z', questions: [] },
-  { id: 'q1', version: 1, status: 'ARCHIVED', updatedAt: '2025-08-01T08:00:00Z', questions: [] },
 ];
 
 // ─────────────────────────────────────────────────────────── Listings
@@ -190,7 +185,7 @@ export const listings: Listing[] = [
   { id: 'l3', guide: 'Sofia Martinez', guideAvatar: 'https://i.pravatar.cc/150?img=45', school: 'UCLA', service: 'CAMPUS_TOUR', title: 'A behind-the-scenes UCLA walk', priceFrom: 5000, status: 'ACTIVE', bookings: 58, createdAt: '2025-09-12T08:00:00Z' },
   { id: 'l4', guide: 'Aiden Chen', guideAvatar: 'https://i.pravatar.cc/150?img=51', school: 'New York University', service: 'CAMPUS_TOUR', title: 'NYU & Greenwich Village like a local', priceFrom: 6000, status: 'INACTIVE', bookings: 44, createdAt: '2025-11-06T08:00:00Z' },
   { id: 'l5', guide: 'Priya Nair', guideAvatar: 'https://i.pravatar.cc/150?img=44', school: 'University of Michigan', service: 'VIDEO_CONSULTATION', title: 'Pre-med & engineering at Michigan', priceFrom: 4500, status: 'ACTIVE', bookings: 49, createdAt: '2025-09-22T08:00:00Z' },
-  { id: 'l6', guide: 'Jordan Blake', guideAvatar: 'https://i.pravatar.cc/150?img=33', school: 'UT Austin', service: 'CAMPUS_TOUR', title: 'Hook ’em: the real UT Austin', priceFrom: 4000, status: 'DISABLED', bookings: 42, createdAt: '2025-10-03T08:00:00Z' },
+  { id: 'l6', guide: 'Jordan Blake', guideAvatar: 'https://i.pravatar.cc/150?img=33', school: 'UT Austin', service: 'CAMPUS_TOUR', title: "Hook 'em: the real UT Austin", priceFrom: 4000, status: 'DISABLED', bookings: 42, createdAt: '2025-10-03T08:00:00Z' },
 ];
 
 // ─────────────────────────────────────────────────────────── Bookings
@@ -368,7 +363,7 @@ export interface NotificationTemplate {
 export const templates: NotificationTemplate[] = [
   { id: 'nt1', key: 'booking.accepted', channel: 'EMAIL', subject: 'Your tour is confirmed 🎉', body: 'Hi {{buyer}}, {{guide}} accepted your {{service}} at {{school}} on {{date}}.', updatedAt: '2026-06-01T08:00:00Z' },
   { id: 'nt2', key: 'booking.requested', channel: 'PUSH', subject: 'New tour request', body: '{{buyer}} requested a {{service}} — respond within {{window}}.', updatedAt: '2026-06-01T08:00:00Z' },
-  { id: 'nt3', key: 'application.approved', channel: 'EMAIL', subject: 'You’re approved to host!', body: 'Congratulations {{applicant}} — your guide application was approved.', updatedAt: '2026-05-20T08:00:00Z' },
+  { id: 'nt3', key: 'application.approved', channel: 'EMAIL', subject: "You're approved to host!", body: 'Congratulations {{applicant}} — your guide application was approved.', updatedAt: '2026-05-20T08:00:00Z' },
   { id: 'nt4', key: 'payout.recorded', channel: 'EMAIL', subject: 'A payout is on its way', body: 'Hi {{guide}}, a payout of {{amount}} was recorded via {{method}}.', updatedAt: '2026-05-18T08:00:00Z' },
 ];
 

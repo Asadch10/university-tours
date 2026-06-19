@@ -21,7 +21,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { SearchInput } from '@/components/ui/search-input';
 import { DataTable, type Column } from '@/components/ui/table';
 import { Modal } from '@/components/ui/modal';
-import { Input, Textarea, Field } from '@/components/ui/input';
+import { Input, Field } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Dropdown, type MenuAction } from '@/components/ui/dropdown';
 import { TableSkeleton, StatGridSkeleton } from '@/components/ui/skeleton';
@@ -39,7 +39,6 @@ const EMPTY_FORM = {
   slug: '',
   location: '',
   state: '',
-  seoContent: '',
   enabled: true,
 };
 
@@ -118,7 +117,6 @@ export default function UniversitiesPage() {
       slug: s.slug,
       location: s.location,
       state: s.state,
-      seoContent: s.seoContent,
       enabled: s.enabled,
     });
     setErrors({});
@@ -164,7 +162,6 @@ export default function UniversitiesPage() {
       slug: form.slug.trim(),
       location: form.location.trim(),
       state: form.state.trim(),
-      seoContent: form.seoContent.trim(),
       enabled: form.enabled,
     };
 
@@ -175,7 +172,6 @@ export default function UniversitiesPage() {
           data: {
             name: payload.name,
             location: payload.location,
-            seoContent: payload.seoContent,
             enabled: payload.enabled,
           },
         });
@@ -185,7 +181,6 @@ export default function UniversitiesPage() {
           name: payload.name,
           slug: payload.slug,
           location: payload.location,
-          seoContent: payload.seoContent,
           enabled: payload.enabled,
         });
         toast.success('University added', `${payload.name} is now in the marketplace.`);
@@ -432,20 +427,6 @@ export default function UniversitiesPage() {
               value={form.location}
               onChange={(e) => setField('location', e.target.value)}
               placeholder="Stanford, CA"
-            />
-          </Field>
-
-          <Field
-            label="SEO content"
-            htmlFor="uni-seo"
-            hint="A short, search-friendly description shown on the public university page."
-          >
-            <Textarea
-              id="uni-seo"
-              rows={3}
-              value={form.seoContent}
-              onChange={(e) => setField('seoContent', e.target.value)}
-              placeholder="Walk the Main Quad with students living it every day…"
             />
           </Field>
 

@@ -2,16 +2,12 @@
 
 The web-only **operations console** for University Campus Private Tours. From here the platform team
 vets student-ambassador applications, manages universities and listings, moderates content, controls
-commission and payouts, configures the mobile apps, and audits every action — all behind
-**role-based access control**.
+commission and payouts, configures the mobile apps, and audits every action.
 
 Built with **Next.js 15 (App Router)**, **React 19**, **Tailwind CSS**, **Framer Motion**, and
 **Recharts**, it shares the exact brand and design system as the [public website](../website) so the
 two products feel like one. Part of the
 [University Campus Private Tours monorepo](../../README.md).
-
-> Implements **Part II — Admin Panel** of the Complete Technical Documentation (15 functional
-> modules, 3 roles, RBAC matrix, CMS & remote app control).
 
 ---
 
@@ -21,8 +17,13 @@ two products feel like one. Part of the
 pnpm --filter @ucpt/admin dev      # → http://localhost:3001
 ```
 
-Or from this folder (`apps/admin`): `pnpm dev`. If deps aren't installed, run `pnpm install` once
-from the repo root.
+Backend must also be running:
+
+```bash
+pnpm --filter @ucpt/backend dev    # → http://localhost:4000
+```
+
+Or from the repo root: `pnpm dev` (starts both via Turborepo).
 
 ### Credentials
 
@@ -39,7 +40,7 @@ Password: Test@123
 | ---------------- | ------------------------------------------- |
 | `pnpm dev`       | Dev server with hot reload (port **3001**)  |
 | `pnpm build`     | Production build (type-checks & prerenders) |
-| `pnpm start`     | Serve the production build                   |
+| `pnpm start`     | Serve the production build                  |
 | `pnpm typecheck` | `tsc --noEmit`                              |
 | `pnpm lint`      | Next.js ESLint                              |
 
@@ -66,17 +67,17 @@ apps/admin/
 │   ├── layout.tsx              # fonts + Providers, never-indexed metadata
 │   ├── providers.tsx           # React Query · Auth · Toast · Confirm
 │   ├── globals.css             # tokens, skeleton shimmer, branded scrollbars
-│   ├── login/page.tsx          # premium split-screen sign-in (dummy auth)
+│   ├── login/page.tsx          # split-screen sign-in (real JWT auth)
 │   └── (console)/              # authenticated route group (guarded shell)
 │       ├── layout.tsx          # AppShell (sidebar + topbar + auth guard)
 │       ├── dashboard/          # KPIs, revenue/booking charts, queues
 │       ├── applications/       # approve / reject / request-changes
-│       ├── questionnaire/      # versioned no-code builder
+│       ├── questionnaire/      # versioned no-code builder (fully live)
 │       ├── universities/  listings/
 │       ├── bookings/  users/  reviews/
 │       ├── transactions/  refunds/  commission/
 │       ├── cms/  templates/  app-config/
-│       └── roles/              # admins · permission matrix · audit log
+│       └── roles/              # admins list · audit log (single-admin mode)
 ├── components/
 │   ├── ui/                     # Button, Badge, StatusBadge, Card, Table, Modal,
 │   │                           # Confirm, Toast-driven, Input/Select/Field, Switch,
@@ -86,78 +87,104 @@ apps/admin/
 │   ├── dashboard/charts.tsx    # Recharts (revenue area + bookings bar)
 │   └── brand/logo.tsx          # inline crest mark
 └── lib/
-    ├── rbac.ts                 # Role, Permission, ROLE_PERMISSIONS matrix
-    ├── auth.tsx                # dummy session + role switching + can()/canAny()
+    ├── rbac.ts                 # single-admin mode — all permission checks pass
+    ├── auth.tsx                # real JWT session via /api/v1/auth/login + /refresh
+    ├── api.ts                  # typed fetch client (access/refresh token rotation)
+    ├── queries.ts              # TanStack Query hooks (all live backend calls)
     ├── nav.ts                  # 15-module nav map (route → icon → permissions)
     ├── toast.tsx               # toast provider/hook
-    ├── data.ts                 # typed mock store (mirrors the DB entity catalog)
-    └── utils.ts                # cn, formatPrice (cents), dates, CSV export, simulate
+    ├── data.ts                 # typed mock store for modules not yet wired live
+    └── utils.ts                # cn, formatPrice (cents), dates, CSV export
 ```
 
 ---
 
-## Role-based access control
+## Auth & access control
 
-Three roles, mirroring **Part II §6**. RBAC is enforced at **four layers**, deny-by-default:
+**Single-admin mode** — there is one admin account (`asadnaeem8@gmail.com`). All permission checks
+pass automatically; no role matrix is enforced on the frontend. The backend validates only that the
+caller holds the `ADMIN` role (JWT `role` claim).
 
-| Layer          | Mechanism                                                                 |
-| -------------- | ------------------------------------------------------------------------- |
-| **Navigation** | `Sidebar` hides modules the role can't access (`nav.ts` permissions)      |
-| **Page**       | `<RequirePermission anyOf={[…]}>` renders a Forbidden state otherwise     |
-| **Component**  | `<Can perm="…">` hides action buttons the role can't perform              |
-| **Action**     | each handler re-checks `can(perm)` before mutating                        |
+Auth flow:
 
-> In production the backend re-validates every permission server-side — the client gate is the first
-> of two layers. Permissions are **key-based**, so role→permission mappings change without touching UI.
-
-| Capability (sample)        | Super Admin | Manager | Support |
-| -------------------------- | :---------: | :-----: | :-----: |
-| Dashboard & reports        | ✓ | ✓ | ✓ |
-| Moderate listings & reviews| ✓ | ✓ | ✓ |
-| Manage users               | ✓ | ✓ | ✓ |
-| Decide applications        | ✓ | ✓ | — |
-| Refunds & payouts          | ✓ | ✓ | — |
-| Universities · CMS · config| ✓ | ✓ | — |
-| Set commission %           | ✓ | — | — |
-| Manage admins & roles      | ✓ | — | — |
-
-The full matrix is browsable in-app under **Roles & Audit → Permissions**.
+1. `POST /api/v1/auth/login` → `{ accessToken, refreshToken, user }`
+2. Tokens stored in `localStorage`; `api.ts` attaches `Authorization: Bearer <access>` on every request
+3. On 401, `api.ts` transparently calls `POST /api/v1/auth/refresh` once and retries
+4. `<RequirePermission>` and `<Can>` are wired but pass unconditionally in single-admin mode
 
 ---
 
-## The fifteen modules
+## Live vs mock data
 
-Dashboard · Applications · Questionnaire · Universities · Listings · Bookings · Users · Reviews ·
-Transactions & Payouts · Refunds · Commission · CMS · Notification Templates · App Configuration ·
-Roles & Audit — each with full CRUD/workflows, filters, search, CSV export where relevant, and all
-five UI states.
+| Module | Status |
+| ------ | ------ |
+| Auth (login / refresh / me) | **Live** |
+| Dashboard | **Live** |
+| Applications | **Live** |
+| Questionnaire (list, add/edit/delete/reorder/publish) | **Live** |
+| Universities (schools) | **Live** |
+| Users | **Live** |
+| Listings | **Live** |
+| Bookings | **Live** |
+| Reviews | **Live** |
+| Transactions / Payouts | **Live** |
+| Refunds | **Live** |
+| Commission | **Live** |
+| CMS | **Live** |
+| Notification Templates | **Live** |
+| App Configuration | **Live** |
+| Audit Logs | **Live** |
+
+Money is **integer cents** throughout; timestamps are ISO UTC.
 
 ---
 
-## Data & API
+## Questionnaire module
 
-All content is **mock data** in [`lib/data.ts`](./lib/data.ts), shaped to match the PostgreSQL entity
-catalog (Part IV) and the REST contract (Part I §7). Money is **integer cents**; timestamps are ISO
-UTC. Mutations are **simulated client-side** (local state + toast) — each is marked with a
-`// Wire to @ucpt/sdk …` comment showing where the real `@ucpt/sdk` call against
-`/api/v1/admin/*` goes once the backend is live. Auth (`lib/auth.tsx`) is a local dummy session;
-swap `signIn` for `POST /api/v1/auth/login`.
+The questionnaire page is **fully dynamic** — all operations call the real backend API:
+
+| Operation | Method | Endpoint |
+| --------- | ------ | -------- |
+| List versions | `GET` | `/api/v1/admin/questionnaires` |
+| Add question | `POST` | `/api/v1/admin/questionnaires/:id/questions` |
+| Edit question | `PUT` | `/api/v1/admin/questionnaires/:id/questions/:qid` |
+| Delete question | `DELETE` | `/api/v1/admin/questionnaires/:id/questions/:qid` |
+| Reorder questions | `PUT` | `/api/v1/admin/questionnaires/:id/questions/reorder` |
+| Publish new version | `POST` | `/api/v1/admin/questionnaires` |
+| Publish (activate) | `POST` | `/api/v1/admin/questionnaires/:id/publish` |
+
+After every mutation, TanStack Query invalidates the `['questionnaires']` cache and refetches —
+no local state needed for the question list.
+
+**Question type mapping** (frontend ↔ backend DB):
+
+| Frontend | DB enum |
+| -------- | ------- |
+| `SHORT_TEXT` | `TEXT` |
+| `LONG_TEXT` | `LONG_TEXT` |
+| `SINGLE_SELECT` | `SINGLE_CHOICE` |
+| `MULTI_SELECT` | `MULTI_CHOICE` |
+| `FILE` | `FILE` |
+
+**Status mapping**: `ACTIVE` (DB) = `PUBLISHED` (frontend); `DRAFT` and `ARCHIVED` unchanged.
 
 ---
 
 ## Environment & deployment
 
 Runs standalone on **port 3001**, deployed independently of the public website (separate
-domain/subdomain). Recommended access hardening for production: 2FA for all admins + an IP
-allowlist or SSO/VPN in front of the admin domain. The console is `noindex` and excluded from
-sitemaps by design.
+domain/subdomain). Requires the backend at `NEXT_PUBLIC_API_URL` (defaults to
+`http://localhost:4000`).
+
+Recommended access hardening for production: 2FA for all admins + an IP allowlist or SSO/VPN in
+front of the admin domain. The console is `noindex` and excluded from sitemaps by design.
 
 ---
 
 ## Roadmap
 
-- Wire `@ucpt/sdk` to the live backend (replace `lib/data.ts` mocks + simulated mutations)
 - Real document viewer for encrypted enrollment proofs (presigned, admin-only)
 - Server-side pagination/filtering/sorting on large tables (TanStack Query is already wired)
-- TOTP 2FA enrollment + enforcement; real audit-log persistence
+- TOTP 2FA enrollment + enforcement
 - Date-range report builder with scheduled CSV exports
+- Restore multi-role RBAC when the team grows beyond a single admin

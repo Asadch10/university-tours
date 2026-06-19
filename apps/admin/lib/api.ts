@@ -161,9 +161,15 @@ export const adminApi = {
   applicationRequestChanges: (id: string, reason: string) =>
     request('POST', `/admin/applications/${id}/request-changes`, { reason }),
 
-  questionnaires: () => request<QuestionnaireDto[]>('GET', '/admin/questionnaires'),
-  questionnaireCreate: (questions: unknown[]) => request('POST', '/admin/questionnaires', { questions }),
-  questionnairePublish: (id: string) => request('POST', `/admin/questionnaires/${id}/publish`),
+  questionnaire: () => request<QuestionnaireDto>('GET', '/admin/questionnaires'),
+  questionnaireAddQuestion: (id: string, q: { type: string; label: string; required: boolean; options?: string[] }) =>
+    request<QuestionnaireDto['questions'][number]>('POST', `/admin/questionnaires/${id}/questions`, q),
+  questionnaireUpdateQuestion: (id: string, qid: string, q: { type?: string; label?: string; required?: boolean; options?: string[] | null }) =>
+    request<QuestionnaireDto['questions'][number]>('PUT', `/admin/questionnaires/${id}/questions/${qid}`, q),
+  questionnaireDeleteQuestion: (id: string, qid: string) =>
+    request<{ ok: true }>('DELETE', `/admin/questionnaires/${id}/questions/${qid}`),
+  questionnaireReorderQuestions: (id: string, orderedIds: string[]) =>
+    request<{ ok: true }>('PUT', `/admin/questionnaires/${id}/questions/reorder`, { orderedIds }),
 
   users: (p: { q?: string; role?: string; status?: string; page?: number } = {}) =>
     request<Paged<UserDto>>('GET', `/admin/users${qs({ ...p, limit: 100 })}`),
@@ -202,7 +208,7 @@ export const adminApi = {
 
   schools: (p: { q?: string; page?: number } = {}) =>
     request<Paged<SchoolDto>>('GET', `/admin/schools${qs({ ...p, limit: 100 })}`),
-  schoolCreate: (b: { name: string; slug: string; location?: string; seoContent?: string; enabled?: boolean }) =>
+  schoolCreate: (b: { name: string; slug: string; location?: string; enabled?: boolean }) =>
     request('POST', '/admin/schools', b),
   schoolUpdate: (id: string, b: Record<string, unknown>) => request('PATCH', `/admin/schools/${id}`, b),
 
@@ -357,7 +363,7 @@ export interface SchoolDto {
   name: string;
   slug: string;
   location: string | null;
-  seoContent: string | null;
+  seoContent?: string | null;
   enabled: boolean;
   _count?: { sellerProfiles: number; listings: number };
 }

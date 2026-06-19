@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   GripVertical,
   ArrowUp,
@@ -8,8 +8,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Info,
-  Lock,
   ListChecks,
   X,
 } from 'lucide-react';
@@ -17,7 +15,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { Modal } from '@/components/ui/modal';
 import { Input, Select, Field } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -26,13 +23,9 @@ import { EmptyState } from '@/components/ui/states';
 import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
-import { cn, formatDate, humanize } from '@/lib/utils';
-import {
-  type Questionnaire,
-  type Question,
-  type QuestionType,
-} from '@/lib/data';
-import { useQuestionnaires, useQuestionnaireActions } from '@/lib/queries';
+import { humanize } from '@/lib/utils';
+import { type Question, type QuestionType } from '@/lib/data';
+import { useQuestionnaire, useQuestionnaireActions } from '@/lib/queries';
 
 const TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
   { value: 'SHORT_TEXT', label: 'Short text' },
@@ -46,7 +39,6 @@ const hasOptions = (t: QuestionType) => t === 'SINGLE_SELECT' || t === 'MULTI_SE
 let uid = 0;
 const newId = () => `qq-new-${++uid}`;
 
-/** UI question type → backend enum expected by the create mutation. */
 const typeToApi = (t: QuestionType): 'TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'FILE' =>
   t === 'SHORT_TEXT'
     ? 'TEXT'
@@ -57,99 +49,72 @@ const typeToApi = (t: QuestionType): 'TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'M
         : t;
 
 export default function QuestionnairePage() {
-  const { data, isLoading: loading } = useQuestionnaires();
-  const serverVersions = useMemo(() => data ?? [], [data]);
-  const { create } = useQuestionnaireActions();
+  const { data: questionnaire, isLoading } = useQuestionnaire();
+  const { addQuestion, updateQuestion, deleteQuestion, reorderQuestions } = useQuestionnaireActions();
 
-  // Local working copy for in-place question edits (no granular per-question API);
-  // synced from the server whenever the query data changes.
-  const [versions, setVersions] = useState<Questionnaire[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
 
   const { success, error } = useToast();
   const confirm = useConfirm();
 
-  useEffect(() => {
-    const cloned = serverVersions.map((q) => ({ ...q, questions: q.questions.map((qq) => ({ ...qq })) }));
-    setVersions(cloned);
-    setSelectedId((prev) => {
-      if (prev && cloned.some((v) => v.id === prev)) return prev;
-      return cloned.find((q) => q.status === 'PUBLISHED')?.id ?? cloned[0]?.id ?? null;
-    });
-  }, [serverVersions]);
-
-  const selected = useMemo(() => versions.find((v) => v.id === selectedId), [versions, selectedId]);
-  const readOnly = selected?.status === 'ARCHIVED';
-
-  function updateSelected(mut: (questions: Question[]) => Question[]) {
-    setVersions((prev) =>
-      prev.map((v) =>
-        v.id === selectedId
-          ? { ...v, questions: mut(v.questions), updatedAt: new Date().toISOString() }
-          : v,
-      ),
-    );
-  }
-
-  function move(index: number, dir: -1 | 1) {
+  async function move(index: number, dir: -1 | 1) {
+    if (!questionnaire) return;
+    const questions = questionnaire.questions;
     const target = index + dir;
-    updateSelected((qs) => {
-      if (target < 0 || target >= qs.length) return qs;
-      const next = [...qs];
-      [next[index], next[target]] = [next[target]!, next[index]!];
-      return next;
-    });
+    if (target < 0 || target >= questions.length) return;
+    const next = [...questions];
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    try {
+      await reorderQuestions.mutateAsync({ id: questionnaire.id, orderedIds: next.map((q) => q.id) });
+    } catch (e) {
+      error('Reorder failed', e instanceof Error ? e.message : undefined);
+    }
   }
 
   async function removeQuestion(q: Question) {
+    if (!questionnaire) return;
     const { confirmed } = await confirm({
       title: 'Delete question',
-      description: `Remove “${q.label}” from this draft? Published versions are unaffected.`,
+      description: `Remove "${q.label}"? This change is immediate.`,
       confirmLabel: 'Delete',
       tone: 'danger',
     });
     if (!confirmed) return;
-    updateSelected((qs) => qs.filter((x) => x.id !== q.id));
-    success('Question deleted');
-  }
-
-  function saveQuestion(q: Question) {
-    updateSelected((qs) => {
-      const exists = qs.some((x) => x.id === q.id);
-      return exists ? qs.map((x) => (x.id === q.id ? q : x)) : [...qs, q];
-    });
-    setEditorOpen(false);
-    setEditing(null);
-    success(editing ? 'Question updated' : 'Question added');
-  }
-
-  async function publishVersion() {
-    const base = versions.find((v) => v.id === selectedId) ?? versions[0];
-    if (!base) return;
-    const { confirmed } = await confirm({
-      title: 'Publish new version',
-      description:
-        'This publishes a new version of the application questionnaire and archives the current published one. Existing applications keep their snapshotted answers and are unaffected.',
-      confirmLabel: 'Publish version',
-    });
-    if (!confirmed) return;
     try {
-      await create.mutateAsync(
-        base.questions.map((qq, i) => ({
-          type: typeToApi(qq.type),
-          label: qq.label,
-          required: qq.required,
-          order: i,
-          options: qq.options,
-        })),
-      );
-      success('Version published', 'The previous version was archived.');
+      await deleteQuestion.mutateAsync({ id: questionnaire.id, qid: q.id });
+      success('Question deleted');
     } catch (e) {
-      error('Publish failed', e instanceof Error ? e.message : undefined);
+      error('Delete failed', e instanceof Error ? e.message : undefined);
     }
   }
+
+  async function saveQuestion(q: Question) {
+    if (!questionnaire) return;
+    const isNew = q.id.startsWith('qq-new-');
+    try {
+      if (isNew) {
+        await addQuestion.mutateAsync({
+          id: questionnaire.id,
+          question: { type: typeToApi(q.type), label: q.label, required: q.required, options: q.options },
+        });
+        success('Question added');
+      } else {
+        await updateQuestion.mutateAsync({
+          id: questionnaire.id,
+          qid: q.id,
+          data: { type: typeToApi(q.type), label: q.label, required: q.required, options: q.options ?? null },
+        });
+        success('Question updated');
+      }
+      setEditorOpen(false);
+      setEditing(null);
+    } catch (e) {
+      error('Save failed', e instanceof Error ? e.message : undefined);
+    }
+  }
+
+  const questions = questionnaire?.questions ?? [];
 
   return (
     <RequirePermission anyOf={['questionnaires.manage']}>
@@ -157,183 +122,106 @@ export default function QuestionnairePage() {
         <PageHeader
           eyebrow="Marketplace"
           title="Questionnaire"
-          description="Build the guide application questionnaire. Publish new versions as your screening evolves."
+          description="Build the guide application questionnaire. Changes take effect immediately."
           actions={
             <Can perm="questionnaires.manage">
-              <Button variant="primary" size="sm" onClick={publishVersion}>
-                <Plus size={15} /> Publish new version
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setEditing(null);
+                  setEditorOpen(true);
+                }}
+              >
+                <Plus size={15} /> Add question
               </Button>
             </Can>
           }
         />
 
-        <div className="flex items-start gap-2.5 rounded-xl border border-info/20 bg-info/5 px-4 py-3 text-sm text-ink-700">
-          <Info size={16} className="mt-0.5 shrink-0 text-info" />
-          <p>
-            Answers are <span className="font-semibold text-ink-900">snapshotted</span> onto each application at
-            submission, so editing or publishing a new questionnaire never alters historical applications.
-          </p>
-        </div>
-
-        {loading || !selected ? (
+        {isLoading ? (
           <TableSkeleton />
         ) : (
-          <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
-            {/* Versions list */}
-            <div className="space-y-3">
-              <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Versions</p>
-              {versions.map((v) => {
-                const active = v.id === selectedId;
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setSelectedId(v.id)}
-                    className={cn(
-                      'w-full rounded-2xl border bg-white p-4 text-left shadow-soft transition-all',
-                      active ? 'border-maroon-800/50 ring-2 ring-maroon-800/15' : 'border-ink-200/70 hover:border-maroon-800/30',
-                      v.status === 'PUBLISHED' && !active && 'border-maroon-800/30 bg-maroon-50/30',
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-display text-base font-semibold text-ink-900">Version {v.version}</span>
-                      <StatusBadge status={v.status} />
-                    </div>
-                    <p className="mt-1 text-xs text-ink-500">
-                      {v.questions.length} question{v.questions.length === 1 ? '' : 's'} · Updated {formatDate(v.updatedAt)}
-                    </p>
-                  </button>
-                );
-              })}
+          <Card>
+            <div className="border-b border-ink-200/60 px-5 py-4">
+              <h3 className="font-display text-base font-semibold text-ink-900">Application questions</h3>
+              <p className="mt-0.5 text-sm text-ink-500">
+                Reorder, add, edit, or remove the questions applicants will answer.
+              </p>
             </div>
 
-            {/* Builder */}
-            <Card>
-              <div className="flex flex-col gap-3 border-b border-ink-200/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display text-base font-semibold text-ink-900">Version {selected.version}</h3>
-                    <StatusBadge status={selected.status} />
-                  </div>
-                  <p className="mt-0.5 text-sm text-ink-500">
-                    {readOnly
-                      ? 'Archived versions are read-only.'
-                      : 'Reorder, add, edit, or remove the questions applicants will answer.'}
-                  </p>
-                </div>
-                {!readOnly && (
-                  <Can perm="questionnaires.manage">
-                    <Button
-                      variant="subtle"
-                      size="sm"
-                      onClick={() => {
-                        setEditing(null);
-                        setEditorOpen(true);
-                      }}
-                    >
-                      <Plus size={15} /> Add question
-                    </Button>
-                  </Can>
-                )}
-              </div>
-
-              <CardBody className="space-y-3">
-                {readOnly && (
-                  <div className="flex items-center gap-2 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
-                    <Lock size={13} /> This version is archived. Select the published version or publish a new one to make changes.
-                  </div>
-                )}
-
-                {selected.questions.length === 0 ? (
-                  <EmptyState
-                    icon={ListChecks}
-                    title="No questions yet"
-                    description={readOnly ? 'This version has no questions.' : 'Add your first question to start building this version.'}
-                    action={
-                      !readOnly ? (
-                        <Can perm="questionnaires.manage">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {
-                              setEditing(null);
-                              setEditorOpen(true);
-                            }}
-                          >
-                            <Plus size={15} /> Add question
-                          </Button>
-                        </Can>
-                      ) : undefined
-                    }
-                  />
-                ) : (
-                  selected.questions.map((q, i) => (
-                    <div
-                      key={q.id}
-                      className="flex items-center gap-3 rounded-xl border border-ink-200/70 bg-white p-3 shadow-soft"
-                    >
-                      <GripVertical size={16} className="shrink-0 text-ink-300" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-ink-900">{q.label}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <Badge variant="neutral" size="sm">{humanize(q.type)}</Badge>
-                          {q.required && <Badge variant="maroon" size="sm">Required</Badge>}
-                          {hasOptions(q.type) && q.options?.length ? (
-                            <span className="text-2xs text-ink-400">{q.options.length} options</span>
-                          ) : null}
-                        </div>
+            <CardBody className="space-y-3">
+              {questions.length === 0 ? (
+                <EmptyState
+                  icon={ListChecks}
+                  title="No questions yet"
+                  description="Add your first question to start building the questionnaire."
+                />
+              ) : (
+                questions.map((q, i) => (
+                  <div
+                    key={q.id}
+                    className="flex items-center gap-3 rounded-xl border border-ink-200/70 bg-white p-3 shadow-soft"
+                  >
+                    <GripVertical size={16} className="shrink-0 text-ink-300" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-ink-900">{q.label}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <Badge variant="neutral" size="sm">{humanize(q.type)}</Badge>
+                        {q.required && <Badge variant="maroon" size="sm">Required</Badge>}
+                        {hasOptions(q.type) && q.options?.length ? (
+                          <span className="text-2xs text-ink-400">{q.options.length} options</span>
+                        ) : null}
                       </div>
-
-                      {!readOnly && (
-                        <Can perm="questionnaires.manage">
-                          <div className="flex shrink-0 items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Move up"
-                              disabled={i === 0}
-                              onClick={() => move(i, -1)}
-                            >
-                              <ArrowUp size={15} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Move down"
-                              disabled={i === selected.questions.length - 1}
-                              onClick={() => move(i, 1)}
-                            >
-                              <ArrowDown size={15} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Edit"
-                              onClick={() => {
-                                setEditing(q);
-                                setEditorOpen(true);
-                              }}
-                            >
-                              <Pencil size={14} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Delete"
-                              className="text-danger hover:bg-danger/10"
-                              onClick={() => removeQuestion(q)}
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        </Can>
-                      )}
                     </div>
-                  ))
-                )}
-              </CardBody>
-            </Card>
-          </div>
+
+                    <Can perm="questionnaires.manage">
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Move up"
+                          disabled={i === 0 || reorderQuestions.isPending}
+                          onClick={() => void move(i, -1)}
+                        >
+                          <ArrowUp size={15} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Move down"
+                          disabled={i === questions.length - 1 || reorderQuestions.isPending}
+                          onClick={() => void move(i, 1)}
+                        >
+                          <ArrowDown size={15} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Edit"
+                          onClick={() => {
+                            setEditing(q);
+                            setEditorOpen(true);
+                          }}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Delete"
+                          className="text-danger hover:bg-danger/10"
+                          onClick={() => void removeQuestion(q)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </Can>
+                  </div>
+                ))
+              )}
+            </CardBody>
+          </Card>
         )}
 
         <QuestionEditor
@@ -365,7 +253,7 @@ function QuestionEditor({
   const [type, setType] = useState<QuestionType>('SHORT_TEXT');
   const [required, setRequired] = useState(true);
   const [options, setOptions] = useState<string[]>([]);
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -373,17 +261,17 @@ function QuestionEditor({
     setType(question?.type ?? 'SHORT_TEXT');
     setRequired(question?.required ?? true);
     setOptions(question?.options ?? []);
-    setError('');
+    setFormError('');
   }, [open, question]);
 
   function submit() {
     if (!label.trim()) {
-      setError('A question label is required.');
+      setFormError('A question label is required.');
       return;
     }
     const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
     if (hasOptions(type) && cleanOptions.length < 2) {
-      setError('Add at least two options for a select question.');
+      setFormError('Add at least two options for a select question.');
       return;
     }
     onSave({
@@ -412,7 +300,7 @@ function QuestionEditor({
       }
     >
       <div className="space-y-4">
-        <Field label="Question label" htmlFor="q-label" required error={error && !label.trim() ? error : undefined}>
+        <Field label="Question label" htmlFor="q-label" required error={formError && !label.trim() ? formError : undefined}>
           <Input
             id="q-label"
             value={label}
@@ -469,7 +357,7 @@ function QuestionEditor({
                 </div>
               ))}
             </div>
-            {error && hasOptions(type) && label.trim() && <p className="text-xs text-danger">{error}</p>}
+            {formError && hasOptions(type) && label.trim() && <p className="text-xs text-danger">{formError}</p>}
           </div>
         )}
       </div>
