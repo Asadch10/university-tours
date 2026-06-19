@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/auth';
 import { NAV } from '@/lib/nav';
 import { Logo } from '@/components/brand/logo';
 
@@ -16,7 +15,6 @@ export function Sidebar({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const { canAny } = useAuth();
 
   return (
     <div className="flex h-full flex-col bg-maroon-gradient text-ivory">
@@ -30,8 +28,7 @@ export function Sidebar({
       {/* Nav */}
       <nav className="scroll-branded relative flex-1 space-y-6 overflow-y-auto px-3 py-5">
         {NAV.map((section) => {
-          const items = section.items.filter((i) => i.permissions.length === 0 || canAny(i.permissions));
-          if (items.length === 0) return null;
+          const items = section.items;
           return (
             <div key={section.title}>
               {!collapsed && (

@@ -413,24 +413,17 @@ export const appConfig: AppConfig = {
 };
 
 // ─────────────────────────────────────────────────────────── Admins & audit
-import type { Role } from './rbac';
 export interface AdminAccount {
   id: string;
   name: string;
   email: string;
-  role: Role;
   status: 'ACTIVE' | 'INVITED' | 'DISABLED';
-  twoFactor: boolean;
   lastActiveAt: string;
   avatar?: string;
 }
 
 export const adminAccounts: AdminAccount[] = [
-  { id: 'ad1', name: 'Alex Morgan', email: 'test@tour.com', role: 'SUPER_ADMIN', status: 'ACTIVE', twoFactor: true, lastActiveAt: '2026-06-15T14:30:00Z', avatar: 'https://i.pravatar.cc/150?img=68' },
-  { id: 'ad2', name: 'Jamie Rivera', email: 'jamie.r@tour.com', role: 'MANAGER', status: 'ACTIVE', twoFactor: true, lastActiveAt: '2026-06-15T11:10:00Z', avatar: 'https://i.pravatar.cc/150?img=13' },
-  { id: 'ad3', name: 'Sam Patel', email: 'sam.p@tour.com', role: 'MANAGER', status: 'ACTIVE', twoFactor: false, lastActiveAt: '2026-06-14T17:45:00Z', avatar: 'https://i.pravatar.cc/150?img=14' },
-  { id: 'ad4', name: 'Riley Chen', email: 'riley.c@tour.com', role: 'SUPPORT', status: 'ACTIVE', twoFactor: false, lastActiveAt: '2026-06-15T09:05:00Z', avatar: 'https://i.pravatar.cc/150?img=25' },
-  { id: 'ad5', name: 'Morgan Lee', email: 'morgan.l@tour.com', role: 'SUPPORT', status: 'INVITED', twoFactor: false, lastActiveAt: '2026-06-13T08:00:00Z', avatar: 'https://i.pravatar.cc/150?img=49' },
+  { id: 'ad1', name: 'Asad Naeem', email: 'asadnaeem8@gmail.com', status: 'ACTIVE', lastActiveAt: '2026-06-15T14:30:00Z', avatar: 'https://i.pravatar.cc/150?img=68' },
 ];
 
 export interface AuditLog {

@@ -39,18 +39,6 @@ const ALL_PERMISSIONS = [
   'audit.view',
 ];
 
-const MANAGER_PERMISSIONS = ALL_PERMISSIONS.filter(
-  (p) => !['commission.set', 'admins.manage'].includes(p),
-);
-
-const SUPPORT_PERMISSIONS = [
-  'dashboard.view',
-  'reports.view',
-  'users.manage',
-  'listings.moderate',
-  'bookings.view',
-  'reviews.moderate',
-];
 
 async function main() {
   console.log('Seeding database…');
@@ -98,40 +86,20 @@ async function main() {
     });
   }
 
-  // --- Admin roles ---
-  await prisma.adminRole.upsert({ where: { role: AdminRoleName.SUPER_ADMIN }, update: { permissionsJson: ALL_PERMISSIONS }, create: { role: AdminRoleName.SUPER_ADMIN, permissionsJson: ALL_PERMISSIONS } });
-  await prisma.adminRole.upsert({ where: { role: AdminRoleName.MANAGER }, update: { permissionsJson: MANAGER_PERMISSIONS }, create: { role: AdminRoleName.MANAGER, permissionsJson: MANAGER_PERMISSIONS } });
-  await prisma.adminRole.upsert({ where: { role: AdminRoleName.SUPPORT }, update: { permissionsJson: SUPPORT_PERMISSIONS }, create: { role: AdminRoleName.SUPPORT, permissionsJson: SUPPORT_PERMISSIONS } });
+  // --- Admin role (single SUPER_ADMIN with all permissions) ---
+  await prisma.adminRole.upsert({
+    where: { role: AdminRoleName.SUPER_ADMIN },
+    update: { permissionsJson: ALL_PERMISSIONS },
+    create: { role: AdminRoleName.SUPER_ADMIN, permissionsJson: ALL_PERMISSIONS },
+  });
 
-  // --- Admin accounts (demo credentials: asadnaeem8@gmail.com / Test@123) ---
-  const superHash = await argon2.hash('Test@123');
-  const managerHash = await argon2.hash('Manager@123');
-  const supportHash = await argon2.hash('Support@123');
-
-  // Remove the legacy demo super admin if it still exists (clear FK-restricted
-  // audit logs / payouts / refunds it authored first).
-  const legacy = await prisma.user.findUnique({ where: { email: 'test@tour.com' } });
-  if (legacy) {
-    await prisma.auditLog.deleteMany({ where: { adminId: legacy.id } });
-    await prisma.payout.deleteMany({ where: { createdByAdmin: legacy.id } });
-    await prisma.refund.deleteMany({ where: { createdBy: legacy.id } });
-    await prisma.user.delete({ where: { id: legacy.id } });
-  }
+  // --- Single admin account ---
+  const adminHash = await argon2.hash('Test@123');
 
   const superAdmin = await prisma.user.upsert({
     where: { email: 'asadnaeem8@gmail.com' },
-    update: { passwordHash: superHash, name: 'Asad Naeem', adminRoleName: AdminRoleName.SUPER_ADMIN, role: UserRole.ADMIN },
-    create: { email: 'asadnaeem8@gmail.com', name: 'Asad Naeem', role: UserRole.ADMIN, adminRoleName: AdminRoleName.SUPER_ADMIN, passwordHash: superHash, emailVerifiedAt: new Date() },
-  });
-  await prisma.user.upsert({
-    where: { email: 'jamie.r@tour.com' },
-    update: {},
-    create: { email: 'jamie.r@tour.com', name: 'Jamie Rivera', role: UserRole.ADMIN, adminRoleName: AdminRoleName.MANAGER, passwordHash: managerHash, emailVerifiedAt: new Date() },
-  });
-  await prisma.user.upsert({
-    where: { email: 'riley.c@tour.com' },
-    update: {},
-    create: { email: 'riley.c@tour.com', name: 'Riley Chen', role: UserRole.ADMIN, adminRoleName: AdminRoleName.SUPPORT, passwordHash: supportHash, emailVerifiedAt: new Date() },
+    update: { passwordHash: adminHash, name: 'Asad Naeem', adminRoleName: AdminRoleName.SUPER_ADMIN, role: UserRole.ADMIN },
+    create: { email: 'asadnaeem8@gmail.com', name: 'Asad Naeem', role: UserRole.ADMIN, adminRoleName: AdminRoleName.SUPER_ADMIN, passwordHash: adminHash, emailVerifiedAt: new Date() },
   });
 
   // --- Schools ---

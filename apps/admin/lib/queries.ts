@@ -31,7 +31,6 @@ import type {
   BookingStatus,
   ListingStatus,
 } from './data';
-import type { Role } from './rbac';
 
 const avatar = (seed: string) => `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
 const nowIso = () => new Date().toISOString();
@@ -596,9 +595,7 @@ export function useAdminAccounts() {
         id: a.id,
         name: a.name,
         email: a.email,
-        role: (a.adminRoleName as Role) ?? 'SUPPORT',
         status: a.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED',
-        twoFactor: false,
         lastActiveAt: a.createdAt,
         avatar: avatar(a.email),
       }));

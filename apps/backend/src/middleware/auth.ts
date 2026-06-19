@@ -1,6 +1,5 @@
-// Auth + permission guards (deny-by-default). Verifies the Bearer access JWT and
-// attaches the principal; role/permission checks are re-enforced server-side here,
-// never trusted from the client (Part I §11, Part II §6).
+// Auth guards (deny-by-default). Verifies the Bearer access JWT and attaches
+// the principal. Single-admin mode: any ADMIN role passes all permission checks.
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
@@ -43,14 +42,11 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-/** Admin with a specific key-based permission (e.g. 'refunds.issue'). */
-export function requirePermission(permission: string) {
+/** Single-admin mode: any authenticated ADMIN passes all permission checks. */
+export function requirePermission(_permission: string) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) return next(unauthorized());
     if (req.user.role !== 'ADMIN') return next(forbidden('Admin only'));
-    if (!req.user.permissions?.includes(permission)) {
-      return next(forbidden(`Missing permission: ${permission}`));
-    }
     return next();
   };
 }

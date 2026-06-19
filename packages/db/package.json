@@ -11,13 +11,13 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "tsx --env-file=.env prisma/seed.ts",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules .turbo"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx --env-file=.env prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

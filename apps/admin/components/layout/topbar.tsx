@@ -1,14 +1,12 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, PanelLeftClose, PanelLeft, Bell, LogOut, ChevronDown, ShieldCheck, Check } from 'lucide-react';
+import { Menu, PanelLeftClose, PanelLeft, Bell, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
-import { ROLES, ROLE_LABELS } from '@/lib/rbac';
 import { navItemForPath } from '@/lib/nav';
 import { Avatar } from '@/components/ui/avatar';
 import { Dropdown } from '@/components/ui/dropdown';
-import { Badge } from '@/components/ui/badge';
-import { cn, timeAgo } from '@/lib/utils';
+import { timeAgo } from '@/lib/utils';
 import { auditLogs } from '@/lib/data';
 
 export function Topbar({
@@ -22,7 +20,7 @@ export function Topbar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, signOut, setRole } = useAuth();
+  const { user, signOut } = useAuth();
   const current = navItemForPath(pathname);
 
   if (!user) return null;
@@ -52,23 +50,6 @@ export function Topbar({
           {current?.label ?? 'Console'}
         </h2>
       </div>
-
-      {/* Role switcher (dev: exercise RBAC) */}
-      <Dropdown
-        align="right"
-        trigger={
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:border-maroon-800/40">
-            <ShieldCheck size={15} className="text-maroon-800" />
-            <span className="hidden sm:inline">{ROLE_LABELS[user.role]}</span>
-            <ChevronDown size={14} className="text-ink-400" />
-          </span>
-        }
-        items={ROLES.map((r) => ({
-          label: r.label,
-          icon: user.role === r.value ? <Check size={15} className="text-maroon-800" /> : <span className="w-[15px]" />,
-          onClick: () => setRole(r.value),
-        }))}
-      />
 
       {/* Notifications */}
       <Dropdown
@@ -115,16 +96,5 @@ export function Topbar({
         ]}
       />
     </header>
-  );
-}
-
-/** Small inline helper retained for parity if needed elsewhere. */
-export function RoleChip({ className }: { className?: string }) {
-  const { user } = useAuth();
-  if (!user) return null;
-  return (
-    <Badge variant="maroon" className={cn(className)}>
-      {ROLE_LABELS[user.role]}
-    </Badge>
   );
 }

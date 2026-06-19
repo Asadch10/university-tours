@@ -24,15 +24,12 @@ pnpm --filter @ucpt/admin dev      # → http://localhost:3001
 Or from this folder (`apps/admin`): `pnpm dev`. If deps aren't installed, run `pnpm install` once
 from the repo root.
 
-### Demo credentials
+### Credentials
 
 ```
-Email:    test@tour.com
+Email:    asadnaeem8@gmail.com
 Password: Test@123
 ```
-
-Sign in lands you on the dashboard as a **Super Admin**. Use the **role switcher** in the top bar
-(Super Admin · Manager · Support) to see RBAC reshape navigation, pages, and actions live.
 
 ---
 

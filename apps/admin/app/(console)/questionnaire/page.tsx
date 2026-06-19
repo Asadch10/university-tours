@@ -57,7 +57,8 @@ const typeToApi = (t: QuestionType): 'TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'M
         : t;
 
 export default function QuestionnairePage() {
-  const { data: serverVersions = [], isLoading: loading } = useQuestionnaires();
+  const { data, isLoading: loading } = useQuestionnaires();
+  const serverVersions = useMemo(() => data ?? [], [data]);
   const { create } = useQuestionnaireActions();
 
   // Local working copy for in-place question edits (no granular per-question API);

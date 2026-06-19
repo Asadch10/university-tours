@@ -9,17 +9,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { roleHas, roleHasAny, type Permission, type Role } from './rbac';
+import type { Permission, Role } from './rbac';
 import { authApi, tokenStore, ApiError } from './api';
-
-/**
- * Live authentication against the backend.
- *
- * `signIn` calls POST /api/v1/auth/login, persists the access + refresh tokens,
- * and hydrates the session from the returned user. On mount we restore the
- * session via GET /auth/me using the stored token. RBAC checks (`can`/`canAny`)
- * run client-side off the role for UX; the backend re-enforces every permission.
- */
 
 const STORAGE_KEY = 'ucpt.admin.user.v2';
 
@@ -36,18 +27,11 @@ interface AuthContextValue {
   ready: boolean;
   signIn: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   signOut: () => void;
-  /** Dev-only: switch role locally to preview RBAC (does not change server perms). */
-  setRole: (role: Role) => void;
-  can: (perm: Permission) => boolean;
-  canAny: (perms: Permission[]) => boolean;
+  can: (_perm: Permission) => boolean;
+  canAny: (_perms: Permission[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-function roleFromAdminRoleName(name: string | null | undefined): Role {
-  if (name === 'MANAGER' || name === 'SUPPORT') return name;
-  return 'SUPER_ADMIN';
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -63,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Restore session on mount: trust the cached user, then revalidate with /me.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -81,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               id: me.id,
               name: me.name,
               email: me.email,
-              role: roleFromAdminRoleName(me.adminRoleName),
+              role: 'ADMIN',
               avatar: `https://i.pravatar.cc/200?u=${encodeURIComponent(me.email)}`,
             });
           }
@@ -108,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: res.user.id,
           name: res.user.name,
           email: res.user.email,
-          role: roleFromAdminRoleName(res.user.adminRoleName),
+          role: 'ADMIN',
           avatar: `https://i.pravatar.cc/200?u=${encodeURIComponent(res.user.email)}`,
         });
         return { ok: true };
@@ -131,32 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(null);
   }, [persist]);
 
-  const setRole = useCallback(
-    (role: Role) =>
-      setUser((u) => {
-        if (!u) return u;
-        const next = { ...u, role };
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        } catch {
-          /* ignore */
-        }
-        return next;
-      }),
-    [],
-  );
-
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       ready,
       signIn,
       signOut,
-      setRole,
-      can: (perm) => (user ? roleHas(user.role, perm) : false),
-      canAny: (perms) => (user ? roleHasAny(user.role, perms) : false),
+      can: () => true,
+      canAny: () => true,
     }),
-    [user, ready, signIn, signOut, setRole],
+    [user, ready, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -168,8 +135,8 @@ export function useAuth() {
   return ctx;
 }
 
-export function useCan(perm: Permission) {
-  return useAuth().can(perm);
+export function useCan(_perm: Permission) {
+  return true;
 }
 
 export const DEMO_CREDENTIALS = { email: 'asadnaeem8@gmail.com', password: 'Test@123' };
