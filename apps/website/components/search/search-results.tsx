@@ -267,7 +267,7 @@ export function SearchResults({
     <div>
       {/* ── Centered pill search bar ────────────────────────────────── */}
       <div className="border-b border-ink-100 py-4">
-        <div className="container-page flex items-start justify-center gap-3">
+        <div className="container-page flex flex-wrap items-start justify-center gap-3">
           <GuideSearchBar
             query={query}
             setQuery={setQuery}

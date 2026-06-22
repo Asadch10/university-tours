@@ -284,12 +284,35 @@ export function ExploreMap() {
         </p>
       </div>
 
-      {/* ── Map card — edge-to-edge (same margins as the hero video) ────── */}
-      <div className="mx-5 sm:mx-7 lg:mx-10">
-        <div className="flex h-[680px] overflow-hidden rounded-3xl border border-ink-200/60 shadow-card">
+      {/* ── Mobile search bar — shown above map on phones only ──────────── */}
+      <div className="mx-4 mb-3 sm:hidden">
+        <div className="flex items-center gap-2 rounded-2xl border border-ink-200 bg-white px-3 py-2.5 shadow-soft focus-within:border-maroon-800/60 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.08)]">
+          <Search size={14} className="shrink-0 text-ink-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search schools or cities…"
+            className="w-full bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="shrink-0 text-ink-400 hover:text-ink-600"
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
 
-          {/* ── Left sidebar ─────────────────────────────────────────────── */}
-          <div className="flex w-[360px] shrink-0 flex-col border-r border-ink-100 bg-white xl:w-[420px]">
+      {/* ── Map card — edge-to-edge (same margins as the hero video) ────── */}
+      <div className="mx-4 sm:mx-7 lg:mx-10">
+        <div className="flex h-[55vh] min-h-[360px] overflow-hidden rounded-3xl border border-ink-200/60 shadow-card sm:h-[620px] lg:h-[680px]">
+
+          {/* ── Left sidebar — hidden on phones so the map fills the card ── */}
+          <div className="hidden w-[280px] shrink-0 flex-col border-r border-ink-100 bg-white sm:flex lg:w-[360px] xl:w-[420px]">
 
             {/* Search row */}
             <div className="shrink-0 border-b border-ink-100 p-4">
@@ -396,7 +419,7 @@ export function ExploreMap() {
             {/* ── Detail panel — slides in from right on pin / list click ──
                 z-[1100] keeps it above the Leaflet zoom control + tiles. */}
             <div
-              className={`absolute inset-y-0 right-0 z-[1100] flex w-[380px] flex-col overflow-y-auto bg-white shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] xl:w-[420px] ${
+              className={`absolute inset-y-0 right-0 z-[1100] flex w-full max-w-[420px] flex-col overflow-y-auto bg-white shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 selected ? 'translate-x-0' : 'translate-x-full'
               }`}
               aria-hidden={!selected}

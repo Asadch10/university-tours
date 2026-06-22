@@ -131,7 +131,7 @@ function ImgCard({ card }: { card: ImageCard }) {
   return (
     <article
       data-card
-      className="relative h-[400px] w-72 shrink-0 overflow-hidden rounded-2xl"
+      className="relative h-[400px] w-[85vw] max-w-72 shrink-0 snap-start overflow-hidden rounded-2xl sm:w-72"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -167,7 +167,7 @@ function TxtCard({ card }: { card: TextCard }) {
   return (
     <article
       data-card
-      className="relative flex h-[400px] w-72 shrink-0 flex-col justify-between overflow-hidden rounded-2xl border border-ink-100 bg-white p-6 shadow-soft"
+      className="relative flex h-[400px] w-[85vw] max-w-72 shrink-0 snap-start flex-col justify-between overflow-hidden rounded-2xl border border-ink-100 bg-white p-6 shadow-soft sm:w-72"
     >
       {/* Decorative large quote mark */}
       <span
@@ -258,12 +258,12 @@ export function TrustedReviews() {
           <ChevronLeft size={20} />
         </button>
 
-        {/* Cards strip — overflows are hidden; JS scrollBy drives motion */}
+        {/* Cards strip — overflow-x-auto enables touch swipe; scrollbar hidden via CSS */}
         <div
           ref={scrollRef}
-          className="overflow-x-hidden"
+          className="overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          <div className="flex gap-5 pl-14 pr-14">
+          <div className="flex gap-5 pl-4 pr-4 sm:pl-14 sm:pr-14">
             {REVIEWS.map((card, i) =>
               card.kind === 'image' ? (
                 <ImgCard key={i} card={card} />

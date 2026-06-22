@@ -60,7 +60,7 @@ function Calendar({ value, onSelect }: { value: string; onSelect: (v: string) =>
   const monthLabel = view.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="w-[340px] rounded-2xl border border-ink-200/80 bg-white p-5 shadow-lift">
+    <div className="w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-ink-200/80 bg-white p-5 shadow-lift">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
@@ -188,28 +188,28 @@ export function GuideSearchBar({
   /* ── Collapsed compact pill ─────────────────────────────────────── */
   if (!expanded) {
     return (
-      <div className="flex items-center justify-center" ref={rootRef}>
-        <div className="flex items-center rounded-full border border-ink-200 bg-white shadow-sm">
+      <div className="flex w-full items-center justify-center sm:w-auto" ref={rootRef}>
+        <div className="flex w-full items-center rounded-full border border-ink-200 bg-white shadow-sm sm:w-auto">
           <button
             type="button"
             onClick={() => open('school')}
-            className="rounded-l-full py-2.5 pl-5 pr-4 text-sm font-medium text-ink-900 hover:bg-ink-50/60"
+            className="min-w-0 flex-1 rounded-l-full py-2.5 pl-4 pr-3 text-sm font-medium text-ink-900 hover:bg-ink-50/60 sm:flex-none sm:pl-5 sm:pr-4"
           >
-            {query || 'School'}
+            <span className="block truncate">{query || 'School'}</span>
           </button>
-          <span className="h-6 w-px bg-ink-200" />
+          <span className="h-6 w-px shrink-0 bg-ink-200" />
           <button
             type="button"
             onClick={() => open('date')}
-            className="px-4 py-2.5 text-sm font-medium text-ink-900 hover:bg-ink-50/60"
+            className="hidden px-4 py-2.5 text-sm font-medium text-ink-900 hover:bg-ink-50/60 sm:block"
           >
             {date ? formatDate(date) : 'Date'}
           </button>
-          <span className="h-6 w-px bg-ink-200" />
+          <span className="hidden h-6 w-px bg-ink-200 sm:block" />
           <button
             type="button"
             onClick={() => open('type')}
-            className="px-4 py-2.5 text-sm font-medium text-ink-900 hover:bg-ink-50/60"
+            className="hidden px-4 py-2.5 text-sm font-medium text-ink-900 hover:bg-ink-50/60 sm:block"
           >
             {service ? serviceLabel : 'Tour type'}
           </button>
@@ -322,7 +322,7 @@ export function GuideSearchBar({
 
         {/* ── School dropdown ──────────────────────────────────────── */}
         {active === 'school' && (
-          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-[400px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift">
+          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[400px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:w-[400px]">
             <div className="max-h-[330px] overflow-y-auto p-2">
               {schoolMatches.length === 0 ? (
                 <p className="px-3 py-6 text-center text-sm text-ink-400">No schools found</p>
@@ -363,7 +363,7 @@ export function GuideSearchBar({
 
         {/* ── Date calendar ────────────────────────────────────────── */}
         {active === 'date' && (
-          <div className="absolute left-1/4 top-[calc(100%+0.75rem)] z-50">
+          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 sm:left-1/4">
             <Calendar
               value={date}
               onSelect={(v) => {
@@ -376,7 +376,7 @@ export function GuideSearchBar({
 
         {/* ── Tour type dropdown ───────────────────────────────────── */}
         {active === 'type' && (
-          <div className="absolute right-14 top-[calc(100%+0.75rem)] z-50 w-[380px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift">
+          <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[380px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:right-14 sm:w-[380px]">
             <p className="px-6 pb-3 pt-5 text-base font-bold text-ink-900">
               How would you like to tour?
             </p>
