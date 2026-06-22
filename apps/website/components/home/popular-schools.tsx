@@ -130,15 +130,15 @@ export function PopularSchools() {
           <ChevronLeft size={20} />
         </button>
 
-        {/* Cards strip */}
-        <div ref={scrollRef} className="overflow-x-hidden">
-          <div className="flex gap-5 pl-14 pr-14">
+        {/* Cards strip — overflow-x-auto enables touch swipe; scrollbar hidden */}
+        <div ref={scrollRef} className="overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-4 pl-4 pr-4 sm:gap-5 sm:pl-14 sm:pr-14">
             {SCHOOLS.map((school) => (
               <Link
                 key={school.id}
                 href={school.href}
                 data-card
-                className="group block w-[210px] shrink-0"
+                className="group block w-[55vw] max-w-[210px] shrink-0 snap-start sm:w-[210px]"
               >
                 {/* Portrait card image — 3:4 ratio */}
                 <div className="aspect-[3/4] overflow-hidden rounded-2xl">

@@ -89,7 +89,7 @@ function GuideCardItem({ guide }: { guide: GuideCard }) {
     <Link
       href={guide.href}
       data-card
-      className="group block w-[288px] shrink-0 overflow-hidden rounded-2xl bg-white transition-shadow duration-200 hover:shadow-lift"
+      className="group block w-[80vw] max-w-[288px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white transition-shadow duration-200 hover:shadow-lift sm:w-[288px]"
     >
       {/* Guide photo — square aspect ratio */}
       <div className="aspect-square overflow-hidden rounded-2xl">
@@ -159,9 +159,9 @@ export function FeaturedGuides() {
           <ChevronLeft size={20} />
         </button>
 
-        {/* Cards strip */}
-        <div ref={scrollRef} className="overflow-x-hidden">
-          <div className="flex gap-5 pl-14 pr-14">
+        {/* Cards strip — overflow-x-auto enables touch swipe; scrollbar hidden */}
+        <div ref={scrollRef} className="overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-5 pl-4 pr-4 sm:pl-14 sm:pr-14">
             {GUIDES.map((guide) => (
               <GuideCardItem key={guide.id} guide={guide} />
             ))}

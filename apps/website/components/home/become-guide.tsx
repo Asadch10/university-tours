@@ -28,7 +28,7 @@ export function BecomeGuide() {
     <section className="py-10 sm:py-12">
       {/* Same edge margins as the hero video and map section */}
       <div className="mx-5 sm:mx-7 lg:mx-10">
-        <div className="relative min-h-[580px] overflow-hidden rounded-[2rem] xl:min-h-[640px]">
+        <div className="relative min-h-[440px] overflow-hidden rounded-[2rem] sm:min-h-[560px] xl:min-h-[640px]">
 
           {/* ── Full-bleed background image ──────────────────────────── */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -52,18 +52,18 @@ export function BecomeGuide() {
           />
 
           {/* ── Content grid ─────────────────────────────────────────── */}
-          <div className="relative z-10 grid min-h-[580px] items-center lg:grid-cols-[5fr_7fr] xl:min-h-[640px]">
+          <div className="relative z-10 grid min-h-[440px] items-center sm:min-h-[560px] lg:grid-cols-[5fr_7fr] xl:min-h-[640px]">
 
             {/* Left: heading + text + CTAs */}
-            <div className="flex flex-col justify-center px-10 py-16 sm:px-14 lg:px-16 xl:px-20">
+            <div className="flex flex-col justify-center px-6 py-12 sm:px-14 sm:py-16 lg:px-16 xl:px-20">
               <h2
                 className="font-display font-bold leading-[1.08] text-white"
-                style={{ fontSize: 'clamp(2.2rem, 4vw, 3.6rem)' }}
+                style={{ fontSize: 'clamp(1.75rem, 5vw, 3.6rem)' }}
               >
                 Become a tour guide
               </h2>
 
-              <p className="mt-5 max-w-[22rem] text-base leading-relaxed text-white/60">
+              <p className="mt-5 max-w-[22rem] text-sm leading-relaxed text-white/60 sm:text-base">
                 Join thousands of students earning $40/hour hosting private college tours
               </p>
 

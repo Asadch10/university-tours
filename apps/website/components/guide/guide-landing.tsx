@@ -112,10 +112,10 @@ export function GuideLanding() {
 
 function Hero() {
   return (
-    <section className="container-page grid items-center gap-12 py-12 lg:grid-cols-2 lg:py-16">
+    <section className="container-page grid items-center gap-8 py-12 sm:gap-10 lg:grid-cols-2 lg:gap-12 lg:py-16">
       {/* Left */}
       <div>
-        <h1 className="font-display text-5xl font-bold leading-[1.05] text-ink-900 sm:text-6xl">
+        <h1 className="font-display text-4xl font-bold leading-[1.05] text-ink-900 sm:text-5xl lg:text-6xl">
           Become a guide
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-ink-600">
@@ -161,7 +161,7 @@ function Hero() {
         </div>
 
         {/* New Tour Request */}
-        <div className="absolute left-4 top-4 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift">
+        <div className="absolute left-4 top-4 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift sm:flex">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-maroon-900 text-white">
             <Bell size={16} />
           </span>
@@ -172,7 +172,7 @@ function Hero() {
         </div>
 
         {/* Payout */}
-        <div className="absolute right-4 top-20 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift">
+        <div className="absolute right-4 top-20 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift sm:flex">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white">
             <DollarSign size={16} />
           </span>
@@ -183,7 +183,7 @@ function Hero() {
         </div>
 
         {/* Tour confirmed */}
-        <div className="absolute bottom-6 left-4 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift">
+        <div className="absolute bottom-6 left-4 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift sm:flex">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white">
             <Check size={16} />
           </span>
@@ -194,7 +194,7 @@ function Hero() {
         </div>
 
         {/* Rating */}
-        <div className="absolute bottom-6 right-4 rounded-2xl bg-white px-4 py-3 shadow-lift">
+        <div className="absolute bottom-6 right-4 hidden rounded-2xl bg-white px-4 py-3 shadow-lift sm:block">
           <div className="flex gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star key={i} size={14} className="fill-gold-500 text-gold-500" />
@@ -260,13 +260,13 @@ function MeetGuides() {
             </div>
 
             {/* Carousel */}
-            <div ref={scrollRef} className="overflow-x-hidden">
+            <div ref={scrollRef} className="overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex gap-5">
                 {TESTIMONIALS.map((t) => (
                   <article
                     key={t.name}
                     data-card
-                    className="relative h-[420px] w-[270px] shrink-0 overflow-hidden rounded-2xl"
+                    className="relative h-[420px] w-[75vw] max-w-[270px] shrink-0 snap-start overflow-hidden rounded-2xl sm:w-[270px]"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={t.photo} alt={t.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
@@ -342,10 +342,10 @@ function BringSchoolToLife() {
           <ChevronLeft size={20} />
         </button>
 
-        <div ref={scrollRef} className="overflow-x-hidden">
-          <div className="flex gap-5 pl-14 pr-14">
+        <div ref={scrollRef} className="overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-4 pl-4 pr-4 sm:gap-5 sm:pl-14 sm:pr-14">
             {list.map((u) => (
-              <div key={u.slug} data-card className="w-[240px] shrink-0">
+              <div key={u.slug} data-card className="w-[60vw] max-w-[240px] shrink-0 snap-start sm:w-[240px]">
                 <div className="aspect-[4/3] overflow-hidden rounded-2xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={u.image} alt={u.name} loading="lazy" className="h-full w-full object-cover" />
