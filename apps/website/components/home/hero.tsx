@@ -155,19 +155,19 @@ export function Hero() {
       <div className="shrink-0" style={{ height: 'calc(var(--header-h) + 1.25rem)' }} />
 
       {/*
-       * Mobile  (< sm): video is a fixed-height strip; search card sits below it.
-       * Desktop (sm+):  video fills remaining viewport; card overlays the left side.
+       * Mobile  (< sm): rounded video strip with side margins; search card sits below.
+       * sm–md:          full-bleed video (no side margins), card overlays left side.
+       * lg+:            same but wider card padding.
        */}
 
       {/* ── Video container ───────────────────────────────────────────── */}
       <div
         className={[
-          'relative overflow-hidden rounded-3xl',
-          /* Mobile: fixed height, no flex-1 */
-          'mx-5 h-[42vh] min-h-[240px]',
-          /* sm+: flex-1 fills remaining screen, wider margins */
-          'sm:mx-7 sm:mb-7 sm:flex-1 sm:h-auto sm:min-h-0',
-          'lg:mx-10 lg:mb-10',
+          'relative overflow-hidden',
+          /* Mobile: rounded strip with gutters */
+          'mx-4 h-[46vh] min-h-[260px] rounded-2xl',
+          /* sm+: edge-to-edge, no rounding at top, rounded bottom edge */
+          'sm:mx-0 sm:flex-1 sm:h-auto sm:min-h-0 sm:rounded-t-none sm:rounded-b-[2rem]',
         ].join(' ')}
       >
         {/* Background video */}
@@ -198,27 +198,27 @@ export function Hero() {
           />
         </video>
 
-        {/* Gradient overlay */}
+        {/* Gradient overlay — stronger on left for card readability */}
         <div
           aria-hidden="true"
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(105deg, rgba(10,8,6,0.62) 0%, rgba(10,8,6,0.36) 50%, rgba(10,8,6,0.10) 100%)',
+              'linear-gradient(105deg, rgba(10,8,6,0.72) 0%, rgba(10,8,6,0.44) 42%, rgba(10,8,6,0.10) 100%)',
           }}
         />
 
-        {/* Desktop card — left side, hidden on mobile */}
-        <div className="absolute inset-y-0 left-0 hidden items-center px-8 py-10 sm:flex lg:px-10">
-          <div className="w-full max-w-[440px] rounded-2xl bg-white p-9 shadow-[0_12px_48px_rgba(0,0,0,0.20)]">
+        {/* Desktop / tablet card — overlays left side of video, hidden on mobile */}
+        <div className="absolute inset-y-0 left-0 hidden items-center px-6 py-10 sm:flex md:px-10 lg:px-14 xl:px-20">
+          <div className="w-full max-w-[340px] rounded-2xl bg-white p-6 shadow-[0_12px_48px_rgba(0,0,0,0.24)] md:max-w-[390px] md:p-8 lg:max-w-[430px] lg:p-9">
             <SearchCard idPrefix="hero-d" {...sharedProps} />
           </div>
         </div>
       </div>
 
-      {/* Mobile card — below video, hidden on sm+ */}
-      <div className="mx-5 mb-5 mt-4 sm:hidden">
-        <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
+      {/* Mobile card — stacks below video, hidden on sm+ */}
+      <div className="mx-4 mb-4 mt-3 sm:hidden">
+        <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-sm">
           <SearchCard idPrefix="hero-m" {...sharedProps} />
         </div>
       </div>
