@@ -1,7 +1,54 @@
 'use client';
 
-import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef } from 'react';
+
+/* ── Leaflet loaded from CDN at runtime ──────────────────────────────────
+   We deliberately avoid `import 'leaflet'` / `import 'leaflet/dist/...css'`
+   so the production build never needs the npm package resolved by the
+   bundler (the map is client-only via `ssr: false`). This keeps `next build`
+   working regardless of how the deploy environment installs dependencies. */
+
+const LEAFLET_VERSION = '1.9.4';
+const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
+const LEAFLET_JS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let leafletPromise: Promise<any> | null = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function loadLeaflet(): Promise<any> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('Leaflet needs a browser'));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  if (w.L) return Promise.resolve(w.L);
+  if (leafletPromise) return leafletPromise;
+
+  leafletPromise = new Promise((resolve, reject) => {
+    // Inject stylesheet once
+    if (!document.querySelector('link[data-leaflet]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = LEAFLET_CSS;
+      link.setAttribute('data-leaflet', '');
+      document.head.appendChild(link);
+    }
+    // Inject (or reuse) the script
+    const existing = document.querySelector('script[data-leaflet]') as HTMLScriptElement | null;
+    if (existing) {
+      if (w.L) resolve(w.L);
+      else existing.addEventListener('load', () => resolve(w.L));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS;
+    script.async = true;
+    script.setAttribute('data-leaflet', '');
+    script.onload = () => resolve(w.L);
+    script.onerror = () => reject(new Error('Failed to load Leaflet'));
+    document.body.appendChild(script);
+  });
+  return leafletPromise;
+}
 
 export type UniversityPin = {
   id: string;
@@ -46,7 +93,7 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
     let isMounted = true;
 
     (async () => {
-      const { default: L } = await import('leaflet');
+      const L = await loadLeaflet();
       if (!isMounted || !containerRef.current || mapRef.current) return;
 
       const map = L.map(containerRef.current, {
