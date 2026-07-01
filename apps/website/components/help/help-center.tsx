@@ -157,17 +157,20 @@ export function HelpCenter() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
-        <div className="bg-grid absolute inset-0 opacity-25" aria-hidden />
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
+      <section className="relative overflow-hidden pt-[var(--header-h)] text-ivory">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/c7/c6221e02913f46d88b662b1fede3a3c98bf15c?auto=format&fit=clip&h=2400&w=2400&s=b0d38cccc08ec7ca71c7034a23861467"
+          alt=""
           aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
         />
+        <div className="absolute inset-0 bg-blue-950/40" aria-hidden />
         <div className="container-page relative py-16 text-center sm:py-20">
           <h1 className="mx-auto max-w-2xl font-display text-4xl font-bold leading-[1.1] sm:text-5xl">
             Help Center
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-ivory/80">
+          <p className="mx-auto mt-4 max-w-xl text-lg text-ivory/85">
             Find answers to common questions. Still need help?{' '}
             <Link href="/contact" className="font-semibold text-gold-300 underline-offset-4 hover:underline">
               Contact us

@@ -45,16 +45,15 @@ export default function ContactPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
-        <div className="bg-grid absolute inset-0 opacity-40" aria-hidden />
-        <div
-          className="pointer-events-none absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl"
+      <section className="relative overflow-hidden pt-[var(--header-h)] text-ivory">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/c7/c6221e02913f46d88b662b1fede3a3c98bf15c?auto=format&fit=clip&h=2400&w=2400&s=b0d38cccc08ec7ca71c7034a23861467"
+          alt=""
           aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
         />
-        <div
-          className="pointer-events-none absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-maroon-400/20 blur-3xl"
-          aria-hidden
-        />
+        <div className="absolute inset-0 bg-blue-950/40" aria-hidden />
         <div className="container-page relative py-16 sm:py-24 lg:py-28">
           <div className="mx-auto max-w-3xl text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold-200 ring-1 ring-inset ring-white/15 backdrop-blur">

@@ -224,18 +224,21 @@ function Impact() {
               type="button"
               onClick={() => scrollBy(-1)}
               aria-label="Previous"
-              className="absolute left-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/20"
+              className="absolute left-1 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-inset ring-white/20 backdrop-blur transition-colors hover:bg-white/20 sm:left-2"
             >
               <ChevronLeft size={18} />
             </button>
 
-            <div ref={scrollRef} className="overflow-x-hidden">
-              <div className="flex gap-5 px-12">
+            <div
+              ref={scrollRef}
+              className="overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              <div className="flex gap-5 px-4 sm:px-14">
                 {TESTIMONIALS.map((t) => (
                   <article
                     key={t.name}
                     data-card
-                    className="relative w-[320px] shrink-0 rounded-2xl bg-white/[0.04] p-6 ring-1 ring-inset ring-white/10"
+                    className="relative w-[85vw] max-w-[320px] shrink-0 snap-start rounded-2xl bg-white/[0.04] p-6 ring-1 ring-inset ring-white/10 sm:w-[320px]"
                   >
                     <Quote size={28} className="absolute right-5 top-5 text-gold-400" />
                     <div className="flex items-center gap-3">
@@ -261,7 +264,7 @@ function Impact() {
               type="button"
               onClick={() => scrollBy(1)}
               aria-label="Next"
-              className="absolute right-0 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/20"
+              className="absolute right-1 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-inset ring-white/20 backdrop-blur transition-colors hover:bg-white/20 sm:right-2"
             >
               <ChevronRight size={18} />
             </button>

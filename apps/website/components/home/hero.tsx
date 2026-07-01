@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, GraduationCap, Calendar, Compass } from 'lucide-react';
 import { universities } from '@/lib/data';
+import { cn } from '@/lib/utils';
 
 /* ─── Shared search form rendered inside both mobile + desktop cards ─── */
 
@@ -26,6 +27,22 @@ function SearchCard({
   onTourTypeChange: (v: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const [schoolOpen, setSchoolOpen] = useState(false);
+  const schoolRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (schoolRef.current && !schoolRef.current.contains(e.target as Node)) setSchoolOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
+  const schoolMatches = universities.filter((u) => {
+    const q = university.toLowerCase().trim();
+    return !q || u.name.toLowerCase().includes(q) || u.location.toLowerCase().includes(q);
+  });
+
   return (
     <>
       <h1 className="font-display text-2xl font-bold leading-snug text-ink-900 sm:text-[1.85rem] lg:text-[2.1rem]">
@@ -40,30 +57,73 @@ function SearchCard({
 
       <form onSubmit={onSubmit} className="mt-5 space-y-3">
         {/* School */}
-        <div>
+        <div className="relative" ref={schoolRef}>
           <label
             htmlFor={`${idPrefix}-school`}
             className="mb-1.5 block text-[0.78rem] font-semibold text-ink-800"
           >
             School
           </label>
-          <div className="flex items-center gap-2.5 rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 transition-[box-shadow,border-color] focus-within:border-maroon-800/40 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.09)]">
+          <div
+            className={cn(
+              'flex items-center gap-2.5 rounded-xl border bg-white px-3.5 py-2.5 transition-colors',
+              schoolOpen ? 'border-maroon-800/40' : 'border-ink-200',
+            )}
+          >
             <GraduationCap size={15} className="shrink-0 text-ink-400" />
             <input
               id={`${idPrefix}-school`}
-              list={`${idPrefix}-uni-list`}
               value={university}
-              onChange={(e) => onUniChange(e.target.value)}
+              onChange={(e) => {
+                onUniChange(e.target.value);
+                setSchoolOpen(true);
+              }}
+              onFocus={() => setSchoolOpen(true)}
               placeholder="Search schools"
               autoComplete="off"
-              className="w-full min-w-0 bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none"
+              className="w-full min-w-0 bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <datalist id={`${idPrefix}-uni-list`}>
-              {universities.map((u) => (
-                <option key={u.slug} value={u.name} />
-              ))}
-            </datalist>
           </div>
+
+          {schoolOpen && (
+            <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift">
+              <div className="max-h-[248px] overflow-y-auto p-2">
+                {schoolMatches.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-ink-400">No schools found</p>
+                ) : (
+                  schoolMatches.map((u) => (
+                    <button
+                      key={u.slug}
+                      type="button"
+                      onClick={() => {
+                        onUniChange(u.name);
+                        setSchoolOpen(false);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-maroon-50"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={u.image}
+                        alt={u.name}
+                        className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-ink-900">{u.name}</p>
+                        <p className="truncate text-xs text-ink-500">{u.location}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSchoolOpen(false)}
+                className="block w-full border-t border-ink-100 px-4 py-3 text-center text-sm font-semibold text-ink-900 transition-colors hover:bg-ink-50"
+              >
+                Suggest a new school
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Date */}
@@ -74,14 +134,14 @@ function SearchCard({
           >
             Date
           </label>
-          <div className="flex items-center gap-2.5 rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 transition-[box-shadow,border-color] focus-within:border-maroon-800/40 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.09)]">
+          <div className="flex items-center gap-2.5 rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 transition-colors focus-within:border-maroon-800/40">
             <Calendar size={15} className="shrink-0 text-ink-400" />
             <input
               id={`${idPrefix}-date`}
               type="date"
               value={date}
               onChange={(e) => onDateChange(e.target.value)}
-              className="w-full cursor-pointer bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none"
+              className="w-full cursor-pointer bg-transparent text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
         </div>
@@ -94,13 +154,13 @@ function SearchCard({
           >
             Tour type
           </label>
-          <div className="flex items-center gap-2.5 rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 transition-[box-shadow,border-color] focus-within:border-maroon-800/40 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.09)]">
+          <div className="flex items-center gap-2.5 rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 transition-colors focus-within:border-maroon-800/40">
             <Compass size={15} className="shrink-0 text-ink-400" />
             <select
               id={`${idPrefix}-tour-type`}
               value={tourType}
               onChange={(e) => onTourTypeChange(e.target.value)}
-              className="w-full cursor-pointer appearance-none bg-transparent text-sm text-ink-900 focus:outline-none"
+              className="w-full cursor-pointer appearance-none bg-transparent text-sm text-ink-900 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               <option value="">Add tour type</option>
               <option value="CAMPUS_TOUR">In-person campus tour</option>
@@ -152,7 +212,7 @@ export function Hero() {
   return (
     <section className="flex flex-col bg-white sm:min-h-dvh">
       {/* Fixed-header offset */}
-      <div className="shrink-0" style={{ height: 'calc(var(--header-h) + 1.25rem)' }} />
+      <div className="h-[var(--header-h)] shrink-0" />
 
       {/*
        * Mobile  (< sm): rounded video strip with side margins; search card sits below.

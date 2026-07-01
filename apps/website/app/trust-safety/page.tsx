@@ -1,92 +1,153 @@
 import type { Metadata } from 'next';
-import {
-  ShieldCheck,
-  BadgeCheck,
-  CreditCard,
-  EyeOff,
-  Star,
-  AlertTriangle,
-  Mail,
-} from 'lucide-react';
+import { Handshake, ShieldCheck, Ban } from 'lucide-react';
 import { Reveal, RevealGroup } from '@/components/ui/reveal';
-import { ButtonLink } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'Trust & Safety',
   description:
-    'How University Campus Private Tours keeps families and student guides safe — verified students, secure payments, masked contact until booking, accountable reviews, and an easy way to report a concern.',
+    'Building trust through transparency, training, and thoughtful guardrails. How University Campus Private Tours keeps families and student guides safe on every campus tour.',
 };
 
-const pillars = [
+const BANNER =
+  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/03/8bcc0983b6feef9579de0397ed985f1590aee5?auto=format&fit=clip&h=2400&w=2400&s=72046b00f38cb2ef8c175150b586afda';
+const IMG_MINORS =
+  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/90/2c205090b5abffa6f4ad9a74165efd71b822a8?auto=format&crop=edges&fit=crop&h=1200&w=1200&s=7e5658169ccc2c8dfc156e959c78f657';
+const IMG_PLEDGE =
+  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/e7/3a581d83a856f5c8ba2631fb85b30f7db55b4b?auto=format&crop=edges&fit=crop&h=1200&w=1200&s=123c8458b790adfa0997ebf308ae929a';
+
+const PRINCIPLES = [
   {
-    icon: BadgeCheck,
-    title: 'Verified students',
-    body: 'Every guide passes enrollment and identity checks before they can host, so you know you are meeting a real, current student.',
+    icon: Handshake,
+    title: 'Always professional and respectful',
+    body: 'All interactions must remain respectful, professional and appropriate at all times.',
   },
   {
-    icon: CreditCard,
-    title: 'Secure payments',
-    body: 'Payments are handled by Stripe and you are only charged when a guide accepts. We never store your full card details.',
+    icon: ShieldCheck,
+    title: 'Boundaries keep everyone safe',
+    body: 'Physical, verbal, or digital boundaries must always be respected, without exception.',
   },
   {
-    icon: EyeOff,
-    title: 'Masked contact until booking',
-    body: 'Your contact details stay private and are shared only after a tour is confirmed — never before, and never sold.',
-  },
-  {
-    icon: Star,
-    title: 'Reviews & accountability',
-    body: 'Honest reviews from real families keep our community accountable and help great guides stand out.',
+    icon: Ban,
+    title: 'Zero tolerance policy',
+    body: 'We do not tolerate harassment, bullying, or discriminatory behavior based on race, gender, sexuality, religion, or background.',
   },
 ];
 
 export default function TrustSafetyPage() {
   return (
-    <>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
-        <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
-          aria-hidden
-        />
-        <div className="container-page relative py-16 sm:py-20">
-          <div className="max-w-3xl">
-            <span className="eyebrow text-gold-300">
-              <span className="h-px w-6 bg-gold-300/60" /> Trust &amp; Safety
-            </span>
-            <h1 className="mt-4 flex items-center gap-3 font-display text-4xl font-semibold leading-[1.1] sm:text-5xl">
-              <ShieldCheck className="text-gold-300" size={36} aria-hidden />
-              Trust &amp; Safety
+    <div className="bg-white">
+      {/* ── 1. Commitment + banner ─────────────────────────────────────── */}
+      <section className="pt-[calc(var(--header-h)+3rem)] sm:pt-[calc(var(--header-h)+4rem)]">
+        <div className="container-page text-center">
+          <Reveal>
+            <h1 className="mx-auto max-w-2xl font-display text-3xl font-bold leading-tight text-ink-900 sm:text-4xl lg:text-5xl">
+              Our commitment to trust and safety
             </h1>
-            <p className="mt-4 text-sm font-medium uppercase tracking-wider text-ivory/60">
-              Last updated: June 15, 2026
+          </Reveal>
+          <Reveal delay={0.05}>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-ink-600">
+              Building trust through transparency, training, and thoughtful guardrails.
             </p>
-            <p className="mt-3 max-w-xl text-lg leading-relaxed text-ivory/75">
-              Safety is the foundation of every campus visit. Here is how we protect families and
-              student guides at every step.
-            </p>
+          </Reveal>
+        </div>
+
+        <Reveal delay={0.1} className="container-page mt-10 sm:mt-14">
+          <div className="overflow-hidden rounded-3xl shadow-lift">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={BANNER}
+              alt="Students exploring a campus together"
+              className="aspect-[4/3] w-full object-cover sm:aspect-[21/9]"
+            />
           </div>
+        </Reveal>
+      </section>
+
+      {/* ── 2. Setting the standard ────────────────────────────────────── */}
+      <section className="container-page py-20 sm:py-28">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <h2 className="font-display text-3xl font-bold leading-tight text-ink-900 sm:text-4xl">
+            Setting the standard for safe campus tours.{' '}
+            <span className="text-maroon-900">Every tour, every time.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-600">
+            We want you to make the most of every campus visit. That’s why we’re committed to safety —
+            with verified guides, training, and clear safety standards — every tour, every time.
+          </p>
+        </Reveal>
+
+        <div className="mt-14 grid items-center gap-10 lg:grid-cols-2 lg:gap-16 sm:mt-20">
+          <Reveal>
+            <h3 className="font-display text-2xl font-semibold text-ink-900 sm:text-[1.75rem]">
+              Minors must be accompanied by a parent
+            </h3>
+            <p className="mt-5 text-lg leading-relaxed text-ink-600">
+              For any tour involving a guest under 18, a parent or legal guardian must be present for
+              the entire tour. One-on-one, in-person tours with minors are never allowed.
+            </p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div className="overflow-hidden rounded-3xl shadow-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={IMG_MINORS}
+                alt="A parent walking through campus with two students"
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
+            </div>
+          </Reveal>
+        </div>
+
+        <div className="mt-14 grid items-center gap-10 lg:grid-cols-2 lg:gap-16 sm:mt-20">
+          <Reveal>
+            <div className="overflow-hidden rounded-3xl shadow-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={IMG_PLEDGE}
+                alt="A student messaging safely through the app"
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
+            </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h3 className="font-display text-2xl font-semibold text-ink-900 sm:text-[1.75rem]">
+              All guides must commit to our Youth Protection Pledge
+            </h3>
+            <p className="mt-5 text-lg leading-relaxed text-ink-600">
+              All guides agree to our Youth Protection Pledge, which requires appropriate boundaries,
+              public on-campus tours only, and no contact with minors outside the platform. They must
+              also report safety concerns immediately and call 911 if there is suspected abuse or
+              imminent danger.
+            </p>
+          </Reveal>
         </div>
       </section>
 
-      {/* Pillars */}
-      <section className="py-16 sm:py-20">
+      {/* ── 3. Safety is our top priority ──────────────────────────────── */}
+      <section className="bg-ivory py-20 sm:py-28">
         <div className="container-page">
-          <RevealGroup className="grid gap-6 sm:grid-cols-2">
-            {pillars.map((p) => {
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="font-display text-3xl font-bold text-ink-900 sm:text-4xl">
+              Safety is our top priority
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-600">
+              We enforce a strict zero-tolerance policy to protect guests and guides. Violations lead
+              to immediate removal and may be reported to law enforcement.
+            </p>
+          </Reveal>
+
+          <RevealGroup className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12">
+            {PRINCIPLES.map((p) => {
               const Icon = p.icon;
               return (
                 <Reveal as="div" key={p.title}>
-                  <div className="flex h-full flex-col rounded-3xl border border-ink-200/70 bg-white p-8 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
-                      <Icon size={22} aria-hidden />
-                    </span>
-                    <h2 className="mt-5 font-display text-xl font-semibold text-ink-900">
-                      {p.title}
-                    </h2>
-                    <p className="mt-2.5 text-[0.95rem] leading-relaxed text-ink-600">{p.body}</p>
-                  </div>
+                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                    <Icon size={22} aria-hidden />
+                  </span>
+                  <h3 className="mt-5 font-display text-xl font-bold text-ink-900">{p.title}</h3>
+                  <p className="mt-3 leading-relaxed text-ink-600">{p.body}</p>
                 </Reveal>
               );
             })}
@@ -94,64 +155,6 @@ export default function TrustSafetyPage() {
         </div>
       </section>
 
-      {/* Guidelines */}
-      <section className="pb-8 sm:pb-12">
-        <div className="container-page">
-          <div className="mx-auto max-w-3xl">
-            <div className="prose prose-ink max-w-none prose-headings:font-display prose-headings:text-ink-900 prose-a:text-maroon-800 prose-a:font-medium hover:prose-a:text-maroon-900">
-              <h2>Safety guidelines for families</h2>
-              <ul>
-                <li>Keep all communication and payments on the Platform until your tour is confirmed.</li>
-                <li>Review your guide&rsquo;s profile, verification badge, and reviews before booking.</li>
-                <li>Agree on a public meeting point on or near campus for in-person tours.</li>
-                <li>A parent or guardian should accompany and supervise any prospective student who is a minor.</li>
-                <li>Trust your instincts — if something feels off, end the visit and report it to us.</li>
-              </ul>
-
-              <h2>Safety guidelines for guides</h2>
-              <ul>
-                <li>Keep your enrollment and profile information accurate and up to date.</li>
-                <li>Meet families in public, well-trafficked areas of campus.</li>
-                <li>Communicate through the Platform and honor your accepted bookings.</li>
-                <li>Respect families&rsquo; privacy and follow your university&rsquo;s policies.</li>
-                <li>Report any behavior that feels unsafe or inappropriate.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Report a concern */}
-      <section className="pb-16 sm:pb-20">
-        <div className="container-page">
-          <div className="mx-auto max-w-3xl">
-            <Reveal>
-              <div className="rounded-4xl border border-ink-200/70 bg-cream/60 p-8 shadow-soft sm:p-10">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
-                  <AlertTriangle size={22} aria-hidden />
-                </span>
-                <h2 className="mt-5 font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
-                  Report a concern
-                </h2>
-                <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink-600">
-                  If you ever feel unsafe or notice something that does not seem right — before,
-                  during, or after a tour — tell us. Our Trust &amp; Safety team reviews every report
-                  promptly and confidentially.
-                </p>
-                <div className="mt-7">
-                  <ButtonLink href="mailto:safety@ucpt.example" variant="primary" size="lg">
-                    <Mail size={18} /> Email safety@ucpt.example
-                  </ButtonLink>
-                </div>
-              </div>
-            </Reveal>
-            <p className="mt-8 text-center text-sm leading-relaxed text-ink-500">
-              In an emergency, always contact your local emergency services first. We are here to
-              support you every step of the way.
-            </p>
-          </div>
-        </div>
-      </section>
-    </>
+    </div>
   );
 }

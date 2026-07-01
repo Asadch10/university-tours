@@ -74,11 +74,11 @@ export function ResourcesPage() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="relative flex min-h-[58vh] items-center overflow-hidden pt-[var(--header-h)]">
+      <section className="relative flex min-h-[46vh] items-center overflow-hidden pt-[var(--header-h)] sm:min-h-[58vh]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={HERO_BG} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-blue-950/25" aria-hidden />
-        <div className="container-page relative py-24 text-center text-white">
+        <div className="container-page relative py-16 text-center text-white sm:py-24">
           <h1 className="mx-auto max-w-3xl font-display text-4xl font-bold leading-[1.1] drop-shadow-sm sm:text-5xl">
             Resource Center
           </h1>
@@ -96,7 +96,7 @@ export function ResourcesPage() {
             type="button"
             onClick={() => scrollBy(-1)}
             aria-label="Previous"
-            className="absolute left-3 top-[110px] z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:left-5"
+            className="absolute left-3 top-[38%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:inline-flex sm:left-5"
           >
             <ChevronLeft size={20} />
           </button>
@@ -110,7 +110,7 @@ export function ResourcesPage() {
                 key={r.title}
                 data-card
                 href={r.href}
-                className="group w-[300px] shrink-0 snap-start sm:w-[340px]"
+                className="group w-[80vw] max-w-[320px] shrink-0 snap-start sm:w-[340px] sm:max-w-none"
               >
                 <div className="overflow-hidden rounded-2xl shadow-soft">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -133,7 +133,7 @@ export function ResourcesPage() {
             type="button"
             onClick={() => scrollBy(1)}
             aria-label="Next"
-            className="absolute right-3 top-[110px] z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:right-5"
+            className="absolute right-3 top-[38%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:inline-flex sm:right-5"
           >
             <ChevronRight size={20} />
           </button>
