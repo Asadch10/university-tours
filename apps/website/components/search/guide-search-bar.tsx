@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronLeft, ChevronRight, Footprints, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { universities } from '@/lib/data';
@@ -185,10 +186,19 @@ export function GuideSearchBar({
 
   const serviceLabel = TOUR_OPTIONS.find((t) => t.value === service)?.label;
 
-  /* ── Collapsed compact pill ─────────────────────────────────────── */
-  if (!expanded) {
-    return (
-      <div className="flex w-full items-center justify-center sm:w-auto" ref={rootRef}>
+  /* ── Collapsed pill ⇄ expanded bar (animated) ───────────────────── */
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {!expanded ? (
+        <motion.div
+          key="collapsed"
+          ref={rootRef}
+          initial={{ opacity: 0, scale: 0.985 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.985 }}
+          transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+          className="flex w-full items-center justify-center sm:w-auto"
+        >
         <div className="flex w-full items-center rounded-full border border-ink-200 bg-white shadow-sm sm:w-auto">
           <button
             type="button"
@@ -222,13 +232,17 @@ export function GuideSearchBar({
             <Search size={16} />
           </button>
         </div>
-      </div>
-    );
-  }
-
-  /* ── Expanded two-line bar ──────────────────────────────────────── */
-  return (
-    <div className="relative flex w-full justify-center" ref={rootRef}>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="expanded"
+          ref={rootRef}
+          initial={{ opacity: 0, scale: 0.985, y: -3 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.985, y: -3 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 34, mass: 0.8 }}
+          className="relative flex w-full justify-center"
+        >
       <div className="relative w-full max-w-3xl">
         <div className="flex flex-col gap-1 rounded-3xl border border-ink-200 bg-white p-2 shadow-lift sm:flex-row sm:items-center sm:gap-0 sm:rounded-full">
 
@@ -414,6 +428,8 @@ export function GuideSearchBar({
           </div>
         )}
       </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

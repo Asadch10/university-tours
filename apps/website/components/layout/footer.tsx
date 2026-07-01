@@ -9,16 +9,21 @@ const COLUMNS = [
       { href: '/about', label: 'About us' },
       { href: '/how-it-works', label: 'How it works' },
       { href: '/universities', label: 'Explore schools' },
-      { href: '/faq', label: 'Help Center' },
-      { href: '/refer', label: 'Refer a friend ($20)' },
       { href: '/partnerships', label: 'School partnerships' },
       { href: '/testimonials', label: 'Testimonials' },
+      { href: '/blog', label: 'Blog' },
+      { href: 'https://youtube.com', label: 'YouTube' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { href: '/faq', label: 'Help Center' },
       { href: '/resources', label: 'Resource Center' },
+      { href: '/refer', label: 'Refer a friend ($20)' },
       { href: '/trust-safety', label: 'Trust and safety' },
       { href: '/trust-safety', label: 'Report a concern' },
       { href: '/reviews', label: 'Leave a review' },
-      { href: '/blog', label: 'Blog' },
-      { href: 'https://youtube.com', label: 'YouTube' },
       { href: '/contact', label: 'Contact us' },
     ],
   },
@@ -61,8 +66,8 @@ export function Footer() {
 
   return (
     <footer className="border-t border-ink-100 bg-white">
-      <div className="container-page py-16 sm:py-20">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_3fr]">
+      <div className="container-page py-14 sm:py-16">
+        <div className="grid gap-12 lg:grid-cols-[1.2fr_3.4fr]">
 
           {/* ── Brand column ─────────────────────────────────────────── */}
           <div>
@@ -92,7 +97,7 @@ export function Footer() {
           </div>
 
           {/* ── Link columns ─────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-5">
             {COLUMNS.map((col) => (
               <div key={col.title}>
                 <h3 className="text-[0.95rem] font-bold text-ink-900">
