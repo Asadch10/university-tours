@@ -28,12 +28,12 @@ function SearchCard({
 }) {
   return (
     <>
-      <h1 className="font-display text-[1.45rem] font-bold leading-snug text-ink-900 sm:text-[1.85rem]">
+      <h1 className="font-display text-2xl font-bold leading-snug text-ink-900 sm:text-[1.85rem] lg:text-[2.1rem]">
         Book private campus tours.{' '}
         <span className="text-maroon-900">Things just got personal.</span>
       </h1>
 
-      <p className="mt-3 text-[0.875rem] leading-relaxed text-ink-500">
+      <p className="mt-3 text-sm leading-relaxed text-ink-500 lg:text-[0.95rem]">
         Get the scoop and find the school that fits you best on a private
         campus tour tailored to you.
       </p>
@@ -150,7 +150,7 @@ export function Hero() {
   };
 
   return (
-    <section className="flex min-h-dvh flex-col bg-white">
+    <section className="flex flex-col bg-white sm:min-h-dvh">
       {/* Fixed-header offset */}
       <div className="shrink-0" style={{ height: 'calc(var(--header-h) + 1.25rem)' }} />
 
@@ -164,10 +164,10 @@ export function Hero() {
       <div
         className={[
           'relative overflow-hidden',
-          /* Mobile: rounded strip with gutters */
-          'mx-4 h-[46vh] min-h-[260px] rounded-2xl',
-          /* sm+: edge-to-edge, no rounding at top, rounded bottom edge */
-          'sm:mx-0 sm:flex-1 sm:h-auto sm:min-h-0 sm:rounded-t-none sm:rounded-b-[2rem]',
+          /* Mobile: rounded strip with gutters, capped so it isn't huge on tall phones */
+          'mx-4 h-[44vh] min-h-[240px] max-h-[440px] rounded-2xl',
+          /* sm+: edge-to-edge, fills remaining height, but tall enough to never clip the card */
+          'sm:mx-0 sm:h-auto sm:max-h-none sm:flex-1 sm:min-h-[600px] sm:rounded-t-none sm:rounded-b-[2rem]',
         ].join(' ')}
       >
         {/* Background video */}

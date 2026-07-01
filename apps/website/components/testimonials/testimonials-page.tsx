@@ -232,18 +232,18 @@ export function TestimonialsPage() {
 
         {/* Stats */}
         <Reveal delay={0.15}>
-          <div className="mx-auto mt-10 flex max-w-xl items-center justify-center divide-x divide-ink-200">
+          <div className="mx-auto mt-10 flex max-w-xl items-stretch justify-center divide-x divide-ink-200">
             {[
               { value: '1,000+', label: 'Guides' },
               { value: '100+', label: 'Schools' },
               { value: '4.98', label: 'Average rating', star: true },
             ].map((s) => (
-              <div key={s.label} className="px-8 text-center first:pl-0 last:pr-0">
-                <p className="flex items-center justify-center gap-1.5 font-display text-4xl font-bold text-ink-900 sm:text-[2.75rem]">
-                  {s.star && <Star size={24} className="fill-gold-500 text-gold-500" />}
+              <div key={s.label} className="px-4 text-center first:pl-0 last:pr-0 sm:px-8">
+                <p className="flex items-center justify-center gap-1 font-display text-2xl font-bold text-ink-900 sm:gap-1.5 sm:text-[2.75rem]">
+                  {s.star && <Star size={18} className="fill-gold-500 text-gold-500 sm:h-6 sm:w-6" />}
                   {s.value}
                 </p>
-                <p className="mt-1 text-sm text-ink-500">{s.label}</p>
+                <p className="mt-1 text-xs text-ink-500 sm:text-sm">{s.label}</p>
               </div>
             ))}
           </div>

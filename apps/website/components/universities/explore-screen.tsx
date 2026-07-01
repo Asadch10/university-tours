@@ -3,7 +3,9 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { Search, X, ExternalLink, MapPin, Users, SlidersHorizontal } from 'lucide-react';
+import {
+  Search, X, ExternalLink, MapPin, Users, SlidersHorizontal, Map as MapIcon, List as ListIcon,
+} from 'lucide-react';
 import type { UniversityPin } from '@/components/home/map-view';
 import { UNIVERSITIES } from '@/components/home/explore-map';
 
@@ -26,6 +28,8 @@ const MapView = dynamic(
 export function ExploreScreen() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<UniversityPin | null>(null);
+  // Mobile-only view toggle (list ⇄ map); on lg+ both are always shown.
+  const [view, setView] = useState<'list' | 'map'>('list');
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -40,14 +44,17 @@ export function ExploreScreen() {
 
   function handleSelect(u: UniversityPin) {
     setSelected((prev) => (prev?.id === u.id ? null : u));
+    setView('map'); // on mobile, jump to the map + detail when a school is picked
   }
 
   return (
     /* Full viewport height below the fixed header — edge-to-edge, no card. */
-    <div className="flex h-[calc(100dvh-var(--header-h))] mt-[var(--header-h)] overflow-hidden bg-white">
+    <div className="relative flex h-[calc(100dvh-var(--header-h))] mt-[var(--header-h)] overflow-hidden bg-white">
 
       {/* ── Left sidebar ─────────────────────────────────────────────── */}
-      <div className="flex w-[320px] shrink-0 flex-col border-r border-ink-100 bg-white sm:w-[380px] xl:w-[420px]">
+      <div
+        className={`${view === 'list' ? 'flex' : 'hidden'} w-full shrink-0 flex-col border-r border-ink-100 bg-white lg:flex lg:w-[380px] xl:w-[420px]`}
+      >
 
         {/* Search row */}
         <div className="shrink-0 border-b border-ink-100 p-4">
@@ -128,7 +135,7 @@ export function ExploreScreen() {
       </div>
 
       {/* ── Map + overlays ───────────────────────────────────────────── */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className={`${view === 'map' ? 'block' : 'hidden'} relative flex-1 overflow-hidden lg:block`}>
 
         <MapView
           universities={UNIVERSITIES}
@@ -147,7 +154,7 @@ export function ExploreScreen() {
 
         {/* Detail panel */}
         <div
-          className={`absolute inset-y-0 right-0 z-[1100] flex w-[380px] flex-col overflow-y-auto bg-white shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] xl:w-[440px] ${
+          className={`absolute inset-y-0 right-0 z-[1100] flex w-full flex-col overflow-y-auto bg-white shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:w-[380px] xl:w-[440px] ${
             selected ? 'translate-x-0' : 'translate-x-full'
           }`}
           aria-hidden={!selected}
@@ -175,7 +182,10 @@ export function ExploreScreen() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setSelected(null)}
+                  onClick={() => {
+                    setSelected(null);
+                    setView('list');
+                  }}
                   aria-label="Close detail panel"
                   className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow transition-colors hover:bg-white"
                 >
@@ -237,6 +247,25 @@ export function ExploreScreen() {
           )}
         </div>
       </div>
+
+      {/* Mobile List/Map toggle (hidden on lg+ and while a detail panel is open) */}
+      {!selected && (
+        <button
+          type="button"
+          onClick={() => setView((v) => (v === 'list' ? 'map' : 'list'))}
+          className="absolute bottom-5 left-1/2 z-[1050] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors hover:bg-ink-800 lg:hidden"
+        >
+          {view === 'list' ? (
+            <>
+              <MapIcon size={16} /> Map
+            </>
+          ) : (
+            <>
+              <ListIcon size={16} /> List
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -123,7 +123,7 @@ function Hero() {
           <br />
           Get started in 2 minutes.
         </p>
-        <div className="mt-8 flex items-center gap-4">
+        <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
           <Link
             href="/register"
             className="inline-flex items-center justify-center rounded-xl bg-maroon-900 px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
@@ -337,7 +337,7 @@ function BringSchoolToLife() {
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="Previous schools"
-          className="absolute left-3 top-[120px] z-10 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute left-3 top-[36%] z-10 hidden -translate-y-1/2 sm:inline-flex sm:h-11 sm:w-11 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronLeft size={20} />
         </button>
@@ -361,7 +361,7 @@ function BringSchoolToLife() {
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="Next schools"
-          className="absolute right-3 top-[120px] z-10 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute right-3 top-[36%] z-10 hidden -translate-y-1/2 sm:inline-flex sm:h-11 sm:w-11 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronRight size={20} />
         </button>
@@ -488,7 +488,7 @@ function HostingSection() {
                 <div
                   className={cn(
                     'overflow-hidden transition-all duration-300',
-                    isOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0',
+                    isOpen ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0',
                   )}
                 >
                   <p className="px-5 pb-6 text-[0.95rem] leading-relaxed text-ink-600">{item.a}</p>

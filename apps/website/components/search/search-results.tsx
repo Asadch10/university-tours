@@ -6,97 +6,19 @@ import { SlidersHorizontal, SearchX, Star, ChevronLeft, ChevronRight, X } from '
 import { GuideSearchBar } from '@/components/search/guide-search-bar';
 import { Pagination } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
-import { universities } from '@/lib/data';
+import {
+  guides as GUIDES,
+  GENDERS,
+  YEARS,
+  ADMISSIONS,
+  FOCUSES,
+  type Guide,
+  type GuideService,
+} from '@/lib/guides';
 
 type Sort = 'recommended' | 'rating' | 'price-asc' | 'price-desc';
-type Service = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION';
-
-/* ─── Filter option sets ─────────────────────────────────────────────── */
-
-const GENDERS = ['Male', 'Female', 'Non-binary'];
-const YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate student'];
-const ADMISSIONS = ['Admitted as a freshman', 'Transfer student'];
-const FOCUSES = ['STEM', 'Business', 'Humanities', 'Arts', 'Social Sciences', 'Pre-Med', 'Pre-Law'];
-
-type Guide = {
-  id: string;
-  headline: string;
-  name: string;
-  university: string;
-  rating: number;
-  reviews: number;
-  photo: string;
-  price: number; // cents
-  services: Service[];
-  gender: string;
-  year: string;
-  admission: string;
-  focus: string;
-};
 
 const PAGE_SIZE = 20;
-
-/* ─── Dummy guide data ───────────────────────────────────────────────── */
-
-const HEADLINES = [
-  'Biology Student @ Columbia University',
-  'CS Junior sharing real research culture & startup life',
-  'Economics Senior & House tour guide',
-  'Film & TV student giving behind-the-scenes campus tours',
-  'Dual-Degree Student in the Huntsman Program',
-  'MIMG Major, Global Health Minor, Pre-Med Student & Dancer :)',
-  'Stern Finance Senior navigating an urban campus',
-  'Pre-Med & Orientation Leader who loves Ann Arbor',
-  'Data Science junior exploring cafés & Bay Area energy',
-  'Journalism student showing the real neighborhood life',
-  'Mechanical Engineering & robotics team captain',
-  'Architecture student with a love for campus design',
-  'Political Science major & varsity athlete',
-  'Neuroscience student and peer mentor',
-  'Business + Music double major, campus tour veteran',
-  'Public Health senior passionate about community',
-  'English Lit student & campus poetry club lead',
-  'Aerospace Engineering junior and maker',
-  'Psychology major & student government rep',
-  'Marine Science student who knows every hidden spot',
-];
-
-const NAMES = [
-  'Rachel B', 'Ujala C', 'Eric L', 'Sara H', 'Maya R', 'Daniel O', 'Sofia M', 'Aiden C',
-  'Priya N', 'Jordan B', 'Olivia B', 'Hannah C', 'Liam K', 'Noah P', 'Emma W', 'Ava T',
-  'Lucas D', 'Mia G', 'Ethan R', 'Isabella F', 'Mason H', 'Charlotte S', 'Logan M', 'Amelia V',
-  'James L', 'Harper N', 'Benjamin O', 'Evelyn Q', 'Henry Z', 'Abigail Y',
-];
-
-const PHOTOS = [
-  47, 45, 12, 33, 44, 15, 5, 32, 9, 13, 25, 51, 60, 14, 16, 20, 3, 7, 11, 24,
-  31, 36, 40, 48, 52, 56, 59, 62, 65, 68,
-];
-
-const GUIDES: Guide[] = NAMES.map((name, i) => {
-  const uni = universities[i % universities.length]!;
-  const ratingChoices = [5.0, 4.9, 4.8, 5.0, 4.7];
-  return {
-    id: `g${i + 1}`,
-    headline: HEADLINES[i % HEADLINES.length]!,
-    name,
-    university: uni.name,
-    rating: ratingChoices[i % ratingChoices.length]!,
-    reviews: 4 + ((i * 7) % 40),
-    photo: `https://i.pravatar.cc/600?img=${PHOTOS[i % PHOTOS.length]}`,
-    price: 4000 + ((i % 7) * 500),
-    services:
-      i % 3 === 0
-        ? ['CAMPUS_TOUR']
-        : i % 3 === 1
-          ? ['CAMPUS_TOUR', 'VIDEO_CONSULTATION']
-          : ['VIDEO_CONSULTATION'],
-    gender: GENDERS[i % GENDERS.length]!,
-    year: YEARS[i % YEARS.length]!,
-    admission: ADMISSIONS[i % ADMISSIONS.length]!,
-    focus: FOCUSES[i % FOCUSES.length]!,
-  };
-});
 
 /* ─── Guide card ─────────────────────────────────────────────────────── */
 
@@ -211,7 +133,7 @@ export function SearchResults({
         g.university.toLowerCase().includes(q) ||
         g.name.toLowerCase().includes(q) ||
         g.headline.toLowerCase().includes(q);
-      const matchesService = !service || g.services.includes(service as Service);
+      const matchesService = !service || g.services.includes(service as GuideService);
       const matchesGender = genders.length === 0 || genders.includes(g.gender);
       const matchesYear = years.length === 0 || years.includes(g.year);
       const matchesAdmission = admissions.length === 0 || admissions.includes(g.admission);
@@ -297,7 +219,7 @@ export function SearchResults({
       </div>
 
       {/* ── Results ─────────────────────────────────────────────────── */}
-      <div className="container-page py-8">
+      <div className="blog-wrap py-8">
         <div ref={topRef} className="scroll-mt-[calc(var(--header-h)+1rem)]" />
 
         <div className="mb-7 flex flex-wrap items-center justify-between gap-3">

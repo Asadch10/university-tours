@@ -11,20 +11,34 @@ export function ParentsPage() {
   return (
     <div className="bg-white pt-[var(--header-h)]">
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative h-[68vh] min-h-[460px] overflow-hidden">
+      <section className="relative h-[62vh] min-h-[420px] overflow-hidden sm:h-[68vh] sm:min-h-[460px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={HERO} alt="A parent and child exploring a campus together" className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={HERO}
+          alt="A parent and child exploring a campus together"
+          className="absolute inset-0 h-full w-full object-cover object-[65%_center] sm:object-center"
+        />
+        {/* Mobile: bottom-up gradient keeps the heading readable */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 sm:hidden"
+          style={{
+            background:
+              'linear-gradient(to top, rgba(10,8,8,0.82) 0%, rgba(10,8,8,0.32) 45%, transparent 78%)',
+          }}
+          aria-hidden
+        />
+        {/* Desktop: left-weighted gradient */}
+        <div
+          className="absolute inset-0 hidden sm:block"
           style={{
             background:
               'linear-gradient(95deg, rgba(10,8,8,0.72) 0%, rgba(10,8,8,0.35) 40%, transparent 70%)',
           }}
           aria-hidden
         />
-        <div className="container-page relative flex h-full items-end pb-14">
+        <div className="container-page relative flex h-full items-end pb-12 sm:pb-14">
           <Reveal>
-            <h1 className="max-w-xl font-display text-4xl font-bold leading-[1.1] text-white sm:text-5xl">
+            <h1 className="max-w-xl font-display text-[2rem] font-bold leading-[1.12] text-white sm:text-5xl sm:leading-[1.1]">
               Help your child choose the right school with confidence
             </h1>
           </Reveal>

@@ -87,9 +87,14 @@ export function AboutPage() {
 
 function Hero() {
   return (
-    <section className="relative flex min-h-[88vh] items-center overflow-hidden pt-[var(--header-h)]">
+    <section className="relative flex min-h-[100svh] items-center overflow-hidden pt-[var(--header-h)] sm:min-h-[88vh]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={HERO_BG} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+      <img
+        src={HERO_BG}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover object-[70%_center] sm:object-center"
+      />
       <div
         className="absolute inset-0"
         style={{
@@ -282,7 +287,7 @@ function StudentExperiences() {
 
         <Reveal delay={0.1} className="mt-12">
           <div className="relative overflow-hidden rounded-3xl shadow-lift">
-            <div className="relative aspect-[16/9] sm:aspect-[21/9]">
+            <div className="relative aspect-[4/3] sm:aspect-[21/9]">
               {STORY_SLIDES.map((s, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -302,12 +307,12 @@ function StudentExperiences() {
                 }}
                 aria-hidden
               />
-              <div className="absolute inset-x-0 bottom-0 p-7 sm:p-10">
-                <Quote className="text-gold-300" size={32} />
-                <h3 className="mt-3 max-w-xl font-display text-2xl font-semibold text-ivory sm:text-3xl">
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-10">
+                <Quote className="text-gold-300" size={28} />
+                <h3 className="mt-2 max-w-xl font-display text-xl font-semibold text-ivory sm:mt-3 sm:text-3xl">
                   {slide.title}
                 </h3>
-                <p className="mt-2 max-w-lg text-ivory/80">{slide.body}</p>
+                <p className="mt-2 max-w-lg text-sm text-ivory/80 sm:text-base">{slide.body}</p>
               </div>
 
               {/* Arrows */}
@@ -354,11 +359,11 @@ function StudentExperiences() {
 
 function DiscoverUniversity() {
   const collage = [
-    { src: img('harvard'), cls: 'col-span-2 row-span-2 h-full min-h-[260px]' },
-    { src: img('stanford'), cls: 'h-[150px]' },
-    { src: img('ucla'), cls: 'h-[150px]' },
-    { src: img('nyu'), cls: 'h-[150px]' },
-    { src: img('umich'), cls: 'h-[150px]' },
+    { src: img('harvard'), cls: 'col-span-2 h-[200px] sm:row-span-2 sm:h-full sm:min-h-[260px]' },
+    { src: img('stanford'), cls: 'h-[130px] sm:h-[150px]' },
+    { src: img('ucla'), cls: 'h-[130px] sm:h-[150px]' },
+    { src: img('nyu'), cls: 'h-[130px] sm:h-[150px]' },
+    { src: img('umich'), cls: 'h-[130px] sm:h-[150px]' },
   ];
   return (
     <section className="bg-cream/50 py-20 sm:py-28">
@@ -386,7 +391,7 @@ function DiscoverUniversity() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div className="grid grid-cols-3 grid-rows-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:grid-rows-2">
             {collage.map((c, i) => (
               <div key={i} className={`overflow-hidden rounded-2xl ${c.cls}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

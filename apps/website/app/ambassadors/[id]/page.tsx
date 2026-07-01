@@ -17,9 +17,11 @@ import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/ui/star-rating';
 import { BookingWidget } from '@/components/booking/booking-widget';
 import { ambassadors, findAmbassador, findUniversity } from '@/lib/data';
+import { guides, getGuideProfile } from '@/lib/guides';
+import { GuideDetail } from '@/components/guide/guide-detail';
 
 export function generateStaticParams() {
-  return ambassadors.map((a) => ({ id: a.id }));
+  return [...ambassadors.map((a) => ({ id: a.id })), ...guides.map((g) => ({ id: g.id }))];
 }
 
 export async function generateMetadata({
@@ -28,6 +30,14 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  const gp = getGuideProfile(id);
+  if (gp) {
+    return {
+      title: `${gp.name} — ${gp.university} student guide`,
+      description: gp.headline,
+      alternates: { canonical: `/ambassadors/${gp.id}` },
+    };
+  }
   const a = findAmbassador(id);
   if (!a) return { title: 'Guide not found' };
   return {
@@ -45,6 +55,11 @@ const SAMPLE_REVIEWS = [
 
 export default async function AmbassadorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  // Search-grid guides (g1..gN) use the rich detail design.
+  const gp = getGuideProfile(id);
+  if (gp) return <GuideDetail g={gp} />;
+
   const a = findAmbassador(id);
   if (!a) notFound();
   const uni = findUniversity(a.universitySlug);
