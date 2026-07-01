@@ -46,6 +46,11 @@
     @apply container max-w-[1280px];
   }
 
+  /* Wide, full-bleed wrapper for content-heavy pages (e.g. blog) */
+  .blog-wrap {
+    @apply mx-auto w-full max-w-[1720px] px-5 sm:px-8 lg:px-12 xl:px-16;
+  }
+
   /* Eyebrow / kicker label */
   .eyebrow {
     @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-maroon-800;

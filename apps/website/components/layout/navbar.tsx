@@ -30,7 +30,9 @@ const ABOUT_ITEMS = [
 ];
 
 const HELP_ITEMS = [
-  { href: '/faq', label: 'FAQ' },
+  { href: '/help', label: 'Help Center' },
+  { href: '/resources', label: 'Resource Center' },
+  { href: '/trust-safety', label: 'Trust and safety' },
   { href: '/contact', label: 'Contact us' },
 ];
 
@@ -151,7 +153,7 @@ export function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-ink-100 bg-white">
-      <nav className="container-page flex h-[var(--header-h)] items-center justify-between gap-4">
+      <nav className="flex h-[var(--header-h)] w-full items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         {/* Logo */}
         <Logo />
 

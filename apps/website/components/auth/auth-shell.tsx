@@ -32,11 +32,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Centered white card — gap from header on top, flush to bottom */}
-      <div className="relative flex justify-center px-4 pt-10 sm:pt-14">
-        <div className="flex min-h-[calc(100dvh-var(--header-h)-3.5rem)] w-full max-w-[540px] flex-col bg-white px-7 py-10 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:px-12">
+      <div className="relative flex justify-center px-0 pt-6 sm:px-4 sm:pt-14">
+        <div className="flex min-h-[calc(100dvh-var(--header-h)-1.5rem)] w-full max-w-[540px] flex-col bg-white px-5 py-8 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:min-h-[calc(100dvh-var(--header-h)-3.5rem)] sm:px-12 sm:py-10">
 
         {/* Tabs */}
-        <div className="flex items-center gap-7">
+        <div className="flex items-center gap-6 sm:gap-7">
           <Link
             href="/register"
             className={cn(
@@ -62,7 +62,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         </div>
 
         {/* Form */}
-        <div className="mt-10">{children}</div>
+        <div className="mt-8 sm:mt-10">{children}</div>
         </div>
       </div>
     </main>

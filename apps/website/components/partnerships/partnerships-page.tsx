@@ -211,7 +211,7 @@ function Impact() {
   return (
     <section className="py-12 sm:py-16">
       <div className="mx-5 sm:mx-7 lg:mx-10">
-        <div className="overflow-hidden rounded-[2rem] bg-ink-900 px-6 py-14 sm:px-10">
+        <div className="overflow-hidden rounded-[2rem] bg-maroon-gradient px-6 py-14 sm:px-10">
           <div className="text-center">
             <h2 className="font-display text-3xl font-bold text-white sm:text-4xl">
               Real students. Real tours. Real impact.

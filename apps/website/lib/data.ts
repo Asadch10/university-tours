@@ -138,3 +138,229 @@ export function findAmbassador(id: string) {
 export function ambassadorsForUniversity(slug: string) {
   return ambassadors.filter((a) => a.universitySlug === slug);
 }
+
+/* ─── Blog ───────────────────────────────────────────────────────────── */
+
+export type BlogCategory = 'Admissions' | 'Schools' | 'College tours';
+
+export interface BlogBlock {
+  type: 'heading' | 'paragraph' | 'quote';
+  text: string;
+}
+
+export interface BlogPost {
+  slug: string;
+  title: string;
+  excerpt: string;
+  date: string; // ISO date
+  category: BlogCategory;
+  image: string;
+  featured?: boolean;
+  author: { name: string; role: string; avatar: string };
+  readMinutes: number;
+  content: BlogBlock[];
+}
+
+const uImg = (slug: string) => universities.find((u) => u.slug === slug)?.image ?? universities[0]!.image;
+
+export const blogPosts: BlogPost[] = [
+  {
+    slug: 'how-to-tour-colleges-on-weekends-holidays-and-school-breaks',
+    title: 'How to Tour Colleges on Weekends, Holidays, and School Breaks',
+    excerpt:
+      'Official tours often run only on weekdays — but your family’s free time doesn’t. Here’s how to see a campus for real when it fits your schedule.',
+    date: '2026-05-01',
+    category: 'College tours',
+    image: uImg('cornell'),
+    featured: true,
+    author: { name: 'Hannah Cohen', role: 'Student guide, Columbia University', avatar: 'https://i.pravatar.cc/120?img=32' },
+    readMinutes: 6,
+    content: [
+      { type: 'paragraph', text: 'Most families discover the same frustrating truth when they start planning college visits: official admissions tours almost always happen mid-week, during business hours, exactly when students are in school and parents are at work. If you can only travel on weekends, holidays, or breaks, it can feel like the door is closed.' },
+      { type: 'paragraph', text: 'It isn’t. A private, student-led tour can happen whenever a current student is free — including Saturdays, Sundays, and the long stretches of winter and spring break when campuses are quieter and easier to actually see.' },
+      { type: 'heading', text: 'Why off-peak visits can be better' },
+      { type: 'paragraph', text: 'Touring on a weekend or break means smaller crowds, more time to ask questions, and a guide who isn’t rushing forty strangers to the next building. You get to linger in the dining hall, walk through a real dorm, and talk honestly about what the school is like the other 51 weeks of the year.' },
+      { type: 'quote', text: 'The best visit I ever gave was on a Sunday in December — no crowds, and the family had two full hours to ask everything they were afraid to ask on the official tour.' },
+      { type: 'heading', text: 'How to plan one' },
+      { type: 'paragraph', text: 'Start by booking a student guide who actually attends the school and matches your interests. Share what matters most — academics, housing, dining, safety, social life — so the tour is built around your questions instead of a script. Then pick a time that works for you, not just the admissions office.' },
+      { type: 'paragraph', text: 'A campus is a place you’ll live for four years. You deserve to see it on your own schedule, at your own pace, through the eyes of someone who’s already there.' },
+    ],
+  },
+  {
+    slug: 'smartest-sat-and-essay-advice-talk-to-a-student-who-already-got-in',
+    title: 'The Smartest SAT & Essay Advice? Talk to a Student Who Already Got In.',
+    excerpt:
+      'Prep books and paid consultants have their place — but the sharpest, most current advice often comes from someone who did it last year.',
+    date: '2026-05-20',
+    category: 'Admissions',
+    image: uImg('harvard'),
+    author: { name: 'Daniel Okafor', role: 'Student guide, Harvard University', avatar: 'https://i.pravatar.cc/120?img=12' },
+    readMinutes: 5,
+    content: [
+      { type: 'paragraph', text: 'When it comes to standardized tests and application essays, families spend thousands on tutors and consultants. That advice can be valuable — but it’s often a few years out of date, and it rarely reflects what a specific school is actually looking for right now.' },
+      { type: 'heading', text: 'Current students know the current bar' },
+      { type: 'paragraph', text: 'A student who got in last cycle knows which score ranges are realistic, how the essay prompts really read to an admissions reader, and what made their own application stand out. That perspective is fresh, specific, and free of the sales pressure that comes with paid packages.' },
+      { type: 'quote', text: 'Nobody told me my essay could be about something small. A current student did — and that’s the essay that got me in.' },
+      { type: 'heading', text: 'Questions worth asking' },
+      { type: 'paragraph', text: 'Ask a guide what they wish they’d known about the SAT, how many drafts their essay went through, and which extracurriculars actually mattered. You’ll walk away with grounded, honest guidance you can trust.' },
+    ],
+  },
+  {
+    slug: 'why-every-student-benefits-from-a-college-counselor',
+    title: 'Why Every Student Benefits from a College Counselor',
+    excerpt:
+      'A great counselor turns an overwhelming process into a clear plan. Here’s what they do — and how student guides fill the gaps.',
+    date: '2026-04-24',
+    category: 'Admissions',
+    image: uImg('uchicago'),
+    author: { name: 'Olivia Bennett', role: 'Student guide, UC Berkeley', avatar: 'https://i.pravatar.cc/120?img=5' },
+    readMinutes: 5,
+    content: [
+      { type: 'paragraph', text: 'The college search is one of the biggest decisions a family makes, and it arrives with deadlines, jargon, and more options than anyone can reasonably track. A good counselor brings order to that chaos.' },
+      { type: 'heading', text: 'What a counselor actually does' },
+      { type: 'paragraph', text: 'They help you build a balanced school list, keep application timelines on track, and translate financial aid letters into plain English. Most importantly, they help you figure out what you actually want out of the next four years.' },
+      { type: 'heading', text: 'Where student guides come in' },
+      { type: 'paragraph', text: 'Counselors give you the strategy; current students give you the ground truth. Pairing professional guidance with an honest conversation from someone living the experience is the most complete picture you can get before committing.' },
+    ],
+  },
+  {
+    slug: 'college-visit-checklist-what-to-look-for-on-campus',
+    title: 'College Visit Checklist: What to Look For on Campus',
+    excerpt:
+      'Beyond the pretty quad, the details reveal whether a school is right for you. Use this checklist on your next visit.',
+    date: '2026-04-03',
+    category: 'College tours',
+    image: uImg('umich'),
+    author: { name: 'Priya Nair', role: 'Student guide, University of Michigan', avatar: 'https://i.pravatar.cc/120?img=44' },
+    readMinutes: 7,
+    content: [
+      { type: 'paragraph', text: 'It’s easy to be dazzled by a manicured quad and a shiny new gym. But the things that will actually shape your four years are often the ones the official tour glosses over.' },
+      { type: 'heading', text: 'Eat where students eat' },
+      { type: 'paragraph', text: 'Dining halls tell you a lot. Is the food good? Is it busy at normal hours? Do people linger and talk, or grab and go? You’ll eat there hundreds of times — it matters.' },
+      { type: 'heading', text: 'See a real dorm' },
+      { type: 'paragraph', text: 'Not the model room. Ask your guide to show you where they actually live, and what an average room looks like. Check the laundry, the common spaces, and how far it is from class.' },
+      { type: 'heading', text: 'Read the bulletin boards' },
+      { type: 'paragraph', text: 'Flyers for clubs, events, and study groups are an unfiltered snapshot of campus life. If the boards are buzzing, the community usually is too.' },
+      { type: 'quote', text: 'Ask your guide the one question they wish they’d asked before enrolling. The answer is always revealing.' },
+    ],
+  },
+  {
+    slug: 'student-led-vs-official-college-tours-key-differences',
+    title: 'Student-Led vs Official College Tours: Key Differences',
+    excerpt:
+      'Both have a role — but they answer very different questions. Here’s when to take each, and why families often do both.',
+    date: '2026-03-13',
+    category: 'College tours',
+    image: uImg('stanford'),
+    author: { name: 'Maya Robinson', role: 'Student guide, Stanford University', avatar: 'https://i.pravatar.cc/120?img=47' },
+    readMinutes: 6,
+    content: [
+      { type: 'paragraph', text: 'Official tours and private student-led tours aren’t competitors — they’re two different tools. Knowing what each does best helps you plan visits that actually inform your decision.' },
+      { type: 'heading', text: 'Official tours: the overview' },
+      { type: 'paragraph', text: 'Run by the admissions office, official tours are polished, informative, and great for orientation. You’ll learn the history, see the landmarks, and hear the school’s pitch. The trade-off: large groups, a fixed route, and a script designed to impress.' },
+      { type: 'heading', text: 'Student-led tours: the truth' },
+      { type: 'paragraph', text: 'A private tour with a current student is personal and unscripted. You choose the guide, the route bends to your questions, and you get honest answers about dorms, workload, social life, and the things brochures leave out.' },
+      { type: 'quote', text: 'Take the official tour to learn the school’s story. Take a student tour to learn if it’s your story.' },
+      { type: 'paragraph', text: 'The families who feel most confident on decision day usually do both — the overview first, then the honest, personalized deep dive.' },
+    ],
+  },
+  {
+    slug: 'you-got-in-now-get-the-real-scoop',
+    title: 'You Got In. Now Get the Real Scoop.',
+    excerpt:
+      'Acceptance is the beginning, not the end. Before you commit, talk to someone who’s already living the experience.',
+    date: '2025-05-01',
+    category: 'Admissions',
+    image: uImg('nyu'),
+    author: { name: 'Aiden Chen', role: 'Student guide, New York University', avatar: 'https://i.pravatar.cc/120?img=33' },
+    readMinutes: 4,
+    content: [
+      { type: 'paragraph', text: 'Congratulations — you got in. Maybe more than once. Now comes the decision that actually shapes your next four years, and admissions brochures aren’t going to make it for you.' },
+      { type: 'heading', text: 'Ask the questions that matter now' },
+      { type: 'paragraph', text: 'What’s the vibe on weekends? How hard is it to get into popular classes? Is it easy to make friends as a first-year? A current student can answer all of this honestly, in a single conversation.' },
+      { type: 'quote', text: 'Deciding between two schools is so much easier after ten minutes with someone who actually goes there.' },
+      { type: 'paragraph', text: 'Before you put down a deposit, get the real scoop from someone on the inside. It’s the cheapest insurance you’ll ever buy on a very big decision.' },
+    ],
+  },
+  {
+    slug: 'hail-state-private-campus-tour-mississippi-state-university',
+    title: 'Hail State: What to Really Expect from a Private Campus Tour at Mississippi State University',
+    excerpt:
+      'Mississippi State is the kind of land-grant institution that surprises visitors. Here’s what a private, student-led tour reveals.',
+    date: '2026-06-08',
+    category: 'Schools',
+    image: uImg('tamu'),
+    author: { name: 'Jordan Blake', role: 'Student guide', avatar: 'https://i.pravatar.cc/120?img=15' },
+    readMinutes: 6,
+    content: [
+      { type: 'paragraph', text: 'Mississippi State University is the kind of land-grant institution that surprises first-time visitors — big-hearted, spirited, and far more welcoming than its size might suggest. A private tour lets you feel that in a way a group walk never can.' },
+      { type: 'heading', text: 'Traditions you’ll actually understand' },
+      { type: 'paragraph', text: 'From ringing cowbells to the energy of a fall Saturday, a current student can explain the traditions that make Starkville feel like home — and why students are so fiercely loyal to them.' },
+      { type: 'heading', text: 'The parts of campus that matter' },
+      { type: 'paragraph', text: 'Your guide will show you the real study spots, the best dining, and the labs and buildings tied to your intended major — not just the postcard views.' },
+      { type: 'quote', text: 'Hail State isn’t just a chant. Spend a day here with a student and you’ll get why people mean it.' },
+    ],
+  },
+  {
+    slug: 'bear-territory-private-campus-tour-uc-berkeley',
+    title: 'Bear Territory: What to Really Expect from a Private Campus Tour at UC Berkeley',
+    excerpt:
+      'UC Berkeley is one of the world’s great universities — and one of its most misunderstood. A student guide cuts through the myths.',
+    date: '2026-06-08',
+    category: 'Schools',
+    image: uImg('berkeley'),
+    author: { name: 'Olivia Bennett', role: 'Student guide, UC Berkeley', avatar: 'https://i.pravatar.cc/120?img=5' },
+    readMinutes: 6,
+    content: [
+      { type: 'paragraph', text: 'The University of California, Berkeley is one of the great universities on earth, and also one of the most misunderstood. A private tour with a current Golden Bear replaces the rumors with reality.' },
+      { type: 'heading', text: 'Big school, close community' },
+      { type: 'paragraph', text: 'Berkeley’s scale can look intimidating from the outside. Your guide will show you how students actually find their people — through majors, clubs, res halls, and the study cafés that become second homes.' },
+      { type: 'heading', text: 'From Sather Gate to the Campanile' },
+      { type: 'paragraph', text: 'You’ll see the landmarks, but more importantly you’ll learn how to navigate them: where to study, where to eat, and how to make a huge campus feel like yours.' },
+      { type: 'quote', text: 'People think Berkeley is impersonal. Ten minutes with a real student and that idea falls apart.' },
+    ],
+  },
+  {
+    slug: 'hotty-toddy-private-campus-tour-university-of-mississippi',
+    title: 'Hotty Toddy: What to Really Expect from a Private Campus Tour at the University of Mississippi',
+    excerpt:
+      'Ole Miss is famous for its charm and its traditions. A private tour shows you the community behind the reputation.',
+    date: '2026-06-07',
+    category: 'Schools',
+    image: uImg('ufl'),
+    author: { name: 'Marcus Reed', role: 'Student guide', avatar: 'https://i.pravatar.cc/120?img=60' },
+    readMinutes: 5,
+    content: [
+      { type: 'paragraph', text: 'The University of Mississippi — Ole Miss to everyone who has ever set foot there — is famous for its charm, its traditions, and one of the most beautiful campuses in the South. A private tour reveals the community behind the reputation.' },
+      { type: 'heading', text: 'The Grove and beyond' },
+      { type: 'paragraph', text: 'Everyone’s heard of the Grove, but a current student will show you daily life: the classroom buildings, the libraries, the dorms, and the corners of campus where friendships are made.' },
+      { type: 'heading', text: 'Honest answers about fit' },
+      { type: 'paragraph', text: 'Is the social scene right for you? What’s academic life really like? Your guide gives you straight answers so you can decide with confidence.' },
+      { type: 'quote', text: 'Hotty Toddy is a greeting, a cheer, and a whole culture. A student can help you feel whether it fits.' },
+    ],
+  },
+  {
+    slug: 'go-blue-private-campus-tour-university-of-michigan',
+    title: 'Go Blue: What to Really Expect from a Private Campus Tour at the University of Michigan',
+    excerpt:
+      'Ann Arbor is a classic college town wrapped around a world-class university. Here’s the student’s-eye view of Michigan.',
+    date: '2026-06-05',
+    category: 'Schools',
+    image: uImg('umich'),
+    author: { name: 'Priya Nair', role: 'Student guide, University of Michigan', avatar: 'https://i.pravatar.cc/120?img=44' },
+    readMinutes: 6,
+    content: [
+      { type: 'paragraph', text: 'The University of Michigan pairs a world-class academic reputation with one of the best college towns in America. A private tour lets you experience both the way students actually do.' },
+      { type: 'heading', text: 'The Diag, the Big House, and the everyday' },
+      { type: 'paragraph', text: 'You’ll see the landmarks that define Michigan, but your guide will also walk you through the ordinary rhythm of student life — where you’ll study, eat, and unwind between classes.' },
+      { type: 'heading', text: 'A town that’s part of the school' },
+      { type: 'paragraph', text: 'Ann Arbor isn’t a backdrop; it’s part of the experience. A current Wolverine will show you the cafés, bookstores, and streets that make it feel like home.' },
+      { type: 'quote', text: 'Go Blue is easy to say. Spend a day here with a student and you’ll actually feel it.' },
+    ],
+  },
+];
+
+export function findBlogPost(slug: string) {
+  return blogPosts.find((p) => p.slug === slug);
+}
+export const blogCategories: BlogCategory[] = ['Admissions', 'Schools', 'College tours'];

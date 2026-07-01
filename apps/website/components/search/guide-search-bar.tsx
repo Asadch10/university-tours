@@ -228,16 +228,16 @@ export function GuideSearchBar({
 
   /* ── Expanded two-line bar ──────────────────────────────────────── */
   return (
-    <div className="relative flex justify-center" ref={rootRef}>
+    <div className="relative flex w-full justify-center" ref={rootRef}>
       <div className="relative w-full max-w-3xl">
-        <div className="flex items-center rounded-full border border-ink-200 bg-white p-2 shadow-lift">
+        <div className="flex flex-col gap-1 rounded-3xl border border-ink-200 bg-white p-2 shadow-lift sm:flex-row sm:items-center sm:gap-0 sm:rounded-full">
 
           {/* School — wider than the rest */}
           <button
             type="button"
             onClick={() => open('school')}
             className={cn(
-              'flex-[1.6] rounded-full px-6 py-2.5 text-left transition-colors',
+              'w-full rounded-2xl px-5 py-2.5 text-left transition-colors sm:w-auto sm:flex-[1.6] sm:rounded-full sm:px-6',
               active === 'school' ? 'bg-ink-50' : 'hover:bg-ink-50/60',
             )}
           >
@@ -254,7 +254,7 @@ export function GuideSearchBar({
 
           <span
             className={cn(
-              'h-8 w-px',
+              'hidden h-8 w-px sm:block',
               active === 'school' || active === 'date' ? 'bg-transparent' : 'bg-ink-200',
             )}
           />
@@ -264,7 +264,7 @@ export function GuideSearchBar({
             type="button"
             onClick={() => open('date')}
             className={cn(
-              'flex-[1.1] rounded-full px-6 py-2.5 text-left transition-colors',
+              'w-full rounded-2xl px-5 py-2.5 text-left transition-colors sm:w-auto sm:flex-[1.1] sm:rounded-full sm:px-6',
               active === 'date' ? 'bg-ink-50' : 'hover:bg-ink-50/60',
             )}
           >
@@ -281,7 +281,7 @@ export function GuideSearchBar({
 
           <span
             className={cn(
-              'h-8 w-px',
+              'hidden h-8 w-px sm:block',
               active === 'date' || active === 'type' ? 'bg-transparent' : 'bg-ink-200',
             )}
           />
@@ -291,7 +291,7 @@ export function GuideSearchBar({
             type="button"
             onClick={() => open('type')}
             className={cn(
-              'flex-[1.2] rounded-full px-6 py-2.5 text-left transition-colors',
+              'w-full rounded-2xl px-5 py-2.5 text-left transition-colors sm:w-auto sm:flex-[1.2] sm:rounded-full sm:px-6',
               active === 'type' ? 'bg-ink-50' : 'hover:bg-ink-50/60',
             )}
           >
@@ -314,9 +314,10 @@ export function GuideSearchBar({
               setActive(null);
             }}
             aria-label="Search"
-            className="ml-2 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-maroon-900 text-white transition-colors hover:bg-maroon-800"
+            className="mt-1 inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-maroon-900 text-white transition-colors hover:bg-maroon-800 sm:mt-0 sm:ml-2 sm:w-12 sm:rounded-full"
           >
             <Search size={18} />
+            <span className="text-sm font-semibold sm:hidden">Search</span>
           </button>
         </div>
 
