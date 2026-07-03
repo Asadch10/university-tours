@@ -161,7 +161,6 @@ export default function RefundsPage() {
     <RequirePermission anyOf={['refunds.issue']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Finance"
           title="Refunds"
           description="Issue full or partial refunds. Each refund posts a compensating ledger entry."
           actions={
@@ -296,7 +295,7 @@ export default function RefundsPage() {
           {selectedBooking && partialValid && (
             <p className="text-sm text-ink-600">
               Refunding{' '}
-              <span className="font-semibold text-maroon-900">{formatPrice(refundCents)}</span> to{' '}
+              <span className="font-semibold text-brand-900">{formatPrice(refundCents)}</span> to{' '}
               {selectedBooking.buyer}.
             </p>
           )}

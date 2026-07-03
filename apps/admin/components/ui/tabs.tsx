@@ -37,7 +37,7 @@ export function Tabs({
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all',
               active
-                ? 'bg-white text-maroon-900 shadow-sm'
+                ? 'bg-white text-brand-900 shadow-sm'
                 : 'text-ink-600 hover:text-ink-900',
             )}
           >
@@ -46,7 +46,7 @@ export function Tabs({
               <span
                 className={cn(
                   'rounded-full px-1.5 py-0.5 text-2xs font-semibold',
-                  active ? 'bg-maroon-50 text-maroon-800' : 'bg-ink-200/70 text-ink-600',
+                  active ? 'bg-brand-50 text-brand-800' : 'bg-ink-200/70 text-ink-600',
                 )}
               >
                 {t.count}

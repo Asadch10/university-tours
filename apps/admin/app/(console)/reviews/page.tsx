@@ -99,7 +99,6 @@ export default function ReviewsPage() {
     <RequirePermission anyOf={['reviews.moderate']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Operations"
           title="Reviews"
           description="Moderate buyer reviews — hide content that violates policy and keep the marketplace trustworthy."
         />

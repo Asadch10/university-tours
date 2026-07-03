@@ -11,7 +11,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { AuthShell, authInputClasses } from '@/components/auth/auth-shell';
-import { signIn } from '@/lib/auth';
+import { setSession } from '@/lib/auth';
+import { authApi, ApiError } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
@@ -20,21 +21,32 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('Please enter a valid email and password.');
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!email || !password) {
+      setErrorMsg('Please enter a valid email and password.');
       setStatus('error');
       return;
     }
     setStatus('loading');
-    // Simulated auth — no real backend. Mark the user logged in (updates the
-    // header) and hand off to the profile.
-    setTimeout(() => {
-      signIn({ email });
+    try {
+      const res = await authApi.login(email.trim(), password);
+      setSession(res);
       setStatus('success');
-      setTimeout(() => router.push('/profile'), 700);
-    }, 1100);
+      // No role yet → onboarding still pending; otherwise straight to the app.
+      setTimeout(() => router.push(res.user.role ? '/' : '/onboarding'), 500);
+    } catch (err) {
+      setErrorMsg(
+        err instanceof ApiError && err.status === 401
+          ? 'Incorrect email or password.'
+          : err instanceof ApiError
+            ? err.message
+            : 'Something went wrong. Please try again.',
+      );
+      setStatus('error');
+    }
   }
 
   return (
@@ -58,7 +70,7 @@ export default function LoginPage() {
               className="flex items-center gap-2.5 rounded-xl border border-maroon-200 bg-maroon-50 px-4 py-3 text-sm text-maroon-900"
             >
               <AlertCircle size={16} className="shrink-0" />
-              Please enter a valid email and password.
+              {errorMsg}
             </div>
           )}
 

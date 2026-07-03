@@ -121,7 +121,7 @@ export default function BookingsPage() {
       key: 'service',
       header: 'Service',
       cell: (b) => (
-        <Badge variant={b.service === 'CAMPUS_TOUR' ? 'maroon' : 'info'}>{humanize(b.service)}</Badge>
+        <Badge variant={b.service === 'CAMPUS_TOUR' ? 'brand' : 'info'}>{humanize(b.service)}</Badge>
       ),
     },
     {
@@ -173,7 +173,6 @@ export default function BookingsPage() {
     <RequirePermission anyOf={['bookings.view']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Operations"
           title="Bookings"
           description="Every campus tour and video consultation across the platform — monitor, inspect, and intervene when needed."
         />
@@ -317,7 +316,7 @@ function Money({ label, value, muted, strong }: { label: string; value: string; 
   return (
     <div className="flex items-center justify-between">
       <span className={muted ? 'text-ink-500' : 'text-ink-700'}>{label}</span>
-      <span className={strong ? 'font-display text-base font-bold text-maroon-900' : 'font-semibold text-ink-900'}>
+      <span className={strong ? 'font-display text-base font-bold text-brand-900' : 'font-semibold text-ink-900'}>
         {value}
       </span>
     </div>

@@ -28,6 +28,9 @@ export interface School {
   slug: string;
   location: string;
   state: string;
+  image?: string | null;
+  tags?: string[];
+  toursFromCents?: number | null;
   enabled: boolean;
   ambassadors: number;
   bookings: number;

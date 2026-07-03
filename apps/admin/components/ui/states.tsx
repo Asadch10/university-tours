@@ -65,7 +65,7 @@ export function ErrorState({
 export function ForbiddenState() {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-ink-200/70 bg-white px-6 py-20 text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-800">
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-800">
         <Lock size={26} />
       </span>
       <h3 className="mt-4 font-display text-lg font-semibold text-ink-900">You don’t have access</h3>

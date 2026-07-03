@@ -120,7 +120,6 @@ export default function QuestionnairePage() {
     <RequirePermission anyOf={['questionnaires.manage']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Marketplace"
           title="Questionnaire"
           description="Build the guide application questionnaire. Changes take effect immediately."
           actions={
@@ -168,7 +167,7 @@ export default function QuestionnairePage() {
                       <p className="truncate text-sm font-semibold text-ink-900">{q.label}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <Badge variant="neutral" size="sm">{humanize(q.type)}</Badge>
-                        {q.required && <Badge variant="maroon" size="sm">Required</Badge>}
+                        {q.required && <Badge variant="brand" size="sm">Required</Badge>}
                         {hasOptions(q.type) && q.options?.length ? (
                           <span className="text-2xs text-ink-400">{q.options.length} options</span>
                         ) : null}

@@ -199,7 +199,6 @@ export default function CmsPage() {
     <RequirePermission anyOf={['cms.edit']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Content & Platform"
           title="CMS"
           description="Lightweight content blocks served to the marketing website and mobile apps. Publishing pushes live and triggers ISR revalidation."
           actions={

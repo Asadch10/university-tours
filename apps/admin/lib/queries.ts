@@ -8,7 +8,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from './api';
+import { adminApi, type SchoolPayload } from './api';
 import type {
   School,
   User,
@@ -433,8 +433,11 @@ export function useSchools() {
         id: s.id,
         name: s.name,
         slug: s.slug,
-        location: s.location ?? '—',
-        state: (s.location ?? '').split(',').pop()?.trim() ?? '—',
+        image: s.image ?? null,
+        location: s.location ?? '',
+        state: s.state ?? (s.location ?? '').split(',').pop()?.trim() ?? '',
+        tags: s.tags ?? [],
+        toursFromCents: s.toursFromCents ?? null,
         enabled: s.enabled,
         ambassadors: s._count?.sellerProfiles ?? 0,
         bookings: s._count?.listings ?? 0,
@@ -448,8 +451,9 @@ export function useSchoolActions() {
   const qc = useQueryClient();
   const inv = () => qc.invalidateQueries({ queryKey: ['schools'] });
   return {
-    create: useMutation({ mutationFn: (b: { name: string; slug: string; location?: string; enabled?: boolean }) => adminApi.schoolCreate(b), onSuccess: inv }),
-    update: useMutation({ mutationFn: (v: { id: string; data: Record<string, unknown> }) => adminApi.schoolUpdate(v.id, v.data), onSuccess: inv }),
+    create: useMutation({ mutationFn: (b: SchoolPayload & { name: string }) => adminApi.schoolCreate(b), onSuccess: inv }),
+    update: useMutation({ mutationFn: (v: { id: string; data: SchoolPayload }) => adminApi.schoolUpdate(v.id, v.data), onSuccess: inv }),
+    uploadImage: useMutation({ mutationFn: (file: File) => adminApi.uploadImage(file) }),
   };
 }
 

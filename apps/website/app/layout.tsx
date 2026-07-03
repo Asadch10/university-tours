@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import './globals.css';
-import { inter, playfair } from './fonts';
+import { inter, plexMono } from './fonts';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
+import { ToastProvider } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={cn(inter.variable, playfair.variable)}>
+    <html lang="en" className={cn(inter.variable, plexMono.variable)}>
       <body className="min-h-dvh bg-ivory text-ink-900 antialiased" suppressHydrationWarning>
         <a
           href="#main"
@@ -41,9 +42,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        <Navbar />
-        <main id="main">{children}</main>
-        <Footer />
+        <ToastProvider>
+          <Navbar />
+          <main id="main">{children}</main>
+          <Footer />
+        </ToastProvider>
       </body>
     </html>
   );

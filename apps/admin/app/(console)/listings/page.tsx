@@ -32,7 +32,7 @@ type ServiceFilter = 'all' | ServiceType;
 
 function ServiceBadge({ service }: { service: ServiceType }) {
   return service === 'CAMPUS_TOUR' ? (
-    <Badge variant="maroon" size="md">In-person</Badge>
+    <Badge variant="brand" size="md">In-person</Badge>
   ) : (
     <Badge variant="info" size="md">Video</Badge>
   );
@@ -242,7 +242,6 @@ export default function ListingsPage() {
     <RequirePermission anyOf={['listings.moderate']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Marketplace"
           title="Listings"
           description="Moderate guide listings across every campus — review details, edit pricing, and remove anything that breaks policy."
         />
@@ -346,7 +345,7 @@ export default function ListingsPage() {
               <div className="rounded-xl border border-ink-200 p-3">
                 <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Bookings</p>
                 <p className="mt-1 flex items-center gap-1.5 font-display text-lg font-bold text-ink-900">
-                  <CalendarCheck size={16} className="text-maroon-800" /> {active.bookings}
+                  <CalendarCheck size={16} className="text-brand-800" /> {active.bookings}
                 </p>
               </div>
               <div className="rounded-xl border border-ink-200 p-3">

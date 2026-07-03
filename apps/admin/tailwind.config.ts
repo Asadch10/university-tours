@@ -4,9 +4,9 @@ import typography from '@tailwindcss/typography';
 /**
  * University Campus Private Tours — Admin Portal design tokens.
  *
- * Shares the exact brand system as the public website (maroon + gold + ivory, Playfair + Inter)
- * so the two products feel like one. The admin layer adds a few console-tuned tokens — denser
- * shadows, a `sidebar` surface scale, and status colors — without touching the brand scales.
+ * The console uses a classic professional blue `brand` scale (familiar, highly readable admin look)
+ * with a warm gold accent retained for charts, progress, and highlights. The admin layer adds
+ * console-tuned tokens — denser shadows and status colors.
  */
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
@@ -18,18 +18,18 @@ const config: Config = {
     },
     extend: {
       colors: {
-        maroon: {
-          50: '#fdf3f4',
-          100: '#fbe3e6',
-          200: '#f6cbd1',
-          300: '#eea3ae',
-          400: '#e27185',
-          500: '#d24762',
-          600: '#bd2c4d',
-          700: '#9e2040',
-          800: '#7a1a32', // brand core
-          900: '#6b1521', // crest maroon
-          950: '#3d0a12',
+        brand: {
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1', // accent — button + active nav
+          600: '#4f46e5', // hover
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
+          950: '#1e1b4b',
         },
         gold: {
           50: '#fdfaf0',
@@ -68,7 +68,10 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['var(--font-playfair)', 'ui-serif', 'Georgia', 'serif'],
+        // Headings use Inter too — a single, clean corporate sans across the console.
+        display: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Tabular numerics: KPI values, money, IDs.
+        mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],
@@ -79,14 +82,14 @@ const config: Config = {
         soft: '0 1px 2px rgba(31,26,22,0.04), 0 4px 16px -4px rgba(31,26,22,0.08)',
         card: '0 2px 4px rgba(31,26,22,0.04), 0 12px 32px -12px rgba(31,26,22,0.12)',
         lift: '0 8px 16px rgba(31,26,22,0.06), 0 24px 48px -16px rgba(31,26,22,0.18)',
-        glow: '0 0 0 1px rgba(207,149,38,0.25), 0 12px 32px -8px rgba(122,26,50,0.30)',
+        glow: '0 0 0 1px rgba(207,149,38,0.25), 0 12px 32px -8px rgba(99,102,241,0.35)',
         'ring-focus': '0 0 0 3px rgba(207,149,38,0.30)',
       },
       borderRadius: {
         '4xl': '2rem',
       },
       backgroundImage: {
-        'maroon-gradient': 'linear-gradient(135deg, #7a1a32 0%, #6b1521 55%, #3d0a12 100%)',
+        'brand-gradient': 'linear-gradient(160deg, #6366f1 0%, #4338ca 55%, #312e81 100%)',
         'gold-sheen': 'linear-gradient(135deg, #eccb72 0%, #cf9526 100%)',
         'radial-fade':
           'radial-gradient(60% 60% at 50% 0%, rgba(207,149,38,0.10) 0%, transparent 70%)',

@@ -108,6 +108,37 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   }
 }
 
+// ─── File upload (multipart) ──────────────────────────────────────────────────
+
+async function rawUpload<T>(path: string, file: File): Promise<T> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const headers: Record<string, string> = {};
+  if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
+  // NOTE: do not set Content-Type — the browser sets the multipart boundary.
+  const res = await fetch(`${API_URL}/api/v1${path}`, { method: 'POST', headers, body: fd });
+  const text = await res.text();
+  const json = text ? JSON.parse(text) : undefined;
+  if (!res.ok) {
+    const err = json as ApiErrorShape | undefined;
+    throw new ApiError(res.status, err?.code ?? 'error', err?.error ?? res.statusText, err?.details);
+  }
+  return json as T;
+}
+
+/** Upload a single image; returns its public URL. Transparent refresh-and-retry on 401. */
+export async function uploadFile(path: string, file: File): Promise<{ url: string; filename: string }> {
+  try {
+    return await rawUpload(path, file);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401 && tokenStore.refresh) {
+      const ok = await tryRefresh();
+      if (ok) return rawUpload(path, file);
+    }
+    throw e;
+  }
+}
+
 function qs(params: Record<string, string | number | boolean | undefined>): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -208,9 +239,10 @@ export const adminApi = {
 
   schools: (p: { q?: string; page?: number } = {}) =>
     request<Paged<SchoolDto>>('GET', `/admin/schools${qs({ ...p, limit: 100 })}`),
-  schoolCreate: (b: { name: string; slug: string; location?: string; enabled?: boolean }) =>
-    request('POST', '/admin/schools', b),
-  schoolUpdate: (id: string, b: Record<string, unknown>) => request('PATCH', `/admin/schools/${id}`, b),
+  schoolCreate: (b: SchoolPayload & { name: string }) =>
+    request<SchoolDto>('POST', '/admin/schools', b),
+  schoolUpdate: (id: string, b: SchoolPayload) => request<SchoolDto>('PATCH', `/admin/schools/${id}`, b),
+  uploadImage: (file: File) => uploadFile('/admin/uploads', file),
 
   cms: (p: { type?: string } = {}) => request<CmsDto[]>('GET', `/admin/cms${qs(p)}`),
   cmsCreate: (b: { key: string; type: string; contentJson: unknown; published?: boolean }) =>
@@ -362,10 +394,27 @@ export interface SchoolDto {
   id: string;
   name: string;
   slug: string;
+  image: string | null;
   location: string | null;
+  state: string | null;
+  tags: string[];
+  toursFromCents: number | null;
   seoContent?: string | null;
   enabled: boolean;
   _count?: { sellerProfiles: number; listings: number };
+}
+
+/** Editable university fields sent to create/update. */
+export interface SchoolPayload {
+  name?: string;
+  slug?: string;
+  image?: string | null;
+  location?: string | null;
+  state?: string | null;
+  tags?: string[];
+  toursFromCents?: number | null;
+  seoContent?: string | null;
+  enabled?: boolean;
 }
 
 export interface CmsDto {

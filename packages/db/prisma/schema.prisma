@@ -115,13 +115,14 @@ enum DevicePlatform {
 
 model User {
   id              String         @id @default(cuid())
-  role            UserRole
+  role            UserRole? // null until decided by onboarding (BUYER = book tours, SELLER = guide)
   email           String         @unique
   name            String         @default("")
   passwordHash    String         @map("password_hash")
   status          UserStatus     @default(ACTIVE)
   emailVerifiedAt DateTime?      @map("email_verified_at")
   adminRoleName   AdminRoleName? @map("admin_role_name")
+  profileJson     Json?          @map("profile_json") // website profile fields (all optional)
   createdAt       DateTime       @default(now()) @map("created_at")
 
   sellerProfile   SellerProfile?
@@ -206,13 +207,16 @@ model AuditLog {
 // ----------------------------------------------------------------------------
 
 model School {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   name       String
-  slug       String  @unique
-  logo       String?
-  location   String?
-  seoContent String? @map("seo_content")
-  enabled    Boolean @default(true)
+  slug       String   @unique // auto-generated from name; drives /universities/{slug}
+  image      String? // campus photo (banner + card + logo)
+  location   String? // e.g. "Stanford, CA"
+  state      String? // e.g. "California"
+  tags       String[] @default([]) // popular programs, e.g. ["Engineering", "Business"]
+  toursFromCents Int?  @map("tours_from_cents") // starting tour price, integer cents
+  seoContent String?  @map("seo_content")
+  enabled    Boolean  @default(true)
 
   sellerProfiles SellerProfile[]
   listings       Listing[]

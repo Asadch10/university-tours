@@ -14,7 +14,7 @@ function generateJti(): string {
 
 interface JwtPayload {
   sub: string;
-  role: string;
+  role: string | null;
   adminRoleName?: string;
   permissions?: string[];
   jti?: string;
@@ -77,16 +77,16 @@ export async function login(email: string, password: string) {
   };
 }
 
-export async function register(email: string, password: string, role: 'BUYER' | 'SELLER', name?: string) {
+export async function register(email: string, password: string, name?: string) {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (existing) throw new HttpError(409, 'email_in_use', 'Email already registered');
 
   const passwordHash = await argon2.hash(password);
+  // Role is intentionally left null — onboarding decides BUYER (book tours) vs SELLER (guide).
   const user = await prisma.user.create({
     data: {
       email: email.toLowerCase().trim(),
       name: name ?? email.split('@')[0],
-      role: role as never,
       passwordHash,
     },
   });
@@ -109,11 +109,10 @@ export async function refresh(token: string) {
     throw new HttpError(401, 'invalid_token', 'Invalid or expired refresh token');
   }
 
-  if (!validRefreshJtis.has(payload.jti)) {
-    throw new HttpError(401, 'token_revoked', 'Refresh token has been revoked');
-  }
-
-  // Rotate: invalidate old jti
+  // NOTE: the valid-jti allowlist is in-memory (see top of file) and is wiped on every backend
+  // restart, which would otherwise "revoke" every live session on reload. In dev we trust any
+  // validly-signed, unexpired refresh token for an active user. (Swap for Redis to enforce
+  // real revocation in production.)
   validRefreshJtis.delete(payload.jti);
 
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });

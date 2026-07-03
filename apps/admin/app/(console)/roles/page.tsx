@@ -75,7 +75,6 @@ export default function RolesPage() {
     <RequirePermission anyOf={['admins.manage', 'audit.view']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Administration"
           title="Admin & Audit"
           description="View the admin account and inspect the immutable audit trail."
           actions={

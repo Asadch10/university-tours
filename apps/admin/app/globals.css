@@ -4,9 +4,9 @@
 
 @layer base {
   :root {
-    --sidebar-w: 17rem;
-    --sidebar-w-collapsed: 4.5rem;
-    --topbar-h: 4rem;
+    --sidebar-w: 15.5rem;
+    --sidebar-w-collapsed: 4.25rem;
+    --topbar-h: 3.5rem;
   }
 
   * {
@@ -19,15 +19,15 @@
   }
 
   body {
-    @apply bg-cream text-ink-900 font-sans antialiased;
+    @apply bg-white text-ink-900 font-sans antialiased;
   }
 
   ::selection {
-    @apply bg-maroon-900 text-ivory;
+    @apply bg-brand-900 text-ivory;
   }
 
   h1, h2, h3, h4 {
-    @apply font-display text-ink-900;
+    @apply font-display font-semibold tracking-[-0.014em] text-ink-900;
     text-wrap: balance;
   }
 
@@ -40,7 +40,7 @@
 @layer components {
   /* Eyebrow / kicker label */
   .eyebrow {
-    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-maroon-800;
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-brand-800;
   }
 
   .text-gold-gradient {
@@ -49,7 +49,7 @@
 
   /* Standard console surface */
   .card-surface {
-    @apply rounded-2xl border border-ink-200/70 bg-white shadow-soft;
+    @apply rounded-xl border border-ink-200/70 bg-white shadow-soft;
   }
 
   /* Sidebar paper texture */

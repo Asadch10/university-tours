@@ -3,14 +3,16 @@ import { Router } from 'express';
 import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth } from '../middleware/auth.js';
 import * as authService from '../services/auth.service.js';
-import { loginSchema, registerSchema } from '@ucpt/validation';
+import { loginSchema } from '@ucpt/validation';
 
 export const authRouter = Router();
 
 authRouter.post('/register', asyncHandler(async (req, res) => {
-  const body = registerSchema.safeParse(req.body);
-  if (!body.success) throw new HttpError(400, 'validation_error', 'Invalid request', body.error.flatten());
-  const result = await authService.register(body.data.email, body.data.password, body.data.role, (req.body as { name?: string }).name);
+  // Website sign-ups don't pick a role — it stays null until onboarding decides it.
+  const { email, password, name } = req.body as { email?: string; password?: string; name?: string };
+  if (!email || typeof email !== 'string') throw new HttpError(400, 'validation_error', 'A valid email is required');
+  if (!password || password.length < 8) throw new HttpError(400, 'validation_error', 'Password must be at least 8 characters');
+  const result = await authService.register(email, password, name);
   res.status(201).json(result);
 }));
 

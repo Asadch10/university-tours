@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (!ready || !user) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-cream">
+      <div className="flex min-h-dvh items-center justify-center bg-white">
         <div className="animate-pulse">
           <Logo />
         </div>
@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebarW = collapsed ? 'lg:w-[var(--sidebar-w-collapsed)]' : 'lg:w-[var(--sidebar-w)]';
 
   return (
-    <div className="min-h-dvh bg-cream">
+    <div className="min-h-dvh bg-white">
       {/* Desktop sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden overflow-hidden transition-[width] duration-300 ease-premium lg:block ${sidebarW}`}
@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-y-0 left-0 w-[17rem] overflow-hidden"
+              className="absolute inset-y-0 left-0 w-[15.5rem] overflow-hidden"
             >
               <Sidebar collapsed={false} onNavigate={() => setMobileOpen(false)} />
             </motion.aside>
@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           onToggleCollapse={() => setCollapsed((v) => !v)}
           onOpenMobile={() => setMobileOpen(true)}
         />
-        <main className="scroll-branded flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="scroll-branded flex-1 px-4 py-5 sm:px-5 lg:px-7">
           <div className="mx-auto w-full max-w-[1400px] animate-fade-in">{children}</div>
         </main>
       </div>

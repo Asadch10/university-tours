@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-2xl border border-ink-200/70 bg-white shadow-soft', className)}
+      className={cn('rounded-xl border border-ink-200/70 bg-white shadow-soft', className)}
       {...props}
     />
   );
@@ -22,10 +22,10 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-start justify-between gap-4 border-b border-ink-200/60 px-5 py-4', className)}>
+    <div className={cn('flex items-start justify-between gap-4 border-b border-ink-200/60 px-4 py-3.5', className)}>
       <div className="min-w-0">
-        <h3 className="font-display text-base font-semibold text-ink-900">{title}</h3>
-        {description && <p className="mt-0.5 text-sm text-ink-500">{description}</p>}
+        <h3 className="font-display text-[0.95rem] font-semibold text-ink-900">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-ink-500">{description}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -33,5 +33,5 @@ export function CardHeader({
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-5', className)} {...props} />;
+  return <div className={cn('p-4', className)} {...props} />;
 }

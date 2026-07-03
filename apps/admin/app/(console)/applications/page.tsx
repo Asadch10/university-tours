@@ -153,7 +153,6 @@ export default function ApplicationsPage() {
     <RequirePermission anyOf={['applications.decide']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Marketplace"
           title="Applications"
           description="Review guide applications — verify enrollment, read questionnaire answers, and approve, request changes, or reject."
         />
@@ -269,7 +268,7 @@ function ApplicationDetailModal({
               </div>
               <p className="mt-0.5 text-sm text-ink-600">{app.email}</p>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-500">
-                <GraduationCap size={15} className="text-maroon-800" />
+                <GraduationCap size={15} className="text-brand-800" />
                 {app.school} · {app.major} · Class of {app.gradYear}
               </p>
             </div>
@@ -288,7 +287,7 @@ function ApplicationDetailModal({
             <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-500">Enrollment document</p>
             <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-200/70 bg-white p-3 shadow-soft">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-maroon-50 text-maroon-800">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-800">
                   <FileText size={18} />
                 </span>
                 <div className="min-w-0">

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { GuideLanding } from '@/components/guide/guide-landing';
+import { BecomeGuideGate } from '@/components/guide/become-guide-gate';
 
 export const metadata: Metadata = {
   title: 'Become a guide',
@@ -8,5 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default function BecomeAGuidePage() {
-  return <GuideLanding />;
+  // Signed-out visitors see the marketing landing; signed-in users see the application form.
+  return <BecomeGuideGate marketing={<GuideLanding />} />;
 }

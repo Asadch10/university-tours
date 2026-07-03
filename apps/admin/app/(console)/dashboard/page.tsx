@@ -46,9 +46,8 @@ export default function DashboardPage() {
 
   return (
     <RequirePermission anyOf={['dashboard.view']}>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <PageHeader
-          eyebrow="Overview"
           title="Dashboard"
           description="Platform health at a glance — revenue, bookings, and the queues that need attention."
         />
@@ -65,14 +64,14 @@ export default function DashboardPage() {
         )}
 
         {/* Charts */}
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader
               title="Revenue & commission"
               description="Gross booking value and platform commission, last 6 months"
               action={
                 <span className="inline-flex items-center gap-3 text-xs">
-                  <span className="inline-flex items-center gap-1.5 text-ink-600"><span className="h-2 w-2 rounded-full bg-maroon-800" /> Gross</span>
+                  <span className="inline-flex items-center gap-1.5 text-ink-600"><span className="h-2 w-2 rounded-full bg-brand-800" /> Gross</span>
                   <span className="inline-flex items-center gap-1.5 text-ink-600"><span className="h-2 w-2 rounded-full bg-gold-500" /> Commission</span>
                 </span>
               }
@@ -87,14 +86,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Queues + top schools */}
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3">
           {/* Pending applications */}
           <Can perm="applications.decide" fallback={<TopSchools />}>
             <Card>
               <CardHeader
                 title="Pending applications"
                 description={`${pendingApps.length} awaiting review`}
-                action={<Link href="/applications" className="text-sm font-semibold text-maroon-800 hover:underline">Review</Link>}
+                action={<Link href="/applications" className="text-sm font-semibold text-brand-800 hover:underline">Review</Link>}
               />
               <CardBody className="space-y-3">
                 {pendingApps.length === 0 ? (
@@ -121,7 +120,7 @@ export default function DashboardPage() {
               <CardHeader
                 title="Payouts due"
                 description={`${formatPrice(s.pendingPayoutsCents)} across ${pendingPayouts.length} guides`}
-                action={<Link href="/transactions" className="text-sm font-semibold text-maroon-800 hover:underline">Pay out</Link>}
+                action={<Link href="/transactions" className="text-sm font-semibold text-brand-800 hover:underline">Pay out</Link>}
               />
               <CardBody className="space-y-3">
                 {pendingPayouts.map((g) => (
@@ -131,7 +130,7 @@ export default function DashboardPage() {
                       <p className="truncate text-sm font-semibold text-ink-900">{g.guide}</p>
                       <p className="truncate text-xs text-ink-500">{g.school}</p>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold text-maroon-900">{formatPrice(g.balanceCents)}</span>
+                    <span className="shrink-0 text-sm font-semibold text-brand-900">{formatPrice(g.balanceCents)}</span>
                   </div>
                 ))}
               </CardBody>

@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { tokenStore, authApi, type AuthResponse, type SessionUser } from './client-api';
 
 /**
- * DEMO AUTH — a lightweight, client-only auth signal backed by localStorage.
- *
- * There is no real backend session yet, so the website treats "has a saved
- * account in localStorage" as "logged in". When the real auth flow (JWT access
- * + refresh via @ucpt/sdk) is wired up, replace getAuthUser/signIn/signOut with
- * calls to the SDK and keep `useAuthUser` as the React binding.
+ * Auth binding for the website. Backed by real JWT sessions (see `lib/client-api.ts`):
+ * the access/refresh tokens + user are persisted in localStorage, so the session
+ * survives reloads. `useAuthUser` keeps components in sync across tabs and after
+ * sign-in / sign-out.
  */
 
 export type Role = 'BUYER' | 'SELLER';
@@ -17,51 +16,39 @@ export interface AuthUser {
   name: string;
   email: string;
   role: Role | null;
+  hasListing?: boolean;
 }
 
 const AUTH_EVENT = 'ucpt-auth-change';
 
-export function getAuthUser(): AuthUser | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const name = localStorage.getItem('ucpt_name') ?? '';
-    const email = localStorage.getItem('ucpt_email') ?? '';
-    const role = localStorage.getItem('ucpt_role');
-    if (!name && !email) return null;
-    return {
-      name,
-      email,
-      role: role === 'SELLER' || role === 'BUYER' ? role : null,
-    };
-  } catch {
-    return null;
-  }
+function notify() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
-export function signIn(user: { name?: string; email?: string; role?: Role | null }) {
-  try {
-    if (user.name) localStorage.setItem('ucpt_name', user.name);
-    if (user.email) localStorage.setItem('ucpt_email', user.email);
-    if (user.role) localStorage.setItem('ucpt_role', user.role);
-  } catch {
-    /* storage unavailable — nothing else to do */
-  }
+export function getAuthUser(): AuthUser | null {
+  const u = tokenStore.user;
+  if (!u) return null;
+  return { name: u.name ?? '', email: u.email ?? '', role: u.role ?? null, hasListing: u.hasListing };
+}
+
+/** Persist a fresh session after login / register, then notify listeners. */
+export function setSession(res: AuthResponse) {
+  tokenStore.setSession(res);
+  notify();
+}
+
+/** Update the cached user (e.g. after a profile save changes name/role). */
+export function updateSessionUser(patch: Partial<SessionUser>) {
+  const current = tokenStore.user;
+  if (!current) return;
+  tokenStore.setUser({ ...current, ...patch });
   notify();
 }
 
 export function signOut() {
-  try {
-    localStorage.removeItem('ucpt_name');
-    localStorage.removeItem('ucpt_email');
-    localStorage.removeItem('ucpt_role');
-  } catch {
-    /* storage unavailable */
-  }
+  void authApi.logout();
+  tokenStore.clear();
   notify();
-}
-
-function notify() {
-  if (typeof window !== 'undefined') window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
 /** Two initials from a name (falling back to the email handle). */
@@ -79,9 +66,9 @@ export function initialsOf(name: string, email = ''): string {
 }
 
 /**
- * Reactive auth state for components. Returns `null` on the server and on the
- * first client render (so SSR markup matches), then syncs from localStorage and
- * stays updated via same-tab (custom event) and cross-tab (storage) changes.
+ * Reactive auth state. Returns `null` on the server and first client render (so
+ * SSR markup matches), then syncs from the token store and stays updated via
+ * same-tab (custom event) and cross-tab (storage) changes.
  */
 export function useAuthUser(): AuthUser | null {
   const [user, setUser] = useState<AuthUser | null>(null);
