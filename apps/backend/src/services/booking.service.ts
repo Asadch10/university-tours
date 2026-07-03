@@ -51,23 +51,25 @@ export async function createBooking(buyerId: string, data: {
 
 // ─── List bookings ────────────────────────────────────────────────────────────
 
-export async function listBookings(userId: string, role: string, page = 1, limit = 20) {
-  const where = role === 'BUYER'
-    ? { buyerId: userId }
-    : role === 'SELLER'
-      ? { sellerId: userId }
-      : {};
+export async function listBookings(
+  userId: string,
+  perspective: 'buyer' | 'seller',
+  page = 1,
+  limit = 50,
+) {
+  // "As guest" (buyer) → tours I booked; "As guide" (seller) → tours I host.
+  const where = perspective === 'seller' ? { sellerId: userId } : { buyerId: userId };
 
   const [data, total] = await Promise.all([
     prisma.booking.findMany({
       where,
       include: {
-        listing: { select: { title: true, serviceType: true } },
+        listing: { select: { title: true, serviceType: true, school: { select: { name: true } } } },
         buyer: { select: { id: true, name: true } },
         seller: { select: { id: true, name: true } },
         option: true,
       },
-      orderBy: { requestedAt: 'desc' },
+      orderBy: { scheduledDate: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),

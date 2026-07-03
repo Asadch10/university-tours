@@ -62,7 +62,7 @@ export default function LoginPage() {
     <div className="min-h-dvh bg-ivory">
       <div className="grid min-h-dvh lg:grid-cols-2">
         {/* LEFT — brand showcase */}
-        <aside className="relative hidden overflow-hidden bg-maroon-gradient lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+        <aside className="relative hidden overflow-hidden bg-brand-gradient lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
           <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gold-500/15 blur-3xl" aria-hidden />
 
@@ -133,7 +133,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@tour.com"
-                    className="w-full rounded-xl border border-ink-200 bg-white py-3 pl-11 pr-4 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+                    className="w-full rounded-xl border border-ink-200 bg-white py-3 pl-11 pr-4 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/15"
                   />
                 </div>
               </div>
@@ -149,7 +149,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-ink-200 bg-white py-3 pl-11 pr-11 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+                    className="w-full rounded-xl border border-ink-200 bg-white py-3 pl-11 pr-11 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/15"
                   />
                   <button
                     type="button"
@@ -165,7 +165,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-maroon-900 text-sm font-semibold text-ivory shadow-soft transition-all duration-200 hover:bg-maroon-800 hover:shadow-lift disabled:opacity-60"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-900 text-sm font-semibold text-ivory shadow-soft transition-all duration-200 hover:bg-brand-800 hover:shadow-lift disabled:opacity-60"
               >
                 {status === 'loading' ? (
                   <><Loader2 size={18} className="animate-spin" /> Signing in…</>
@@ -179,9 +179,9 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={fillDemo}
-              className="mt-6 w-full rounded-xl border border-dashed border-ink-300 bg-cream/50 px-4 py-3 text-left transition-colors hover:border-maroon-800/40 hover:bg-cream"
+              className="mt-6 w-full rounded-xl border border-dashed border-ink-300 bg-cream/50 px-4 py-3 text-left transition-colors hover:border-brand-800/40 hover:bg-cream"
             >
-              <p className="text-2xs font-semibold uppercase tracking-wider text-maroon-800">Demo credentials — click to fill</p>
+              <p className="text-2xs font-semibold uppercase tracking-wider text-brand-800">Demo credentials — click to fill</p>
               <p className="mt-1 font-mono text-sm text-ink-700">{DEMO_CREDENTIALS.email} · {DEMO_CREDENTIALS.password}</p>
             </button>
           </div>

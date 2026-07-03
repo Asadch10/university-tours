@@ -73,7 +73,7 @@ export const NAV: NavSection[] = [
         label: 'Universities',
         icon: GraduationCap,
         permissions: ['universities.manage'],
-        desc: 'Add/edit, logo, location, SEO content, enable/disable',
+        desc: 'Add/edit photo, location, programs, price, enable/disable',
       },
       {
         href: '/listings',
@@ -182,4 +182,11 @@ export const ALL_NAV_ITEMS: NavItem[] = NAV.flatMap((s) => s.items);
 /** Find the nav item that owns a given pathname. */
 export function navItemForPath(pathname: string): NavItem | undefined {
   return ALL_NAV_ITEMS.find((i) => pathname === i.href || pathname.startsWith(i.href + '/'));
+}
+
+/** The section title that owns a given pathname (for topbar breadcrumb). */
+export function sectionForPath(pathname: string): string | undefined {
+  return NAV.find((s) =>
+    s.items.some((i) => pathname === i.href || pathname.startsWith(i.href + '/')),
+  )?.title;
 }

@@ -40,7 +40,7 @@ function ChannelBadge({ channel }: { channel: Channel }) {
       <Mail size={12} /> Email
     </Badge>
   ) : (
-    <Badge variant="maroon">
+    <Badge variant="brand">
       <Bell size={12} /> Push
     </Badge>
   );
@@ -137,7 +137,6 @@ export default function TemplatesPage() {
     <RequirePermission anyOf={['templates.edit']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Content & Platform"
           title="Notification Templates"
           description="Transactional email and push copy sent by the platform. Bodies support {{variables}} interpolated at send time."
         />

@@ -23,7 +23,7 @@ type Segment = PushCampaign['segment'];
 const SEGMENTS: Segment[] = ['ALL', 'BUYERS', 'GUIDES'];
 
 function SegmentBadge({ segment }: { segment: Segment }) {
-  const variant = segment === 'ALL' ? 'maroon' : segment === 'BUYERS' ? 'info' : 'gold';
+  const variant = segment === 'ALL' ? 'brand' : segment === 'BUYERS' ? 'info' : 'gold';
   return <Badge variant={variant}>{humanize(segment)}</Badge>;
 }
 
@@ -208,7 +208,6 @@ export default function AppConfigPage() {
     <RequirePermission anyOf={['appconfig.manage']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Content & Platform"
           title="App Configuration"
           description="Remote configuration for the mobile and web clients — feature flags, release gating, maintenance mode, and push campaigns."
         />
@@ -218,7 +217,7 @@ export default function AppConfigPage() {
           <CardHeader
             title={
               <span className="flex items-center gap-2">
-                <Flag size={16} className="text-maroon-800" /> Feature flags
+                <Flag size={16} className="text-brand-800" /> Feature flags
               </span>
             }
             description="Toggle capabilities remotely — changes apply on the next app-config fetch, no release required."
@@ -249,7 +248,7 @@ export default function AppConfigPage() {
           <CardHeader
             title={
               <span className="flex items-center gap-2">
-                <Smartphone size={16} className="text-maroon-800" /> Mobile release control
+                <Smartphone size={16} className="text-brand-800" /> Mobile release control
               </span>
             }
             description="Clients below the minimum supported version see a blocking force-update screen."
@@ -292,7 +291,7 @@ export default function AppConfigPage() {
           <CardHeader
             title={
               <span className="flex items-center gap-2">
-                <Wrench size={16} className="text-maroon-800" /> Maintenance mode
+                <Wrench size={16} className="text-brand-800" /> Maintenance mode
               </span>
             }
             description="When on, the apps are gated and show the maintenance banner."
@@ -344,7 +343,7 @@ export default function AppConfigPage() {
           <CardHeader
             title={
               <span className="flex items-center gap-2">
-                <Megaphone size={16} className="text-maroon-800" /> Push campaigns
+                <Megaphone size={16} className="text-brand-800" /> Push campaigns
               </span>
             }
             description="Broadcast push notifications to a user segment."

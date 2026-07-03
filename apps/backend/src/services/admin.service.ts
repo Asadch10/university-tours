@@ -527,17 +527,67 @@ export async function listSchools(opts: { q?: string; enabled?: boolean; page?: 
   return { data, total, page, limit };
 }
 
-export async function createSchool(data: { name: string; slug: string; location?: string; enabled?: boolean }) {
-  const existing = await prisma.school.findUnique({ where: { slug: data.slug } });
-  if (existing) throw new HttpError(409, 'slug_in_use', 'A school with that slug already exists');
-  return prisma.school.create({ data });
+/** Editable university fields (all optional except where the route enforces name+slug). */
+export interface SchoolInput {
+  name?: string;
+  slug?: string;
+  image?: string | null;
+  location?: string | null;
+  state?: string | null;
+  tags?: string[];
+  toursFromCents?: number | null;
+  seoContent?: string | null;
+  enabled?: boolean;
 }
 
-export async function updateSchool(id: string, data: { name?: string; location?: string; enabled?: boolean }, adminId?: string) {
+/** Whitelist only known columns from a (possibly noisy) client payload. */
+function pickSchoolFields(data: SchoolInput): SchoolInput {
+  const out: SchoolInput = {};
+  if (data.name !== undefined) out.name = data.name;
+  if (data.slug !== undefined) out.slug = data.slug;
+  if (data.image !== undefined) out.image = data.image;
+  if (data.location !== undefined) out.location = data.location;
+  if (data.state !== undefined) out.state = data.state;
+  if (data.tags !== undefined) out.tags = data.tags;
+  if (data.toursFromCents !== undefined) out.toursFromCents = data.toursFromCents;
+  if (data.seoContent !== undefined) out.seoContent = data.seoContent;
+  if (data.enabled !== undefined) out.enabled = data.enabled;
+  return out;
+}
+
+/** "Stanford University" → "stanford-university". */
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+/** A slug guaranteed unique in the schools table (appends -2, -3, … on collision). */
+async function ensureUniqueSlug(base: string): Promise<string> {
+  const root = slugify(base) || 'university';
+  let slug = root;
+  let n = 2;
+  // eslint-disable-next-line no-await-in-loop
+  while (await prisma.school.findUnique({ where: { slug } })) slug = `${root}-${n++}`;
+  return slug;
+}
+
+export async function createSchool(data: SchoolInput & { name: string }) {
+  const fields = pickSchoolFields(data);
+  // Slug is derived from the name (no longer a user-facing field), kept unique.
+  const slug = data.slug ? await ensureUniqueSlug(data.slug) : await ensureUniqueSlug(data.name);
+  return prisma.school.create({ data: { ...fields, name: data.name, slug } });
+}
+
+export async function updateSchool(id: string, data: SchoolInput, adminId?: string) {
   const school = await prisma.school.findUnique({ where: { id } });
   if (!school) throw new HttpError(404, 'not_found', 'School not found');
-  const updated = await prisma.school.update({ where: { id }, data });
-  if (adminId) await prisma.auditLog.create({ data: { adminId, action: 'school.update', entity: `schools/${id} (${school.name})`, afterJson: data as never, ip: '127.0.0.1' } });
+  const fields = pickSchoolFields(data);
+  // If the slug is changing, make sure it stays unique.
+  if (fields.slug && fields.slug !== school.slug) {
+    const clash = await prisma.school.findUnique({ where: { slug: fields.slug } });
+    if (clash) throw new HttpError(409, 'slug_in_use', 'A school with that slug already exists');
+  }
+  const updated = await prisma.school.update({ where: { id }, data: fields });
+  if (adminId) await prisma.auditLog.create({ data: { adminId, action: 'school.update', entity: `schools/${id} (${school.name})`, afterJson: fields as never, ip: '127.0.0.1' } });
   return updated;
 }
 

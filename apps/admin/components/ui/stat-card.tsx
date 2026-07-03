@@ -16,15 +16,15 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="group rounded-2xl border border-ink-200/70 bg-white p-5 shadow-soft transition-shadow hover:shadow-card">
+    <div className="group rounded-xl border border-ink-200/70 bg-white p-4 shadow-soft transition-shadow hover:shadow-card">
       <div className="flex items-start justify-between">
         <p className="text-sm font-medium text-ink-500">{label}</p>
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
-          <Icon size={18} />
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+          <Icon size={16} />
         </span>
       </div>
-      <p className="mt-3 font-display text-[1.75rem] font-bold leading-none text-ink-900">{value}</p>
-      <div className="mt-3 flex items-center gap-2">
+      <p className="mt-2.5 font-mono text-2xl font-semibold leading-none tracking-tight text-ink-900 tabular-nums">{value}</p>
+      <div className="mt-2 flex items-center gap-2">
         {delta && (
           <span
             className={cn(

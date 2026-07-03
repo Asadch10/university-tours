@@ -4,6 +4,7 @@ import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import * as svc from '../services/admin.service.js';
 import { questionnaireApiRouter } from './api/questionnaire.js';
+import { imageUpload, uploadUrl } from '../lib/uploads.js';
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth);
@@ -166,6 +167,23 @@ adminRouter.post('/sellers/:id/payouts', requirePermission('payouts.record'), as
   res.status(201).json(await svc.recordPayout(req.params['id'] as string, data, req.user!.id));
 }));
 
+// ─── Media uploads ──────────────────────────────────────────────────────────────
+
+// Single image upload (field name `file`) → { url }. Used for university banners/logos.
+adminRouter.post('/uploads', requirePermission('universities.manage'), (req, res, next) => {
+  imageUpload(req, res, (err: unknown) => {
+    if (err) {
+      next(err instanceof HttpError ? err : new HttpError(400, 'upload_failed', (err as Error).message));
+      return;
+    }
+    if (!req.file) {
+      next(new HttpError(400, 'no_file', 'No file was uploaded'));
+      return;
+    }
+    res.status(201).json({ url: uploadUrl(req.file.filename), filename: req.file.filename });
+  });
+});
+
 // ─── Schools ──────────────────────────────────────────────────────────────────
 
 adminRouter.get('/schools', requirePermission('universities.manage'), asyncHandler(async (req, res) => {
@@ -174,13 +192,13 @@ adminRouter.get('/schools', requirePermission('universities.manage'), asyncHandl
 }));
 
 adminRouter.post('/schools', requirePermission('universities.manage'), asyncHandler(async (req, res) => {
-  const body = req.body as { name: string; slug: string; location?: string; enabled?: boolean };
-  if (!body.name || !body.slug) throw new HttpError(400, 'validation_error', 'name and slug required');
+  const body = req.body as svc.SchoolInput & { name: string };
+  if (!body.name) throw new HttpError(400, 'validation_error', 'name is required');
   res.status(201).json(await svc.createSchool(body));
 }));
 
 adminRouter.patch('/schools/:id', requirePermission('universities.manage'), asyncHandler(async (req, res) => {
-  res.json(await svc.updateSchool(req.params['id'] as string, req.body as { name?: string; location?: string; enabled?: boolean }, req.user!.id));
+  res.json(await svc.updateSchool(req.params['id'] as string, req.body as svc.SchoolInput, req.user!.id));
 }));
 
 // ─── CMS ──────────────────────────────────────────────────────────────────────

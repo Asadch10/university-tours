@@ -196,7 +196,7 @@ export default function TransactionsPage() {
       header: 'Balance',
       align: 'right',
       cell: (r) => (
-        <span className="font-semibold text-maroon-900">{formatPrice(r.balanceCents)}</span>
+        <span className="font-semibold text-brand-900">{formatPrice(r.balanceCents)}</span>
       ),
     },
     {
@@ -253,7 +253,6 @@ export default function TransactionsPage() {
     <RequirePermission anyOf={['transactions.view']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Finance"
           title="Transactions & Payouts"
           description="Every captured payment, guide balance, and manual payout in one ledger."
           actions={

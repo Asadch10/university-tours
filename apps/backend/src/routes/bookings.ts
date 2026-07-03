@@ -15,8 +15,10 @@ bookingsRouter.post('/', requireAuth, requireRole('BUYER'), asyncHandler(async (
 }));
 
 bookingsRouter.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const { page, limit } = req.query as Record<string, string>;
-  res.json(await svc.listBookings(req.user!.id, req.user!.role, page ? +page : 1, limit ? +limit : 20));
+  const { page, limit, as } = req.query as Record<string, string>;
+  // ?as=guide → tours I host (seller); default ?as=guest → tours I booked (buyer).
+  const perspective = as === 'guide' ? 'seller' : 'buyer';
+  res.json(await svc.listBookings(req.user!.id, perspective, page ? +page : 1, limit ? +limit : 50));
 }));
 
 bookingsRouter.get('/:id', requireAuth, asyncHandler(async (req, res) => {

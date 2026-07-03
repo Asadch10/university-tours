@@ -87,7 +87,6 @@ export default function CommissionPage() {
     <RequirePermission anyOf={['commission.set']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Finance"
           title="Commission"
           description="The single global commission rate the platform keeps on every booking."
         />
@@ -123,7 +122,7 @@ export default function CommissionPage() {
               <CardBody>
                 <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-800">
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-800">
                       <Percent size={26} />
                     </span>
                     <div>
@@ -140,7 +139,7 @@ export default function CommissionPage() {
                     </p>
                     <div className="flex items-center justify-between gap-8">
                       <span className="text-ink-500">Platform keeps</span>
-                      <span className="font-semibold text-maroon-900">
+                      <span className="font-semibold text-brand-900">
                         {formatPrice(Math.round((SAMPLE_GROSS_CENTS * pct) / 100))}
                       </span>
                     </div>
@@ -231,7 +230,7 @@ export default function CommissionPage() {
             </p>
             <div className="flex items-center justify-between">
               <span className="text-ink-500">Platform keeps</span>
-              <span className="font-semibold text-maroon-900">{formatPrice(previewKeeps)}</span>
+              <span className="font-semibold text-brand-900">{formatPrice(previewKeeps)}</span>
             </div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-ink-500">Guide receives</span>

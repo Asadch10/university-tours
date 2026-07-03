@@ -4,7 +4,7 @@ import typography from '@tailwindcss/typography';
 /**
  * University Campus Private Tours — design tokens.
  * Brand: deep collegiate maroon (from the crest logo) + gold premium accent + warm ivory canvas.
- * Type: Playfair Display (display/serif) + Inter (body) — the "Classic Elegant" pairing.
+ * Type: Inter for all UI + headings; IBM Plex Mono for tabular numerics (prices, IDs).
  */
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
@@ -64,7 +64,10 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['var(--font-playfair)', 'ui-serif', 'Georgia', 'serif'],
+        // Headings use Inter too — a single, clean sans across the site.
+        display: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Tabular numerics: prices, IDs.
+        mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],

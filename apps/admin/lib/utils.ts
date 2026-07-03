@@ -6,6 +6,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Resolve a stored media path to an absolute URL. Uploads are stored relative (e.g. "/uploads/x.jpg"). */
+export function mediaUrl(path?: string | null): string {
+  if (!path) return '';
+  if (/^https?:\/\//.test(path) || path.startsWith('data:')) return path;
+  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
 /** Format integer cents as USD (the platform stores all money as integer cents). */
 export function formatPrice(cents: number) {
   return new Intl.NumberFormat('en-US', {

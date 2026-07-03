@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { AuthShell, authInputClasses } from '@/components/auth/auth-shell';
-import { signIn } from '@/lib/auth';
+import { setSession } from '@/lib/auth';
+import { authApi, ApiError } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
 const COUNTRY_CODES = [
@@ -28,20 +29,37 @@ export default function RegisterPage() {
   const [agree, setAgree] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('Please complete all fields and accept the terms.');
 
   const isValid = Boolean(email && firstName && lastName && password && agree);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!isValid) {
+      setErrorMsg('Please complete all fields and accept the terms.');
+      setStatus('error');
+      return;
+    }
+    if (password.length < 8) {
+      setErrorMsg('Password must be at least 8 characters.');
       setStatus('error');
       return;
     }
     setStatus('loading');
-    // Simulated sign-up — no real backend. Persist the account (which also
-    // marks the user as logged in for the header) and hand off to the profile.
-    signIn({ name: `${firstName} ${lastName}`.trim(), email });
-    setTimeout(() => router.push('/profile'), 700);
+    try {
+      const res = await authApi.register(email.trim(), password, `${firstName} ${lastName}`.trim());
+      setSession(res);
+      router.push('/onboarding');
+    } catch (err) {
+      setErrorMsg(
+        err instanceof ApiError && err.code === 'email_in_use'
+          ? 'That email is already registered. Try logging in instead.'
+          : err instanceof ApiError
+            ? err.message
+            : 'Something went wrong. Please try again.',
+      );
+      setStatus('error');
+    }
   }
 
   return (
@@ -53,7 +71,7 @@ export default function RegisterPage() {
             className="flex items-center gap-2.5 rounded-xl border border-maroon-200 bg-maroon-50 px-4 py-3 text-sm text-maroon-900"
           >
             <AlertCircle size={16} className="shrink-0" />
-            Please complete all fields and accept the terms.
+            {errorMsg}
           </div>
         )}
 

@@ -30,7 +30,7 @@
      surfaces via <body>, ivory on dark hero/CTA sections) so titles stay
      legible everywhere. Components that need a specific color set it explicitly. */
   h1, h2, h3, h4 {
-    @apply font-display;
+    @apply font-display font-semibold tracking-[-0.014em];
     color: inherit;
     text-wrap: balance;
   }

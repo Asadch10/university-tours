@@ -55,7 +55,7 @@ export function DataTable<T>({
     a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left';
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft">
+    <div className="overflow-hidden rounded-xl border border-ink-200/70 bg-white shadow-soft">
       <div className="scroll-branded overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
@@ -81,14 +81,14 @@ export function DataTable<T>({
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cn(
                   'transition-colors',
-                  onRowClick && 'cursor-pointer hover:bg-maroon-50/40',
+                  onRowClick && 'cursor-pointer hover:bg-brand-50/40',
                 )}
               >
                 {columns.map((c) => (
                   <td
                     key={c.key}
                     className={cn(
-                      'px-4 py-3.5 align-middle text-ink-700',
+                      'px-4 py-3 align-middle text-ink-700',
                       align(c.align),
                       c.hideOnMobile && 'hidden lg:table-cell',
                       c.className,

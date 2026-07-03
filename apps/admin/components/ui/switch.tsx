@@ -27,7 +27,7 @@ export function Switch({
       onClick={() => onChange(!checked)}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'bg-maroon-800' : 'bg-ink-300',
+        checked ? 'bg-brand-800' : 'bg-ink-300',
       )}
     >
       <span

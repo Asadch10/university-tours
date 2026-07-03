@@ -153,7 +153,7 @@ export default function UsersPage() {
     {
       key: 'role',
       header: 'Role',
-      cell: (u) => <Badge variant={u.role === 'SELLER' ? 'maroon' : 'neutral'}>{humanize(u.role)}</Badge>,
+      cell: (u) => <Badge variant={u.role === 'SELLER' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>,
     },
     { key: 'school', header: 'School', hideOnMobile: true, cell: (u) => <span className="text-ink-600">{u.school ?? '—'}</span> },
     { key: 'bookings', header: 'Bookings', align: 'right', hideOnMobile: true, cell: (u) => <span className="font-semibold text-ink-800">{u.bookings}</span> },
@@ -187,7 +187,6 @@ export default function UsersPage() {
     <RequirePermission anyOf={['users.manage']}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Operations"
           title="Users"
           description="Buyers and seller-guides across the platform — review profiles and manage account status."
         />
@@ -300,7 +299,7 @@ function UserDetail({
         </div>
 
         <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-          <Detail label="Role" value={<Badge variant={u.role === 'SELLER' ? 'maroon' : 'neutral'}>{humanize(u.role)}</Badge>} />
+          <Detail label="Role" value={<Badge variant={u.role === 'SELLER' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>} />
           <Detail
             label="School"
             value={

@@ -4,18 +4,29 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, ChevronDown, ChevronRight, User as UserIcon, LogOut } from 'lucide-react';
+import { Menu, X, ChevronDown, ChevronRight, LogOut } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { Button, ButtonLink } from '@/components/ui/button';
-import { UserMenu } from '@/components/layout/user-menu';
-import { useAuthUser, signOut, initialsOf } from '@/lib/auth';
+import { UserMenu, ACCOUNT_MENU } from '@/components/layout/user-menu';
+import { useAuthUser, signOut, initialsOf, updateSessionUser } from '@/lib/auth';
+import { accountApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
 
+// Public (logged-out) primary links.
 const NAV_LINKS = [
   { href: '/universities', label: 'Explore schools' },
   { href: '/search', label: 'Browse tour guides' },
   { href: '/become-a-guide', label: 'Become a guide' },
 ];
+
+// Signed-in primary links — a focused set. Guides (with a listing) manage it instead of joining.
+function userLinksFor(hasListing?: boolean) {
+  return [
+    { href: '/search', label: 'Browse guides' },
+    hasListing ? { href: '/manage-listing', label: 'Manage listing' } : { href: '/become-a-guide', label: 'Become a guide' },
+    { href: '/my-tours', label: 'My tours' },
+  ];
+}
 
 const ABOUT_ITEMS = [
   { href: '/about', label: 'About us' },
@@ -138,6 +149,19 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthUser();
+  const userLinks = userLinksFor(user?.hasListing);
+
+  // Sync whether the user has a published listing (drives Become-a-guide ↔ Manage-listing).
+  useEffect(() => {
+    if (!user || user.hasListing !== undefined) return;
+    accountApi
+      .getMe()
+      .then((me) => {
+        const p = (me.profileJson ?? {}) as Record<string, unknown>;
+        updateSessionUser({ hasListing: !!p.guideListing });
+      })
+      .catch(() => {});
+  }, [user]);
 
   function handleLogout() {
     setOpen(false);
@@ -159,7 +183,7 @@ export function Navbar() {
 
         {/* Desktop nav — plain text links, evenly spaced, grouped right */}
         <div className="hidden items-center gap-7 lg:flex">
-          {NAV_LINKS.map((item) => {
+          {(user ? userLinks : NAV_LINKS).map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
@@ -178,13 +202,12 @@ export function Navbar() {
             );
           })}
 
-          <NavDropdown label="About" items={ABOUT_ITEMS} pathname={pathname} />
-          <NavDropdown label="Help" items={HELP_ITEMS} pathname={pathname} />
-
           {user ? (
             <UserMenu user={user} />
           ) : (
             <>
+              <NavDropdown label="About" items={ABOUT_ITEMS} pathname={pathname} />
+              <NavDropdown label="Help" items={HELP_ITEMS} pathname={pathname} />
               <Link
                 href="/register"
                 className="text-sm font-medium text-ink-900 transition-colors duration-150 hover:text-ink-500"
@@ -225,7 +248,7 @@ export function Navbar() {
           >
             <div className="container-page border-t border-ink-100 bg-white pb-6 pt-2">
               <ul className="flex flex-col">
-                {NAV_LINKS.map((item) => (
+                {(user ? userLinks : NAV_LINKS).map((item) => (
                   <li key={item.href}>
                     <Link
                       href={item.href}
@@ -237,37 +260,41 @@ export function Navbar() {
                   </li>
                 ))}
 
-                <li>
-                  <p className="mt-3 px-4 pb-1 text-[0.65rem] font-semibold uppercase tracking-widest text-ink-400">
-                    About
-                  </p>
-                  {ABOUT_ITEMS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900"
-                    >
-                      {item.label}
-                      <ChevronRight size={16} className="text-ink-400" />
-                    </Link>
-                  ))}
-                </li>
+                {!user && (
+                  <>
+                    <li>
+                      <p className="mt-3 px-4 pb-1 text-[0.65rem] font-semibold uppercase tracking-widest text-ink-400">
+                        About
+                      </p>
+                      {ABOUT_ITEMS.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900"
+                        >
+                          {item.label}
+                          <ChevronRight size={16} className="text-ink-400" />
+                        </Link>
+                      ))}
+                    </li>
 
-                <li>
-                  <p className="mt-3 px-4 pb-1 text-[0.65rem] font-semibold uppercase tracking-widest text-ink-400">
-                    Help
-                  </p>
-                  {HELP_ITEMS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900"
-                    >
-                      {item.label}
-                      <ChevronRight size={16} className="text-ink-400" />
-                    </Link>
-                  ))}
-                </li>
+                    <li>
+                      <p className="mt-3 px-4 pb-1 text-[0.65rem] font-semibold uppercase tracking-widest text-ink-400">
+                        Help
+                      </p>
+                      {HELP_ITEMS.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900"
+                        >
+                          {item.label}
+                          <ChevronRight size={16} className="text-ink-400" />
+                        </Link>
+                      ))}
+                    </li>
+                  </>
+                )}
               </ul>
 
               <div className="mt-5 flex flex-col gap-2.5">
@@ -286,9 +313,16 @@ export function Navbar() {
                         )}
                       </div>
                     </div>
-                    <ButtonLink href="/profile" variant="outline" size="lg">
-                      <UserIcon size={17} /> Profile
-                    </ButtonLink>
+                    {ACCOUNT_MENU.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-ink-800 transition-colors hover:bg-ink-50 hover:text-ink-900"
+                      >
+                        {item.label}
+                        <ChevronRight size={16} className="text-ink-400" />
+                      </Link>
+                    ))}
                     <Button variant="primary" size="lg" onClick={handleLogout}>
                       <LogOut size={17} /> Log out
                     </Button>

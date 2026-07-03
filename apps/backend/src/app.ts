@@ -9,6 +9,7 @@ import { logger } from './lib/logger.js';
 import { errorHandler, notFound } from './lib/http.js';
 import { apiV1 } from './routes/index.js';
 import { webhooksRouter } from './routes/payments.js';
+import { UPLOAD_DIR, UPLOAD_URL_PREFIX } from './lib/uploads.js';
 
 export function createApp() {
   const app = express();
@@ -32,6 +33,17 @@ export function createApp() {
   app.use('/api/v1/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+  // Locally-stored admin media (university banners/logos). Cached and CORS-open for <img> use.
+  app.use(
+    UPLOAD_URL_PREFIX,
+    (_req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      next();
+    },
+    express.static(UPLOAD_DIR),
+  );
 
   app.use('/api/v1', apiV1);
 

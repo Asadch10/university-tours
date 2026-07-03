@@ -48,10 +48,11 @@ Password: Test@123
 
 ## Design system
 
-Shares the website's tokens verbatim — collegiate **maroon** (`maroon-800/900`) + **gold**
-(`gold-500`) accent + warm **ivory/cream/ink** canvas, **Playfair Display** (`font-display`) +
+A classic professional **blue** `brand` scale (`brand-600/800/900`) — familiar and highly readable —
+with a warm **gold** (`gold-500`) accent kept for charts, progress bars, and highlights, over a warm
+**ivory/cream/ink** canvas. Type is **Playfair Display** (`font-display`) +
 **Inter** (`font-sans`) via `next/font`. The admin layer adds console-tuned status colors
-(`info · warn · danger · success`), a denser shadow scale, and a maroon-gradient sidebar. Tokens
+(`info · warn · danger · success`), a denser shadow scale, and a blue-gradient sidebar. Tokens
 live in [`tailwind.config.ts`](./tailwind.config.ts); base styles in [`app/globals.css`](./app/globals.css).
 
 Every interactive surface implements the full set of states: **loading** (skeletons), **empty**,

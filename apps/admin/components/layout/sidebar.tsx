@@ -17,22 +17,20 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col bg-maroon-gradient text-ivory">
-      <div className="bg-grid absolute inset-0 opacity-40" aria-hidden />
-
+    <div className="flex h-full flex-col border-r border-ink-200/70 bg-ink-100/70 text-ink-700">
       {/* Brand */}
-      <div className={cn('relative flex h-16 items-center border-b border-white/10', collapsed ? 'justify-center px-2' : 'px-5')}>
-        <Logo variant="light" showWordmark={!collapsed} />
+      <div className={cn('flex h-14 items-center border-b border-ink-200/70', collapsed ? 'justify-center px-2' : 'px-4')}>
+        <Logo showWordmark={!collapsed} />
       </div>
 
       {/* Nav */}
-      <nav className="scroll-branded relative flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      <nav className="scroll-branded flex-1 space-y-4 overflow-y-auto px-2.5 py-4">
         {NAV.map((section) => {
           const items = section.items;
           return (
             <div key={section.title}>
               {!collapsed && (
-                <p className="px-3 pb-2 text-2xs font-semibold uppercase tracking-[0.16em] text-ivory/45">
+                <p className="px-2.5 pb-1.5 text-2xs font-semibold uppercase tracking-[0.16em] text-ink-400">
                   {section.title}
                 </p>
               )}
@@ -47,19 +45,24 @@ export function Sidebar({
                         onClick={onNavigate}
                         title={collapsed ? item.label : undefined}
                         className={cn(
-                          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                          'group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
                           collapsed && 'justify-center',
-                          active ? 'text-ivory' : 'text-ivory/70 hover:bg-white/10 hover:text-ivory',
+                          active
+                            ? 'text-white'
+                            : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
                         )}
                       >
                         {active && (
                           <motion.span
                             layoutId="sidebar-active"
-                            className="absolute inset-0 rounded-xl bg-white/15 ring-1 ring-inset ring-white/15"
+                            className="absolute inset-0 rounded-lg bg-brand-500 shadow-soft"
                             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                           />
                         )}
-                        <Icon size={18} className="relative shrink-0" />
+                        <Icon
+                          size={17}
+                          className={cn('relative shrink-0', active ? 'text-white' : 'text-ink-400 group-hover:text-ink-600')}
+                        />
                         {!collapsed && <span className="relative truncate">{item.label}</span>}
                       </Link>
                     </li>
@@ -73,8 +76,8 @@ export function Sidebar({
 
       {/* Footer note */}
       {!collapsed && (
-        <div className="relative border-t border-white/10 px-5 py-4">
-          <p className="text-2xs leading-relaxed text-ivory/45">
+        <div className="border-t border-ink-200/70 px-4 py-3">
+          <p className="text-2xs leading-relaxed text-ink-400">
             Web-only console · deny-by-default · re-checked server-side.
           </p>
         </div>

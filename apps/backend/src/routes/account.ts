@@ -11,8 +11,37 @@ usersRouter.get('/me', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 usersRouter.patch('/me', requireAuth, asyncHandler(async (req, res) => {
-  const { name } = req.body as { name?: string };
-  res.json(await svc.updateMyProfile(req.user!.id, { name }));
+  const { name, profileJson } = req.body as { name?: string; profileJson?: Record<string, unknown> };
+  res.json(await svc.updateMyProfile(req.user!.id, { name, profileJson: profileJson as never }));
+}));
+
+usersRouter.post('/me/onboarding', requireAuth, asyncHandler(async (req, res) => {
+  const { intent, schools } = req.body as { intent?: string; schools?: string[] };
+  res.status(201).json(await svc.completeOnboarding(req.user!.id, { intent, schools }));
+}));
+
+usersRouter.post('/me/guide-listing', requireAuth, asyncHandler(async (req, res) => {
+  const listing = (req.body ?? {}) as Record<string, unknown>;
+  res.status(201).json(await svc.saveGuideListing(req.user!.id, listing));
+}));
+
+usersRouter.delete('/me/guide-listing', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await svc.deleteGuideListing(req.user!.id));
+}));
+
+usersRouter.post('/me/contact', requireAuth, asyncHandler(async (req, res) => {
+  const { email, phone, promo } = req.body as { email?: string; phone?: string; promo?: boolean };
+  res.json(await svc.updateContact(req.user!.id, { email, phone, promo }));
+}));
+
+usersRouter.post('/me/password', requireAuth, asyncHandler(async (req, res) => {
+  const { newPassword } = req.body as { newPassword?: string };
+  if (!newPassword) throw new HttpError(400, 'validation_error', 'newPassword is required');
+  res.json(await svc.changePassword(req.user!.id, newPassword));
+}));
+
+usersRouter.delete('/me', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await svc.deleteAccount(req.user!.id));
 }));
 
 usersRouter.post('/me/devices', requireAuth, asyncHandler(async (_req, res) => {
