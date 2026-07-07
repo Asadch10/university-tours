@@ -34,11 +34,14 @@ export function createApp() {
 
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-  // Locally-stored admin media (university banners/logos). Cached and CORS-open for <img> use.
+  // Locally-stored media (admin banners/logos + guide photos). Cached and open for
+  // cross-origin <img> use — the website/admin run on different origins, so we must
+  // relax helmet's default Cross-Origin-Resource-Policy (same-origin) for these files.
   app.use(
     UPLOAD_URL_PREFIX,
     (_req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       next();
     },

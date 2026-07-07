@@ -92,6 +92,7 @@ export function GuideApplication() {
   const idInput = useRef<HTMLInputElement>(null);
   const [paidAgreed, setPaidAgreed] = useState<Record<string, boolean>>({});
   const [photos, setPhotos] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const photosInput = useRef<HTMLInputElement>(null);
   const detailsFormRef = useRef<HTMLFormElement>(null);
@@ -117,6 +118,10 @@ export function GuideApplication() {
           }
           const school = typeof draft.school === 'string' ? draft.school : '';
           if (school && !universities.some((u) => u.name === school)) setSchoolNotListed(true);
+          // Restore previously-uploaded photos (ignore legacy in-session blob URLs).
+          if (Array.isArray(draft.photos)) {
+            setPhotos(draft.photos.filter((p): p is string => typeof p === 'string' && /^https?:\/\//.test(p)));
+          }
           // Resume at the step after the last one the user completed.
           if (draft.completedStep === 'paid') setStep('photos');
           else if (draft.completedStep === 'details') setStep('paid');
@@ -218,9 +223,19 @@ export function GuideApplication() {
 
   // Step 1 → save the details as a draft, then advance to "Getting paid".
   async function saveDetails() {
+    const details = collectDetails();
+    // School and tour type drive what guests and admins see, so require them here.
+    if (!details.school.trim()) {
+      toast.error('School required', 'Please select or enter your school before continuing.');
+      return;
+    }
+    if (!details.tourTypes.length) {
+      toast.error('Tour type required', 'Please select at least one tour type before continuing.');
+      return;
+    }
     setSavingStep(true);
     try {
-      await accountApi.saveGuideListing({ ...collectDetails(), status: 'draft', completedStep: 'details' });
+      await accountApi.saveGuideListing({ ...details, status: 'draft', completedStep: 'details' });
       setStep('paid');
     } catch (e) {
       toast.error('Could not save your details', friendlyError(e));
@@ -503,10 +518,20 @@ export function GuideApplication() {
                 <button
                   type="button"
                   onClick={() => photosInput.current?.click()}
-                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40"
+                  disabled={uploadingPhotos}
+                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <span className="text-lg font-bold text-ink-900">+ Add photo</span>
-                  <span className="text-xs leading-tight text-ink-400">.JPG, .GIF or .PNG<br />Max. 20 MB</span>
+                  {uploadingPhotos ? (
+                    <>
+                      <Loader2 size={22} className="animate-spin text-maroon-800" />
+                      <span className="text-xs leading-tight text-ink-400">Uploading…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-lg font-bold text-ink-900">+ Add photo</span>
+                      <span className="text-xs leading-tight text-ink-400">.JPG, .GIF or .PNG<br />Max. 5 MB</span>
+                    </>
+                  )}
                 </button>
               </div>
               <input
@@ -515,10 +540,20 @@ export function GuideApplication() {
                 accept="image/*"
                 multiple
                 className="hidden"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const files = Array.from(e.target.files ?? []);
-                  if (files.length) setPhotos((p) => [...p, ...files.map((f) => URL.createObjectURL(f))]);
                   if (photosInput.current) photosInput.current.value = '';
+                  if (!files.length) return;
+                  setUploadingPhotos(true);
+                  try {
+                    // Upload each file so the photos persist (and show on Browse guides).
+                    const urls = await Promise.all(files.map((f) => accountApi.uploadPhoto(f)));
+                    setPhotos((p) => [...p, ...urls]);
+                  } catch (err) {
+                    toast.error('Couldn’t upload photo', friendlyError(err));
+                  } finally {
+                    setUploadingPhotos(false);
+                  }
                 }}
               />
 
@@ -527,7 +562,7 @@ export function GuideApplication() {
               </p>
 
               <div className="mt-8">
-                <Button type="button" variant="primary" size="lg" disabled={photos.length < 3 || publishing} onClick={publish} className="w-full sm:w-auto">
+                <Button type="button" variant="primary" size="lg" disabled={photos.length < 3 || publishing || uploadingPhotos} onClick={publish} className="w-full sm:w-auto">
                   {publishing ? (
                     <>
                       <Loader2 size={18} className="animate-spin" /> Publishing…

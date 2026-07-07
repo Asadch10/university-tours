@@ -36,18 +36,32 @@ authRouter.post('/logout', requireAuth, asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
-authRouter.post('/verify-email', asyncHandler(async (_req, res) => {
-  // Email verification is out of scope for v1 demo — mark verified immediately.
-  res.json({ ok: true });
+authRouter.post('/verify-email', asyncHandler(async (req, res) => {
+  const token = (req.body as { token?: string }).token;
+  if (!token || typeof token !== 'string') throw new HttpError(400, 'missing_token', 'A verification token is required');
+  const result = await authService.verifyEmail(token);
+  res.json(result);
 }));
 
-authRouter.post('/forgot-password', asyncHandler(async (_req, res) => {
-  // Password reset email not implemented in v1 demo.
+authRouter.post('/resend-verification', requireAuth, asyncHandler(async (req, res) => {
+  const result = await authService.resendVerification(req.user!.id);
+  res.json(result);
+}));
+
+authRouter.post('/forgot-password', asyncHandler(async (req, res) => {
+  const email = (req.body as { email?: string }).email;
+  if (!email || typeof email !== 'string') throw new HttpError(400, 'validation_error', 'A valid email is required');
+  await authService.forgotPassword(email);
+  // Same response whether or not the account exists (avoids email enumeration).
   res.json({ ok: true, message: 'If that email exists, a reset link has been sent.' });
 }));
 
-authRouter.post('/reset-password', asyncHandler(async (_req, res) => {
-  res.json({ ok: true });
+authRouter.post('/reset-password', asyncHandler(async (req, res) => {
+  const { token, password } = req.body as { token?: string; password?: string };
+  if (!token || typeof token !== 'string') throw new HttpError(400, 'missing_token', 'A reset token is required');
+  if (!password || typeof password !== 'string') throw new HttpError(400, 'validation_error', 'A new password is required');
+  const result = await authService.resetPassword(token, password);
+  res.json(result);
 }));
 
 authRouter.get('/me', requireAuth, asyncHandler(async (req, res) => {

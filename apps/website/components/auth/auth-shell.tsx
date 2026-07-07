@@ -13,7 +13,20 @@ const BG_IMAGE =
  * Shared shell for the /login and /register pages: a full-bleed campus
  * background with a centered white card carrying the Sign up / Log in tabs.
  */
-export function AuthShell({ children }: { children: ReactNode }) {
+/**
+ * When `heading` is provided, the Sign up / Log in tabs are replaced with a
+ * plain title + optional subtitle — used by the password-reset screens, which
+ * share the same shell but aren't login/register.
+ */
+export function AuthShell({
+  children,
+  heading,
+  subtitle,
+}: {
+  children: ReactNode;
+  heading?: string;
+  subtitle?: string;
+}) {
   const pathname = usePathname();
   const isLogin = pathname.startsWith('/login');
 
@@ -35,31 +48,39 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <div className="relative flex justify-center px-0 pt-6 sm:px-4 sm:pt-14">
         <div className="flex min-h-[calc(100dvh-var(--header-h)-1.5rem)] w-full max-w-[540px] flex-col bg-white px-5 py-8 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:min-h-[calc(100dvh-var(--header-h)-3.5rem)] sm:px-12 sm:py-10">
 
-        {/* Tabs */}
-        <div className="flex items-center gap-6 sm:gap-7">
-          <Link
-            href="/register"
-            className={cn(
-              'pb-2 font-display text-2xl font-bold transition-colors',
-              !isLogin
-                ? 'border-b-2 border-maroon-900 text-maroon-900'
-                : 'text-ink-900 hover:text-ink-600',
-            )}
-          >
-            Sign up
-          </Link>
-          <Link
-            href="/login"
-            className={cn(
-              'pb-2 font-display text-2xl font-bold transition-colors',
-              isLogin
-                ? 'border-b-2 border-maroon-900 text-maroon-900'
-                : 'text-ink-900 hover:text-ink-600',
-            )}
-          >
-            Log in
-          </Link>
-        </div>
+        {heading ? (
+          /* Reset-flow header — a title instead of the auth tabs */
+          <div>
+            <h1 className="font-display text-2xl font-bold text-maroon-900 sm:text-3xl">{heading}</h1>
+            {subtitle && <p className="mt-2 text-sm leading-relaxed text-ink-600">{subtitle}</p>}
+          </div>
+        ) : (
+          /* Tabs */
+          <div className="flex items-center gap-6 sm:gap-7">
+            <Link
+              href="/register"
+              className={cn(
+                'pb-2 font-display text-2xl font-bold transition-colors',
+                !isLogin
+                  ? 'border-b-2 border-maroon-900 text-maroon-900'
+                  : 'text-ink-900 hover:text-ink-600',
+              )}
+            >
+              Sign up
+            </Link>
+            <Link
+              href="/login"
+              className={cn(
+                'pb-2 font-display text-2xl font-bold transition-colors',
+                isLogin
+                  ? 'border-b-2 border-maroon-900 text-maroon-900'
+                  : 'text-ink-900 hover:text-ink-600',
+              )}
+            >
+              Log in
+            </Link>
+          </div>
+        )}
 
         {/* Form */}
         <div className="mt-8 sm:mt-10">{children}</div>

@@ -231,3 +231,107 @@ export function getGuideProfile(id: string): GuideProfile | undefined {
   const uni = universities[idx % universities.length]!;
   return buildProfile(g, idx, uni);
 }
+
+/* ─── Community guides (real, admin-approved website listings) ──────────────
+   These come from the backend (`/search/community-guides`) and are mapped into
+   the same Guide / GuideProfile shapes the UI already renders, so approved
+   guides appear alongside the sample guides with no special-casing. */
+
+export interface CommunityGuideDto {
+  id: string;
+  name: string;
+  rating: number | null;
+  reviews: number;
+  listing: Record<string, unknown>;
+}
+
+const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+const strArr = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
+/** Photos are object URLs during the guide's session; only real (http) URLs survive. */
+const httpPhoto = (v: unknown): v is string => typeof v === 'string' && /^https?:\/\//.test(v);
+const splitList = (v: unknown): string[] =>
+  str(v)
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+function mapServices(tourTypes: unknown): GuideService[] {
+  const t = strArr(tourTypes);
+  const out: GuideService[] = [];
+  if (t.includes('Campus tour')) out.push('CAMPUS_TOUR');
+  if (t.includes('Video chat')) out.push('VIDEO_CONSULTATION');
+  return out.length ? out : ['CAMPUS_TOUR'];
+}
+
+function mapAdmission(v: unknown): string {
+  const a = str(v);
+  if (/first/i.test(a)) return 'Admitted as a freshman';
+  if (/transfer/i.test(a)) return 'Transfer student';
+  return a;
+}
+
+function guidePhoto(dto: CommunityGuideDto): string {
+  const photos = Array.isArray(dto.listing.photos) ? dto.listing.photos : [];
+  const real = photos.find(httpPhoto);
+  // Deterministic avatar fallback (photos uploaded in-browser don't persist yet).
+  return real ?? `https://i.pravatar.cc/600?u=${encodeURIComponent(dto.id)}`;
+}
+
+export function communityGuideToGuide(dto: CommunityGuideDto): Guide {
+  const gl = dto.listing;
+  return {
+    id: dto.id,
+    headline: str(gl.listingTitle) || `${str(gl.academicFocus) || 'Student'} guide`,
+    name: dto.name || 'Student guide',
+    university: str(gl.school),
+    rating: dto.rating ?? 5.0,
+    reviews: dto.reviews ?? 0,
+    photo: guidePhoto(dto),
+    price: 4000,
+    services: mapServices(gl.tourTypes),
+    gender: str(gl.gender),
+    year: str(gl.academicYear),
+    admission: mapAdmission(gl.admissionType),
+    focus: str(gl.academicFocus),
+  };
+}
+
+export function communityGuideToProfile(dto: CommunityGuideDto): GuideProfile {
+  const gl = dto.listing;
+  const base = communityGuideToGuide(dto);
+  const uni = universities.find((u) => u.name === base.university);
+  const realPhotos = (Array.isArray(gl.photos) ? gl.photos : []).filter(httpPhoto);
+  const gallery = [base.photo, ...realPhotos, uni?.image].filter(
+    (p): p is string => typeof p === 'string' && !!p,
+  );
+  const fn = firstName(base.name);
+  const majors = [...splitList(gl.majors), ...splitList(gl.minors).map((m) => `Minor in ${m}`)];
+  const selected = new Set(strArr(gl.extracurriculars));
+  const selectedHousing = new Set(strArr(gl.housing));
+
+  return {
+    ...base,
+    universitySlug: uni?.slug ?? '',
+    universityLocation: uni?.location ?? '',
+    universityImage: uni?.image ?? base.photo,
+    gallery: gallery.length ? gallery : [base.photo],
+    age: Number(str(gl.age)) || 0,
+    hometown: str(gl.hometown),
+    intro:
+      str(gl.intro) ||
+      `Hi, I'm ${fn}${base.university ? `, a student at ${base.university}` : ''}. I can't wait to show you around!`,
+    majors: majors.length ? majors : base.focus ? [base.focus] : [],
+    extracurriculars: EXTRACURRICULAR_OPTIONS.map((label) => ({ label, active: selected.has(label) })),
+    clubs: splitList(gl.clubs),
+    housing: HOUSING_OPTIONS.map((label) => ({ label, active: selectedHousing.has(label) })),
+    collegeExperience: str(gl.describeExperience) ? [str(gl.describeExperience)] : [],
+    tip: str(gl.tip),
+    favoriteClass: str(gl.favoriteClass) ? [str(gl.favoriteClass)] : [],
+    careerGoals: str(gl.careerGoals) ? [str(gl.careerGoals)] : [],
+    reviewList: [],
+    hostedBy:
+      str(gl.intro) ||
+      `I joined University Campus Private Tours to share an honest, student's-eye view of ${base.university || 'my campus'}.`,
+  };
+}

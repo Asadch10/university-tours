@@ -1,5 +1,8 @@
 import { prisma, Prisma } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
+import { logger } from '../lib/logger.js';
+import { config } from '../config.js';
+import { sendProfileApprovedEmail, sendProfileDeclinedEmail } from './mailer.service.js';
 import * as argon2 from 'argon2';
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -387,11 +390,12 @@ export async function moderateListing(id: string, data: { status?: string }, adm
   const next = toJson[data.status ?? ''];
   if (!next) throw new HttpError(400, 'validation_error', `status must be one of ${GUIDE_LISTING_STATUSES.join(', ')}`);
 
-  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, profileJson: true } });
+  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, profileJson: true } });
   const profile = (user?.profileJson ?? {}) as Record<string, unknown>;
   const gl = profile.guideListing as Record<string, unknown> | undefined;
   if (!user || !gl) throw new HttpError(404, 'not_found', 'Listing not found');
 
+  const prevStatus = gl.status;
   const guideListing: Record<string, unknown> = { ...gl, status: next };
   if (next === 'published' && !guideListing.publishedAt) guideListing.publishedAt = new Date().toISOString();
 
@@ -405,6 +409,22 @@ export async function moderateListing(id: string, data: { status?: string }, adm
       data: { adminId, action: `listing.${next}`, entity: `listings/${id} (${user.name})`, ip: '127.0.0.1' },
     });
   }
+
+  // Notify the guide on a decision — only on an actual status change, so
+  // re-saving the same status doesn't re-send. Best-effort (never fails the update).
+  if (next !== prevStatus) {
+    const dashboardUrl = `${config.APP_WEB_URL.replace(/\/+$/, '')}/manage-listing`;
+    if (next === 'published') {
+      sendProfileApprovedEmail({ to: user.email, name: user.name, dashboardUrl }).catch((err) =>
+        logger.error({ err, userId: id }, 'Approval email dispatch failed'),
+      );
+    } else if (next === 'suspended') {
+      sendProfileDeclinedEmail({ to: user.email, name: user.name, dashboardUrl }).catch((err) =>
+        logger.error({ err, userId: id }, 'Decline email dispatch failed'),
+      );
+    }
+  }
+
   return updated;
 }
 

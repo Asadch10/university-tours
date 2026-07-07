@@ -49,7 +49,9 @@ export default function RegisterPage() {
     try {
       const res = await authApi.register(email.trim(), password, `${firstName} ${lastName}`.trim());
       setSession(res);
-      router.push('/onboarding');
+      // Show the "check your inbox" screen; onboarding happens after the user
+      // confirms their email via the link we just sent.
+      router.push('/verify-email');
     } catch (err) {
       setErrorMsg(
         err instanceof ApiError && err.code === 'email_in_use'
