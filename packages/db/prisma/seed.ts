@@ -104,17 +104,23 @@ async function main() {
 
   // --- Schools ---
   const schoolData = [
-    { name: 'Stanford University', slug: 'stanford', location: 'Stanford, CA', seoContent: 'Walk Palm Drive and the Main Quad with students living it every day.', enabled: true },
-    { name: 'Harvard University', slug: 'harvard', location: 'Cambridge, MA', seoContent: 'From Harvard Yard to the river houses with insider perspective.', enabled: true },
-    { name: 'UCLA', slug: 'ucla', location: 'Los Angeles, CA', seoContent: 'Royce Hall, Bruin Walk, and the real LA student experience.', enabled: true },
-    { name: 'New York University', slug: 'nyu', location: 'New York, NY', seoContent: 'A campus woven into the city — explore it like a local.', enabled: true },
-    { name: 'University of Michigan', slug: 'umich', location: 'Ann Arbor, MI', seoContent: 'The Diag, the Big House, and a classic college town.', enabled: true },
-    { name: 'UT Austin', slug: 'utexas', location: 'Austin, TX', seoContent: 'Hook em — the Tower, the Drag, and Austin energy.', enabled: true },
-    { name: 'University of Washington', slug: 'uw', location: 'Seattle, WA', seoContent: 'Cherry blossoms on the Quad and Pacific Northwest energy.', enabled: false },
+    { name: 'Stanford University', slug: 'stanford', location: 'Stanford, CA', seoContent: 'Walk Palm Drive and the Main Quad with students living it every day.', lat: 37.4275, lng: -122.1697, enabled: true },
+    { name: 'Harvard University', slug: 'harvard', location: 'Cambridge, MA', seoContent: 'From Harvard Yard to the river houses with insider perspective.', lat: 42.377, lng: -71.1167, enabled: true },
+    { name: 'UCLA', slug: 'ucla', location: 'Los Angeles, CA', seoContent: 'Royce Hall, Bruin Walk, and the real LA student experience.', lat: 34.0689, lng: -118.4452, enabled: true },
+    { name: 'New York University', slug: 'nyu', location: 'New York, NY', seoContent: 'A campus woven into the city — explore it like a local.', lat: 40.7295, lng: -73.9965, enabled: true },
+    { name: 'University of Michigan', slug: 'umich', location: 'Ann Arbor, MI', seoContent: 'The Diag, the Big House, and a classic college town.', lat: 42.278, lng: -83.7382, enabled: true },
+    { name: 'UT Austin', slug: 'utexas', location: 'Austin, TX', seoContent: 'Hook em — the Tower, the Drag, and Austin energy.', lat: 30.2849, lng: -97.7341, enabled: true },
+    { name: 'University of Washington', slug: 'uw', location: 'Seattle, WA', seoContent: 'Cherry blossoms on the Quad and Pacific Northwest energy.', lat: 47.6553, lng: -122.3035, enabled: false },
   ];
   const schools: Record<string, string> = {};
   for (const s of schoolData) {
-    const school = await prisma.school.upsert({ where: { slug: s.slug }, update: {}, create: s });
+    // Coordinates are backfilled on reseed (they drive the explore map);
+    // other fields stay untouched so admin edits survive.
+    const school = await prisma.school.upsert({
+      where: { slug: s.slug },
+      update: { lat: s.lat, lng: s.lng },
+      create: s,
+    });
     schools[s.slug] = school.id;
   }
 

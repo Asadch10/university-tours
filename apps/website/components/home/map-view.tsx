@@ -55,12 +55,13 @@ export type UniversityPin = {
   name: string;
   city: string;
   state: string;
-  lat: number;
-  lng: number;
-  image: string;
+  /** Missing coordinates → the school is listed in the sidebar but not pinned. */
+  lat: number | null;
+  lng: number | null;
+  image: string | null;
   blurb: string;
   ambassadors: number;
-  ranking: string;
+  ranking?: string;
   href: string;
 };
 
@@ -81,10 +82,89 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
   const onSelectRef = useRef(onSelect);
   const resizeObsRef = useRef<ResizeObserver | null>(null);
   const didSelectRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const leafletRef = useRef<any>(null);
+  // Universities load async (from the API), so marker builds always read the
+  // latest list through a ref — regardless of which effect fires first.
+  const universitiesRef = useRef(universities);
+  universitiesRef.current = universities;
 
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+
+  /** (Re)create one circle marker per university that has coordinates. */
+  function rebuildMarkers() {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) return;
+
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.clear();
+
+    universitiesRef.current.forEach((u) => {
+      if (u.lat == null || u.lng == null) return;
+      const lat = u.lat;
+      const lng = u.lng;
+
+      const marker = L.circleMarker([lat, lng], {
+        radius: 9,
+        color: '#fff',
+        fillColor: '#2563EB',
+        fillOpacity: 1,
+        weight: 2.5,
+      });
+
+      const popup = L.popup({
+        closeButton: false,
+        offset: L.point(0, -10),
+        className: 'uni-hover-popup',
+        maxWidth: 252,
+        autoPan: false,
+      }).setContent(
+        `<div style="overflow:hidden;border-radius:12px;width:252px;">
+          ${
+            u.image
+              ? `<img
+            src="${u.image}"
+            alt="${u.name}"
+            style="width:252px;height:148px;object-fit:cover;display:block;"
+            onerror="this.style.display='none'"
+          />`
+              : ''
+          }
+          <div style="padding:10px 14px 14px;background:#fff;">
+            <p style="margin:0;font-weight:700;font-size:13.5px;color:#1f1a16;line-height:1.3;">${u.name}</p>
+            <p style="margin:5px 0 0;font-size:12px;color:#85725f;">${u.city}, ${u.state}</p>
+          </div>
+        </div>`,
+      );
+
+      marker.on('mouseover', () => {
+        marker.setStyle({ radius: 12 });
+        popup.setLatLng([lat, lng]).openOn(map);
+      });
+
+      marker.on('mouseout', () => {
+        marker.setStyle({ radius: 9 });
+        map.closePopup(popup);
+      });
+
+      marker.on('click', () => {
+        map.closePopup(popup);
+        onSelectRef.current(u);
+      });
+
+      marker.addTo(map);
+      markersRef.current.set(u.id, marker);
+    });
+  }
+
+  // ── Rebuild markers whenever the university list changes ─────────────
+  useEffect(() => {
+    rebuildMarkers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universities]);
 
   // ── Init map once on mount ────────────────────────────────────────────
   useEffect(() => {
@@ -116,56 +196,9 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
       // Zoom top-right
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      universities.forEach((u) => {
-        const marker = L.circleMarker([u.lat, u.lng], {
-          radius: 9,
-          color: '#fff',
-          fillColor: '#2563EB',
-          fillOpacity: 1,
-          weight: 2.5,
-        });
-
-        const popup = L.popup({
-          closeButton: false,
-          offset: L.point(0, -10),
-          className: 'uni-hover-popup',
-          maxWidth: 252,
-          autoPan: false,
-        }).setContent(
-          `<div style="overflow:hidden;border-radius:12px;width:252px;">
-            <img
-              src="${u.image}"
-              alt="${u.name}"
-              style="width:252px;height:148px;object-fit:cover;display:block;"
-              onerror="this.style.display='none'"
-            />
-            <div style="padding:10px 14px 14px;background:#fff;">
-              <p style="margin:0;font-weight:700;font-size:13.5px;color:#1f1a16;line-height:1.3;">${u.name}</p>
-              <p style="margin:5px 0 0;font-size:12px;color:#85725f;">${u.city}, ${u.state}</p>
-            </div>
-          </div>`,
-        );
-
-        marker.on('mouseover', () => {
-          marker.setStyle({ radius: 12 });
-          popup.setLatLng([u.lat, u.lng]).openOn(map);
-        });
-
-        marker.on('mouseout', () => {
-          marker.setStyle({ radius: 9 });
-          map.closePopup(popup);
-        });
-
-        marker.on('click', () => {
-          map.closePopup(popup);
-          onSelectRef.current(u);
-        });
-
-        marker.addTo(map);
-        markersRef.current.set(u.id, marker);
-      });
-
       mapRef.current = map;
+      leafletRef.current = L;
+      rebuildMarkers();
 
       // Leaflet computes tile layout from the container size at init time.
       // Inside a flex/dynamic-imported layout that size can still be settling,

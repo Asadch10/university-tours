@@ -12,6 +12,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 const ACCESS_KEY = 'ucpt.admin.access';
 const REFRESH_KEY = 'ucpt.admin.refresh';
+const USER_KEY = 'ucpt.admin.user.v2'; // kept in sync with STORAGE_KEY in lib/auth.tsx
 
 export interface ApiErrorShape {
   error: string;
@@ -95,14 +96,29 @@ async function tryRefresh(): Promise<boolean> {
   return refreshing;
 }
 
+/** Session is unrecoverable (no/expired tokens) — wipe it and send the user to sign in again. */
+function forceLogout() {
+  if (typeof window === 'undefined') return;
+  tokenStore.clear();
+  try {
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+  if (!window.location.pathname.startsWith('/login')) window.location.assign('/login');
+}
+
 /** Authenticated request with one transparent refresh-and-retry on 401. */
 export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   try {
     return await rawRequest<T>(method, path, body);
   } catch (e) {
-    if (e instanceof ApiError && e.status === 401 && tokenStore.refresh) {
-      const ok = await tryRefresh();
-      if (ok) return rawRequest<T>(method, path, body);
+    if (e instanceof ApiError && e.status === 401) {
+      if (tokenStore.refresh) {
+        const ok = await tryRefresh();
+        if (ok) return rawRequest<T>(method, path, body);
+      }
+      forceLogout();
     }
     throw e;
   }
@@ -131,9 +147,12 @@ export async function uploadFile(path: string, file: File): Promise<{ url: strin
   try {
     return await rawUpload(path, file);
   } catch (e) {
-    if (e instanceof ApiError && e.status === 401 && tokenStore.refresh) {
-      const ok = await tryRefresh();
-      if (ok) return rawUpload(path, file);
+    if (e instanceof ApiError && e.status === 401) {
+      if (tokenStore.refresh) {
+        const ok = await tryRefresh();
+        if (ok) return rawUpload(path, file);
+      }
+      forceLogout();
     }
     throw e;
   }
@@ -208,6 +227,7 @@ export const adminApi = {
 
   listings: (p: { q?: string; status?: string; service?: string; page?: number } = {}) =>
     request<Paged<ListingDto>>('GET', `/admin/listings${qs({ ...p, limit: 100 })}`),
+  listingDetail: (id: string) => request<ListingDetailDto>('GET', `/admin/listings/${id}`),
   listingModerate: (id: string, status: string) => request('PATCH', `/admin/listings/${id}`, { status }),
 
   bookings: (p: { status?: string; q?: string; page?: number } = {}) =>
@@ -306,7 +326,7 @@ export interface UserDto {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: string | null; // null until onboarding decides guide vs guest
   status: string;
   emailVerifiedAt: string | null;
   createdAt: string;
@@ -315,17 +335,46 @@ export interface UserDto {
   _count?: { buyerBookings: number };
 }
 
+/** Guide listing surfaced from the owner's `profileJson.guideListing` (one per user; id = owner's user id). */
 export interface ListingDto {
   id: string;
   title: string;
-  serviceType: string;
-  status: string;
-  sellerId: string;
-  seller?: { id: string; name: string } | null;
-  createdAt?: string;
-  school: { name: string };
-  options: { priceCents: number }[];
-  _count?: { bookings: number };
+  school: string | null;
+  tourTypes: string[];
+  photos: string[];
+  intro: string | null;
+  status: string; // DRAFT | UNDER_REVIEW | PUBLISHED | SUSPENDED
+  submittedAt: string | null;
+  createdAt: string;
+  seller: { id: string; name: string; email: string };
+  bookings: number;
+  /** Full form answers as saved by the website's become-a-guide flow. */
+  details: Record<string, unknown>;
+}
+
+/** Listing detail page payload: the listing plus the owner's account and seller profile. */
+export interface ListingDetailDto extends Omit<ListingDto, 'seller'> {
+  publishedAt: string | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string | null;
+    status: string;
+    emailVerified: boolean;
+    joinedAt: string;
+    buyerBookings: number;
+  };
+  sellerProfile: {
+    school: string | null;
+    major: string | null;
+    gradYear: number | null;
+    bio: string | null;
+    applicationStatus: string;
+    approvedAt: string | null;
+    ratingAvg: number;
+    ratingCount: number;
+  } | null;
 }
 
 export interface BookingDto {
@@ -400,6 +449,8 @@ export interface SchoolDto {
   tags: string[];
   toursFromCents: number | null;
   seoContent?: string | null;
+  lat: number | null;
+  lng: number | null;
   enabled: boolean;
   _count?: { sellerProfiles: number; listings: number };
 }
@@ -414,6 +465,8 @@ export interface SchoolPayload {
   tags?: string[];
   toursFromCents?: number | null;
   seoContent?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   enabled?: boolean;
 }
 

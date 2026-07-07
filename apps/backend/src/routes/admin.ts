@@ -69,8 +69,12 @@ adminRouter.patch('/users/:id', requirePermission('users.manage'), asyncHandler(
 // ─── Listings ─────────────────────────────────────────────────────────────────
 
 adminRouter.get('/listings', requirePermission('listings.moderate'), asyncHandler(async (req, res) => {
-  const { q, status, schoolId, service, page, limit } = req.query as Record<string, string>;
-  res.json(await svc.listListings({ q, status, schoolId, service, page: page ? +page : 1, limit: limit ? +limit : 20 }));
+  const { q, status, service, page, limit } = req.query as Record<string, string>;
+  res.json(await svc.listListings({ q, status, service, page: page ? +page : 1, limit: limit ? +limit : 20 }));
+}));
+
+adminRouter.get('/listings/:id', requirePermission('listings.moderate'), asyncHandler(async (req, res) => {
+  res.json(await svc.getListingDetail(req.params['id'] as string));
 }));
 
 adminRouter.patch('/listings/:id', requirePermission('listings.moderate'), asyncHandler(async (req, res) => {

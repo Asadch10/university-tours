@@ -7,7 +7,7 @@ import {
   Search, X, ExternalLink, MapPin, Users, SlidersHorizontal, Map as MapIcon, List as ListIcon,
 } from 'lucide-react';
 import type { UniversityPin } from '@/components/home/map-view';
-import { UNIVERSITIES } from '@/components/home/explore-map';
+import { useUniversities } from '@/lib/schools';
 
 /* ─── Dynamic Leaflet map (no SSR) ──────────────────────────────────── */
 
@@ -26,6 +26,7 @@ const MapView = dynamic(
 /* ─── Full-screen explore page ──────────────────────────────────────── */
 
 export function ExploreScreen() {
+  const { universities, loading } = useUniversities();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<UniversityPin | null>(null);
   // Mobile-only view toggle (list ⇄ map); on lg+ both are always shown.
@@ -33,14 +34,14 @@ export function ExploreScreen() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return UNIVERSITIES;
-    return UNIVERSITIES.filter(
+    if (!q) return universities;
+    return universities.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.city.toLowerCase().includes(q) ||
         u.state.toLowerCase().includes(q),
     );
-  }, [search]);
+  }, [search, universities]);
 
   function handleSelect(u: UniversityPin) {
     setSelected((prev) => (prev?.id === u.id ? null : u));
@@ -95,7 +96,9 @@ export function ExploreScreen() {
 
         {/* University list */}
         <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <p className="px-5 py-8 text-center text-sm text-ink-400">Loading schools…</p>
+          ) : filtered.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-ink-400">No schools found</p>
           ) : (
             filtered.map((u) => {
@@ -109,12 +112,18 @@ export function ExploreScreen() {
                     isActive ? 'border-l-[3px] border-l-maroon-900 bg-maroon-50/50 pl-[17px]' : ''
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={u.image}
-                    alt={u.name}
-                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                  />
+                  {u.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={u.image}
+                      alt={u.name}
+                      className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-maroon-gradient font-display text-lg font-bold text-ivory">
+                      {u.name.charAt(0)}
+                    </span>
+                  )}
                   <div className="min-w-0">
                     <p
                       className={`truncate text-sm font-semibold leading-snug ${
@@ -138,7 +147,7 @@ export function ExploreScreen() {
       <div className={`${view === 'map' ? 'block' : 'hidden'} relative flex-1 overflow-hidden lg:block`}>
 
         <MapView
-          universities={UNIVERSITIES}
+          universities={universities}
           selectedId={selected?.id ?? null}
           onSelect={handleSelect}
           panelWidth={420}
@@ -163,12 +172,18 @@ export function ExploreScreen() {
             <>
               {/* Campus hero image */}
               <div className="relative h-[230px] shrink-0 overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selected.image}
-                  alt={selected.name}
-                  className="h-full w-full object-cover"
-                />
+                {selected.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={selected.image}
+                    alt={selected.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-maroon-gradient font-display text-5xl font-bold text-ivory">
+                    {selected.name.charAt(0)}
+                  </div>
+                )}
                 <div
                   className="absolute inset-0"
                   style={{
@@ -199,8 +214,12 @@ export function ExploreScreen() {
                   <MapPin size={13} className="shrink-0 text-ink-400" />
                   <p className="text-[0.8rem] text-ink-600">
                     {selected.city}, {selected.state}
-                    <span className="mx-1.5 text-ink-300">·</span>
-                    <span className="font-semibold text-ink-800">{selected.ranking}</span>
+                    {selected.ranking && (
+                      <>
+                        <span className="mx-1.5 text-ink-300">·</span>
+                        <span className="font-semibold text-ink-800">{selected.ranking}</span>
+                      </>
+                    )}
                   </p>
                 </div>
 

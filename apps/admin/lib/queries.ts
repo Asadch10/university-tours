@@ -32,7 +32,6 @@ import type {
   ListingStatus,
 } from './data';
 
-const avatar = (seed: string) => `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
 const nowIso = () => new Date().toISOString();
 
 // ─── Status mappers (backend enum → UI enum) ───────────────────────────────────
@@ -43,11 +42,6 @@ export const appStatusToApi = (s: string) => (s === 'PENDING' ? 'SUBMITTED' : s)
 
 const bookingStatus = (s: string): BookingStatus =>
   s === 'PENDING' ? 'REQUESTED' : s === 'CONFIRMED' ? 'UPCOMING' : (s as BookingStatus);
-
-const listingStatus = (s: string): ListingStatus =>
-  s === 'PAUSED' ? 'INACTIVE' : s === 'SUSPENDED' || s === 'DRAFT' ? 'DISABLED' : (s as ListingStatus);
-export const listingStatusToApi = (s: ListingStatus): string =>
-  s === 'INACTIVE' ? 'PAUSED' : s === 'DISABLED' ? 'SUSPENDED' : 'ACTIVE';
 
 const qType = (t: string): Questionnaire['questions'][number]['type'] =>
   t === 'TEXT' ? 'SHORT_TEXT' : t === 'SINGLE_CHOICE' ? 'SINGLE_SELECT' : t === 'MULTI_CHOICE' ? 'MULTI_SELECT' : (t as 'LONG_TEXT' | 'FILE');
@@ -105,7 +99,6 @@ export function useApplications() {
         gradYear: a.seller.sellerProfile?.gradYear ?? 0,
         status: appStatus(a.status),
         submittedAt: a.submittedAt,
-        avatar: avatar(a.seller.email),
         enrollmentDoc: 'enrollment.pdf',
         answers: a.answers.map((ans) => ({ question: ans.questionLabelSnapshot, answer: ans.value ?? '' })),
         reason: a.reason ?? undefined,
@@ -179,18 +172,19 @@ export function useUsers() {
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {
       const res = await adminApi.users();
+      // Website sign-ups keep role=null until onboarding decides it, so only
+      // admins are excluded. SELLER → Guide; BUYER and undecided → Guest.
       return res.data
-        .filter((u) => u.role === 'BUYER' || u.role === 'SELLER')
+        .filter((u) => u.role !== 'ADMIN' && !u.adminRoleName)
         .map((u) => ({
           id: u.id,
           name: u.name,
           email: u.email,
-          role: u.role as User['role'],
+          role: (u.role === 'SELLER' ? 'GUIDE' : 'GUEST') as User['role'],
           status: u.status as User['status'],
           school: u.sellerProfile?.school?.name,
           bookings: u._count?.buyerBookings ?? 0,
           joinedAt: u.createdAt,
-          avatar: avatar(u.email),
           emailVerified: !!u.emailVerifiedAt,
         }));
     },
@@ -214,17 +208,28 @@ export function useListings() {
       const res = await adminApi.listings();
       return res.data.map((l) => ({
         id: l.id,
-        guide: l.seller?.name ?? '—',
-        guideAvatar: avatar(l.sellerId),
-        school: l.school?.name ?? '—',
-        service: l.serviceType as Listing['service'],
+        guide: l.seller.name,
+        guideEmail: l.seller.email,
+        school: l.school ?? '—',
+        tourTypes: l.tourTypes,
+        photos: l.photos,
+        intro: l.intro ?? undefined,
         title: l.title,
-        priceFrom: l.options.length ? Math.min(...l.options.map((o) => o.priceCents)) : 0,
-        status: listingStatus(l.status),
-        bookings: l._count?.bookings ?? 0,
-        createdAt: l.createdAt ?? nowIso(),
+        status: l.status as ListingStatus,
+        bookings: l.bookings,
+        submittedAt: l.submittedAt ?? undefined,
+        createdAt: l.createdAt,
+        details: l.details ?? {},
       }));
     },
+  });
+}
+
+export function useListingDetail(id: string) {
+  return useQuery({
+    queryKey: ['listings', id],
+    queryFn: () => adminApi.listingDetail(id),
+    enabled: !!id,
   });
 }
 
@@ -233,7 +238,7 @@ export function useListingActions() {
   const inv = () => qc.invalidateQueries({ queryKey: ['listings'] });
   return {
     moderate: useMutation({
-      mutationFn: (v: { id: string; status: ListingStatus }) => adminApi.listingModerate(v.id, listingStatusToApi(v.status)),
+      mutationFn: (v: { id: string; status: ListingStatus }) => adminApi.listingModerate(v.id, v.status),
       onSuccess: inv,
     }),
   };
@@ -308,7 +313,6 @@ export function useGuideBalances() {
       return res.map((g) => ({
         sellerId: g.sellerId,
         guide: g.name,
-        avatar: avatar(g.sellerId),
         school: g.school,
         completedNetCents: g.completedNetCents,
         paidOutCents: g.paidOutCents,
@@ -438,6 +442,8 @@ export function useSchools() {
         state: s.state ?? (s.location ?? '').split(',').pop()?.trim() ?? '',
         tags: s.tags ?? [],
         toursFromCents: s.toursFromCents ?? null,
+        lat: s.lat,
+        lng: s.lng,
         enabled: s.enabled,
         ambassadors: s._count?.sellerProfiles ?? 0,
         bookings: s._count?.listings ?? 0,
@@ -612,7 +618,6 @@ export function useAdminAccounts() {
         email: a.email,
         status: a.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED',
         lastActiveAt: a.createdAt,
-        avatar: avatar(a.email),
       }));
     },
   });

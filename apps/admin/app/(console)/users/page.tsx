@@ -32,8 +32,8 @@ import { formatDate, humanize } from '@/lib/utils';
 
 const ROLE_TABS = [
   { value: 'ALL', label: 'All' },
-  { value: 'BUYER', label: 'Buyers' },
-  { value: 'SELLER', label: 'Sellers' },
+  { value: 'GUIDE', label: 'Guide' },
+  { value: 'GUEST', label: 'Guest' },
 ];
 
 export default function UsersPage() {
@@ -50,8 +50,8 @@ export default function UsersPage() {
   const counts = useMemo(
     () => ({
       ALL: rows.length,
-      BUYER: rows.filter((u) => u.role === 'BUYER').length,
-      SELLER: rows.filter((u) => u.role === 'SELLER').length,
+      GUIDE: rows.filter((u) => u.role === 'GUIDE').length,
+      GUEST: rows.filter((u) => u.role === 'GUEST').length,
     }),
     [rows],
   );
@@ -139,12 +139,7 @@ export default function UsersPage() {
         <div className="flex items-center gap-3">
           <Avatar name={u.name} src={u.avatar} size={38} />
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="truncate font-semibold text-ink-900">{u.name}</span>
-              {!u.emailVerified && (
-                <Badge variant="warning" className="shrink-0">Unverified</Badge>
-              )}
-            </div>
+            <span className="block truncate font-semibold text-ink-900">{u.name}</span>
             <p className="truncate text-xs text-ink-500">{u.email}</p>
           </div>
         </div>
@@ -153,11 +148,21 @@ export default function UsersPage() {
     {
       key: 'role',
       header: 'Role',
-      cell: (u) => <Badge variant={u.role === 'SELLER' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>,
+      cell: (u) => <Badge variant={u.role === 'GUIDE' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>,
     },
     { key: 'school', header: 'School', hideOnMobile: true, cell: (u) => <span className="text-ink-600">{u.school ?? '—'}</span> },
     { key: 'bookings', header: 'Bookings', align: 'right', hideOnMobile: true, cell: (u) => <span className="font-semibold text-ink-800">{u.bookings}</span> },
     { key: 'joined', header: 'Joined', hideOnMobile: true, cell: (u) => <span className="whitespace-nowrap text-ink-600">{formatDate(u.joinedAt)}</span> },
+    {
+      key: 'emailVerified',
+      header: 'Email',
+      cell: (u) =>
+        u.emailVerified ? (
+          <Badge variant="success"><CheckCircle2 size={12} /> Verified</Badge>
+        ) : (
+          <Badge variant="warning"><AlertTriangle size={12} /> Unverified</Badge>
+        ),
+    },
     { key: 'status', header: 'Status', cell: (u) => <StatusBadge status={u.status} /> },
     {
       key: 'actions',
@@ -188,7 +193,7 @@ export default function UsersPage() {
       <div className="space-y-6">
         <PageHeader
           title="Users"
-          description="Buyers and seller-guides across the platform — review profiles and manage account status."
+          description="Guides and guests across the platform — review profiles and manage account status."
         />
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -299,7 +304,7 @@ function UserDetail({
         </div>
 
         <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-          <Detail label="Role" value={<Badge variant={u.role === 'SELLER' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>} />
+          <Detail label="Role" value={<Badge variant={u.role === 'GUIDE' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>} />
           <Detail
             label="School"
             value={

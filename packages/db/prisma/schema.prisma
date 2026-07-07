@@ -216,6 +216,8 @@ model School {
   tags       String[] @default([]) // popular programs, e.g. ["Engineering", "Business"]
   toursFromCents Int?  @map("tours_from_cents") // starting tour price, integer cents
   seoContent String?  @map("seo_content")
+  lat        Float? // campus coordinates — drive the pin on the website's explore map
+  lng        Float?
   enabled    Boolean  @default(true)
 
   sellerProfiles SellerProfile[]
