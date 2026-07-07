@@ -7,7 +7,7 @@ export async function listSchools(q?: string) {
   return prisma.school.findMany({
     where: {
       enabled: true,
-      ...(q ? { name: { contains: q, mode: 'insensitive' } } : {}),
+      ...(q ? { name: { contains: q } } : {}),
     },
     include: { _count: { select: { listings: true, sellerProfiles: true } } },
     orderBy: { name: 'asc' },
@@ -16,7 +16,7 @@ export async function listSchools(q?: string) {
 
 export async function autocompleteSchools(q: string) {
   return prisma.school.findMany({
-    where: { enabled: true, name: { contains: q, mode: 'insensitive' } },
+    where: { enabled: true, name: { contains: q } },
     select: { id: true, name: true, slug: true, location: true },
     orderBy: { name: 'asc' },
     take: 10,
@@ -131,8 +131,8 @@ export async function searchGuides(opts: {
   if (serviceType) where.serviceType = serviceType;
   if (q) {
     where.OR = [
-      { title: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } },
+      { title: { contains: q } },
+      { description: { contains: q } },
     ];
   }
   const [data, total] = await Promise.all([

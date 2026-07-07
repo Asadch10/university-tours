@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -155,7 +155,7 @@ model SellerProfile {
   school            School?           @relation(fields: [schoolId], references: [id], onDelete: SetNull)
   major             String?
   gradYear          Int?              @map("grad_year")
-  bio               String?
+  bio               String?        @db.Text
   enrollmentDocId   String?           @unique @map("enrollment_doc_id")
   enrollmentDoc     Document?         @relation("EnrollmentDoc", fields: [enrollmentDocId], references: [id], onDelete: SetNull)
   applicationStatus ApplicationStatus @default(NOT_SUBMITTED) @map("application_status")
@@ -213,9 +213,9 @@ model School {
   image      String? // campus photo (banner + card + logo)
   location   String? // e.g. "Stanford, CA"
   state      String? // e.g. "California"
-  tags       String[] @default([]) // popular programs, e.g. ["Engineering", "Business"]
+  tags       Json?    @db.Json // popular programs, e.g. ["Engineering", "Business"] (null = none)
   toursFromCents Int?  @map("tours_from_cents") // starting tour price, integer cents
-  seoContent String?  @map("seo_content")
+  seoContent String?  @db.Text @map("seo_content")
   lat        Float? // campus coordinates — drive the pin on the website's explore map
   lng        Float?
   enabled    Boolean  @default(true)
@@ -235,7 +235,7 @@ model Listing {
   school      School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   serviceType ServiceType   @map("service_type")
   title       String
-  description String?
+  description String?      @db.Text
   status      ListingStatus @default(ACTIVE)
 
   options  ListingOption[]
@@ -288,7 +288,7 @@ model Booking {
   scheduledDate         DateTime      @map("scheduled_date")
   scheduledTime         String?       @map("scheduled_time")
   guestCount            Int           @default(1) @map("guest_count")
-  noteForGuide          String?       @map("note_for_guide")
+  noteForGuide          String?       @db.Text @map("note_for_guide")
   status                BookingStatus @default(PENDING)
   stripePaymentIntentId String?       @map("stripe_payment_intent_id")
   grossCents            Int           @map("gross_cents")
@@ -322,7 +322,7 @@ model BookingEvent {
   fromState BookingStatus? @map("from_state")
   toState   BookingStatus @map("to_state")
   actor     String
-  reason    String?
+  reason    String?  @db.Text
   createdAt DateTime      @default(now()) @map("created_at")
 
   @@index([bookingId])
@@ -351,7 +351,7 @@ model Payout {
   amountCents    Int      @map("amount_cents")
   method         String
   reference      String?
-  note           String?
+  note           String?  @db.Text
   createdByAdmin String   @map("created_by_admin")
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -365,7 +365,7 @@ model Refund {
   booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
   amountCents   Int      @map("amount_cents")
   stripeRefundId String? @map("stripe_refund_id")
-  reason        String?
+  reason        String?  @db.Text
   createdBy     String   @map("created_by")
   createdByUser User     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   createdAt     DateTime @default(now()) @map("created_at")
@@ -410,7 +410,7 @@ model Application {
   questionnaireVersionId String            @map("questionnaire_version_id")
   questionnaire          Questionnaire     @relation(fields: [questionnaireVersionId], references: [id], onDelete: Restrict)
   status                 ApplicationStatus @default(SUBMITTED)
-  reason                 String?
+  reason                 String?     @db.Text
   submittedAt            DateTime          @default(now()) @map("submitted_at")
 
   answers ApplicationAnswer[]
@@ -460,7 +460,7 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderId       String       @map("sender_id")
   sender         User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
-  body           String?
+  body           String?  @db.Text
   imageId        String?      @map("image_id")
   image          Document?    @relation("MessageImage", fields: [imageId], references: [id], onDelete: SetNull)
   masked         Boolean      @default(false)
@@ -479,7 +479,7 @@ model Review {
   sellerId  String   @map("seller_id")
   seller    User     @relation("SellerReviews", fields: [sellerId], references: [id], onDelete: Restrict)
   rating    Int
-  text      String?
+  text      String?  @db.Text
   hidden    Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -544,7 +544,7 @@ model NotificationTemplate {
   key     String              @unique
   channel NotificationChannel
   subject String?
-  body    String
+  body    String   @db.Text
 
   @@map("notification_templates")
 }
@@ -553,7 +553,7 @@ model PushCampaign {
   id          String          @id @default(cuid())
   segment     CampaignSegment
   title       String
-  body        String
+  body        String   @db.Text
   scheduledAt DateTime?       @map("scheduled_at")
   status      CampaignStatus  @default(DRAFT)
 
