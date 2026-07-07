@@ -18,6 +18,10 @@ import {
   Ban,
   Camera,
   Sparkles,
+  X,
+  Eye,
+  User,
+  ListChecks,
 } from 'lucide-react';
 import { accountApi, friendlyError, tokenStore } from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
@@ -35,6 +39,32 @@ interface GuideListing {
   submittedAt?: string;
   publishedAt?: string;
   completedStep?: string;
+  // ── Full "About you" details captured in step 1 ──
+  gender?: string;
+  academicYear?: string;
+  age?: string;
+  admissionType?: string;
+  hometown?: string;
+  academicFocus?: string;
+  majors?: string;
+  minors?: string;
+  extracurriculars?: string[];
+  clubs?: string;
+  housing?: string[];
+  personality?: string;
+  experienceRating?: string;
+  describeExperience?: string;
+  tip?: string;
+  favoriteClass?: string;
+  careerGoals?: string;
+  freeNight?: string;
+  highSchool?: string;
+  previousCollege?: string;
+  groupTours?: string;
+  referral?: string;
+  // ── Agreements captured in steps 1 & 2 ──
+  agreedContract?: boolean;
+  agreedGuidelines?: boolean;
 }
 
 /* Photos are object URLs during the session; they don't survive a reload. */
@@ -341,11 +371,12 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
   const status = listing.status ?? 'under_review';
   const photo = usablePhoto(listing.photos?.find(usablePhoto) ?? undefined);
   const photoCount = (listing.photos ?? []).length;
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
       {/* ── Listing preview card ── */}
-      <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+      <section className="self-start overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
         <div className="relative aspect-[4/3.4] overflow-hidden">
           {photo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -381,6 +412,14 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
               ))}
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(true)}
+            className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-maroon-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
+          >
+            <Eye size={15} /> View details
+          </button>
         </div>
       </section>
 
@@ -415,6 +454,226 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
             </div>
           )}
         </section>
+      </div>
+
+      {detailsOpen && (
+        <DetailsModal listing={listing} name={name} onClose={() => setDetailsOpen(false)} />
+      )}
+    </div>
+  );
+}
+
+/* ═══ Full-detail modal — Details · Getting paid · Photos ═══════════════ */
+
+const GUIDELINES = [
+  {
+    key: 'personable',
+    title: 'Be personable',
+    body: 'Share your personal story as a college student and answer questions honestly.',
+  },
+  {
+    key: 'punctual',
+    title: 'Be punctual',
+    body: 'Treat hosting like a job: be welcoming, keep availability updated, and arrive on time.',
+  },
+  {
+    key: 'prepared',
+    title: 'Be prepared',
+    body: 'Know your campus and come ready to give guests a great, informative experience.',
+  },
+];
+
+function DetailsModal({
+  listing,
+  name,
+  onClose,
+}: {
+  listing: GuideListing;
+  name: string;
+  onClose: () => void;
+}) {
+  const photos = (listing.photos ?? []).map(usablePhoto).filter((p): p is string => !!p);
+
+  // Ordered rows for the "Details" section — empty values are skipped.
+  const rows: { label: string; value?: string }[] = [
+    { label: 'Listing title', value: listing.listingTitle },
+    { label: 'School', value: listing.school },
+    { label: 'Tour types', value: listing.tourTypes?.join(', ') },
+    { label: 'Gender', value: listing.gender },
+    { label: 'Academic year', value: listing.academicYear },
+    { label: 'Age', value: listing.age },
+    { label: 'Admission type', value: listing.admissionType },
+    { label: 'Hometown', value: listing.hometown },
+    { label: 'Academic focus', value: listing.academicFocus },
+    { label: 'Major(s)', value: listing.majors },
+    { label: 'Minor(s)', value: listing.minors },
+    { label: 'Extracurriculars', value: listing.extracurriculars?.join(', ') },
+    { label: 'Clubs & involvement', value: listing.clubs },
+    { label: 'Housing', value: listing.housing?.join(', ') },
+    { label: 'Personality', value: listing.personality },
+    { label: 'Experience rating', value: listing.experienceRating },
+    { label: 'College experience', value: listing.describeExperience },
+    { label: 'Tip for future students', value: listing.tip },
+    { label: 'Favorite class', value: listing.favoriteClass },
+    { label: 'Career goals', value: listing.careerGoals },
+    { label: 'Ideal free night', value: listing.freeNight },
+    { label: 'High school', value: listing.highSchool },
+    { label: 'Previous college', value: listing.previousCollege },
+    { label: 'Open to group tours', value: listing.groupTours },
+    { label: 'How they heard about us', value: listing.referral },
+  ].filter((r) => r.value && r.value.trim());
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/50 px-4 py-8 backdrop-blur-[2px] sm:py-12"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Guide listing details"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-3xl rounded-3xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-ink-100 bg-white/95 px-6 py-4 backdrop-blur sm:px-8">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-ink-900">
+              {listing.listingTitle?.trim() || 'Your guide profile'}
+            </h2>
+            <p className="mt-0.5 text-sm text-ink-500">{name || 'Guide'}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-7 sm:px-8">
+          {/* ── Section 1: Details ── */}
+          <div className="space-y-5">
+            <SectionHeader icon={User} step={1} title="Details" subtitle="About you & your school" />
+            {listing.intro?.trim() && (
+              <div className="rounded-2xl bg-ink-50/70 p-4">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
+                  Introduction
+                </p>
+                <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">
+                  {listing.intro}
+                </p>
+              </div>
+            )}
+            <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+              {rows.map((r) => (
+                <div key={r.label}>
+                  <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
+                    {r.label}
+                  </dt>
+                  <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">
+                    {r.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {/* ── Section 2: Getting paid ── */}
+          <div className="mt-8 border-t border-ink-100 pt-7">
+            <SectionHeader
+              icon={Wallet}
+              step={2}
+              title="Getting paid"
+              subtitle="Guidelines you agreed to"
+            />
+            <ul className="mt-1 space-y-3">
+              {GUIDELINES.map((g) => (
+                <li
+                  key={g.key}
+                  className="flex items-start gap-3 rounded-2xl border border-ink-100 bg-white p-4"
+                >
+                  <span
+                    className={cn(
+                      'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
+                      listing.agreedGuidelines
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-ink-100 text-ink-400',
+                    )}
+                  >
+                    <CheckCircle2 size={15} />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-ink-900">{g.title}</p>
+                    <p className="mt-0.5 text-[0.82rem] leading-relaxed text-ink-500">{g.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex items-center gap-2 text-sm text-ink-600">
+              <ListChecks size={15} className="text-maroon-800" />
+              <span>
+                Guide agreement:{' '}
+                <span className="font-semibold text-ink-900">
+                  {listing.agreedContract ? 'Accepted' : 'Not accepted'}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* ── Section 3: Photos ── */}
+          <div className="mt-8 border-t border-ink-100 pt-7">
+            <SectionHeader
+              icon={Camera}
+              step={3}
+              title="Photos"
+              subtitle={`${photos.length} photo${photos.length !== 1 ? 's' : ''} uploaded`}
+            />
+            {photos.length ? (
+              <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {photos.map((src, i) => (
+                  <div key={i} className="aspect-square overflow-hidden rounded-2xl bg-ink-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt={`Guide photo ${i + 1}`} className="h-full w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 rounded-2xl bg-ink-50 p-4 text-sm text-ink-500">
+                Photos are added during setup and shown here once uploaded.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  step,
+  title,
+  subtitle,
+}: {
+  icon: typeof User;
+  step: number;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-900">
+        <Icon size={18} />
+      </span>
+      <div>
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
+          Step {step}
+        </p>
+        <h3 className="font-display text-lg font-semibold leading-tight text-ink-900">{title}</h3>
+        <p className="text-[0.82rem] text-ink-500">{subtitle}</p>
       </div>
     </div>
   );

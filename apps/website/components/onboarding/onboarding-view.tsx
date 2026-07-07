@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { accountApi, friendlyError, tokenStore } from '@/lib/client-api';
+import { accountApi, authApi, friendlyError, tokenStore } from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { universities } from '@/lib/data';
@@ -24,6 +24,8 @@ type Step = 'intent' | 'schools';
 /** First-run welcome. Buyers get a second step to pick schools before heading to Browse guides. */
 export function OnboardingView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const verifyToken = searchParams.get('token');
   const toast = useToast();
   const [firstName, setFirstName] = useState('');
   const [selected, setSelected] = useState('');
@@ -36,22 +38,46 @@ export function OnboardingView() {
   const [customSchools, setCustomSchools] = useState('');
 
   useEffect(() => {
-    const u = tokenStore.user;
-    if (!u) {
-      router.replace('/login');
-      return;
-    }
-    setFirstName((u.name || '').trim().split(/\s+/)[0] || '');
+    let cancelled = false;
 
-    // Role decides onboarding: if it's already set, onboarding is done → skip.
-    accountApi
-      .getMe()
-      .then((me) => {
+    (async () => {
+      // Arrived from the email "Verify my email" button → confirm it first.
+      if (verifyToken) {
+        try {
+          await authApi.verifyEmail(verifyToken);
+          updateSessionUser({ emailVerified: true });
+          if (!cancelled) toast.success('Email verified', 'Your email address is confirmed.');
+        } catch {
+          if (!cancelled) toast.error('Verification failed', 'That link is invalid or has expired.');
+        }
+        // Drop the token from the URL so a refresh doesn't re-run verification.
+        router.replace('/onboarding');
+      }
+
+      const u = tokenStore.user;
+      if (!u) {
+        router.replace('/login');
+        return;
+      }
+      if (cancelled) return;
+      setFirstName((u.name || '').trim().split(/\s+/)[0] || '');
+
+      // Role decides onboarding: if it's already set, onboarding is done → skip.
+      try {
+        const me = await accountApi.getMe();
+        if (cancelled) return;
         if (me.role) router.replace('/');
         else setChecking(false);
-      })
-      .catch(() => setChecking(false));
-  }, [router]);
+      } catch {
+        if (!cancelled) setChecking(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, verifyToken]);
 
   async function handleIntentContinue() {
     // Buyers pick their schools next; everyone else finishes here.

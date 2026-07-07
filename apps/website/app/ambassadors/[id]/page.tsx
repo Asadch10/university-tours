@@ -17,11 +17,33 @@ import { Badge } from '@/components/ui/badge';
 import { StarRating } from '@/components/ui/star-rating';
 import { BookingWidget } from '@/components/booking/booking-widget';
 import { ambassadors, findAmbassador, findUniversity } from '@/lib/data';
-import { guides, getGuideProfile } from '@/lib/guides';
+import {
+  guides,
+  getGuideProfile,
+  communityGuideToProfile,
+  type GuideProfile,
+  type CommunityGuideDto,
+} from '@/lib/guides';
 import { GuideDetail } from '@/components/guide/guide-detail';
 
 export function generateStaticParams() {
   return [...ambassadors.map((a) => ({ id: a.id })), ...guides.map((g) => ({ id: g.id }))];
+}
+
+/** Fetch an admin-approved website guide by owner id (rendered on demand). */
+async function fetchLiveGuide(id: string): Promise<GuideProfile | null> {
+  const base =
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    'http://localhost:4000';
+  try {
+    const res = await fetch(`${base}/api/v1/search/community-guides/${id}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const dto = (await res.json()) as CommunityGuideDto;
+    return communityGuideToProfile(dto);
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata({
@@ -39,7 +61,17 @@ export async function generateMetadata({
     };
   }
   const a = findAmbassador(id);
-  if (!a) return { title: 'Guide not found' };
+  if (!a) {
+    const live = await fetchLiveGuide(id);
+    if (live) {
+      return {
+        title: `${live.name} — ${live.university} student guide`,
+        description: live.headline,
+        alternates: { canonical: `/ambassadors/${live.id}` },
+      };
+    }
+    return { title: 'Guide not found' };
+  }
   return {
     title: `${a.name} — ${a.university} student guide`,
     description: a.bio,
@@ -61,7 +93,12 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
   if (gp) return <GuideDetail g={gp} />;
 
   const a = findAmbassador(id);
-  if (!a) notFound();
+  if (!a) {
+    // Not a sample guide/ambassador → try a real, admin-approved website guide.
+    const live = await fetchLiveGuide(id);
+    if (live) return <GuideDetail g={live} />;
+    notFound();
+  }
   const uni = findUniversity(a.universitySlug);
 
   return (

@@ -7,6 +7,8 @@
  * once and retries. (Server components use the SDK client in `lib/api.ts`.)
  */
 
+import type { CommunityGuideDto } from './guides';
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
@@ -156,6 +158,38 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 }
 
+/** Multipart image upload (field `file`). Returns an absolute URL to the stored image. */
+async function uploadImage(path: string, file: File): Promise<string> {
+  const doUpload = async () => {
+    const headers: Record<string, string> = {};
+    if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${API_URL}/api/v1${path}`, { method: 'POST', headers, body: form });
+    const text = await res.text();
+    const json = text ? JSON.parse(text) : undefined;
+    if (!res.ok) {
+      const err = json as ApiErrorShape | undefined;
+      throw new ApiError(res.status, err?.code ?? 'error', err?.error ?? res.statusText);
+    }
+    return json as { url: string };
+  };
+
+  let out: { url: string };
+  try {
+    out = await doUpload();
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401 && tokenStore.refresh && (await tryRefresh())) {
+      out = await doUpload();
+    } else {
+      throw e;
+    }
+  }
+  // Stored URLs are backend-relative (/uploads/…); make them absolute so the
+  // website (a different origin) can render them.
+  return out.url.startsWith('http') ? out.url : `${API_URL}${out.url}`;
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export const authApi = {
@@ -168,6 +202,31 @@ export const authApi = {
     tokenStore.refresh
       ? rawRequest('POST', '/auth/logout', { refreshToken: tokenStore.refresh }, false).catch(() => undefined)
       : Promise.resolve(undefined),
+  // Confirm an email-verification token (public — the user may be signed out).
+  verifyEmail: (token: string) =>
+    rawRequest<{ ok: true; email: string; name: string; emailVerified: true }>(
+      'POST',
+      '/auth/verify-email',
+      { token },
+      false,
+    ),
+  // Re-send the verification email for the currently signed-in user.
+  resendVerification: () =>
+    request<{ ok: true; alreadyVerified: boolean }>('POST', '/auth/resend-verification'),
+  // Request a password-reset email (always resolves ok, even for unknown emails).
+  forgotPassword: (email: string) =>
+    rawRequest<{ ok: true; message: string }>('POST', '/auth/forgot-password', { email }, false),
+  // Set a new password using the token from the reset email.
+  resetPassword: (token: string, password: string) =>
+    rawRequest<{ ok: true }>('POST', '/auth/reset-password', { token, password }, false),
+};
+
+// ─── Public guides (admin-approved website listings) ──────────────────────────
+
+export const guidesApi = {
+  // Approved website guides shown on Browse guides. Public — no auth needed.
+  community: () =>
+    rawRequest<{ data: CommunityGuideDto[] }>('GET', '/search/community-guides', undefined, false),
 };
 
 // ─── Account / profile ────────────────────────────────────────────────────────
@@ -191,6 +250,8 @@ export const accountApi = {
   changePassword: (newPassword: string) =>
     request<{ ok: true }>('POST', '/users/me/password', { newPassword }),
   deleteAccount: () => request<{ ok: true }>('DELETE', '/users/me'),
+  // Upload a profile photo; returns an absolute URL to store in the listing.
+  uploadPhoto: (file: File) => uploadImage('/users/me/uploads', file),
   saveGuideListing: (listing: Record<string, unknown>) =>
     request<{ id: string; role: Role; profileJson: Record<string, unknown> | null }>('POST', '/users/me/guide-listing', listing),
   deleteGuideListing: () =>

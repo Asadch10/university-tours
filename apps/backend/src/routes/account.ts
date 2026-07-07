@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { imageUpload, uploadUrl } from '../lib/uploads.js';
 import * as svc from '../services/account.service.js';
 
 export const usersRouter = Router();
@@ -43,6 +44,22 @@ usersRouter.post('/me/password', requireAuth, asyncHandler(async (req, res) => {
 usersRouter.delete('/me', requireAuth, asyncHandler(async (req, res) => {
   res.json(await svc.deleteAccount(req.user!.id));
 }));
+
+// Authenticated single-image upload (field name `file`) → { url }. Used by the
+// become-a-guide flow to persist profile photos so they survive the session.
+usersRouter.post('/me/uploads', requireAuth, (req, res, next) => {
+  imageUpload(req, res, (err: unknown) => {
+    if (err) {
+      next(err instanceof HttpError ? err : new HttpError(400, 'upload_failed', (err as Error).message));
+      return;
+    }
+    if (!req.file) {
+      next(new HttpError(400, 'no_file', 'No file was uploaded'));
+      return;
+    }
+    res.status(201).json({ url: uploadUrl(req.file.filename), filename: req.file.filename });
+  });
+});
 
 usersRouter.post('/me/devices', requireAuth, asyncHandler(async (_req, res) => {
   res.status(201).json({ ok: true });

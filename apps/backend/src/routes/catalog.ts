@@ -55,6 +55,15 @@ searchRouter.get('/guides', asyncHandler(async (req, res) => {
   res.json(await svc.searchGuides({ schoolId, serviceType, date, q, page: page ? +page : 1, limit: limit ? +limit : 20 }));
 }));
 
+// Approved website guides (become-a-guide listings an admin published). Public.
+searchRouter.get('/community-guides', asyncHandler(async (_req, res) => {
+  res.json(await svc.listPublishedGuides());
+}));
+
+searchRouter.get('/community-guides/:id', asyncHandler(async (req, res) => {
+  res.json(await svc.getPublishedGuide(req.params['id'] as string));
+}));
+
 export const configRouter = Router();
 
 configRouter.get('/price-bounds', asyncHandler(async (_req, res) => {

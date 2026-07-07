@@ -157,3 +157,68 @@ export async function searchGuides(opts: {
 export async function getPriceBounds() {
   return prisma.servicePriceBound.findMany();
 }
+
+// ─── Community guides (website become-a-guide listings that admins published) ──
+// These live on the owner's user record (`profileJson.guideListing`), separate
+// from the seeded Listing catalog above. Only `status: 'published'` ones are
+// public — this is what powers the approved guides shown on Browse guides.
+
+interface CommunityGuideRow {
+  id: string;
+  name: string;
+  rating: number | null;
+  reviews: number;
+  listing: Record<string, unknown>;
+}
+
+function toCommunityGuide(u: {
+  id: string;
+  name: string;
+  profileJson: unknown;
+  sellerProfile: { ratingAvg: number | null; ratingCount: number } | null;
+}): CommunityGuideRow | null {
+  const gl = ((u.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as
+    | Record<string, unknown>
+    | null;
+  if (!gl || gl.status !== 'published') return null;
+  return {
+    id: u.id,
+    name: u.name,
+    rating: u.sellerProfile?.ratingAvg ?? null,
+    reviews: u.sellerProfile?.ratingCount ?? 0,
+    listing: gl,
+  };
+}
+
+/** All published website guides, newest first. */
+export async function listPublishedGuides(): Promise<{ data: CommunityGuideRow[] }> {
+  const users = await prisma.user.findMany({
+    where: { role: { not: 'ADMIN' } },
+    select: {
+      id: true,
+      name: true,
+      profileJson: true,
+      createdAt: true,
+      sellerProfile: { select: { ratingAvg: true, ratingCount: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const data = users.map(toCommunityGuide).filter((g): g is CommunityGuideRow => g !== null);
+  return { data };
+}
+
+/** A single published website guide by owner id (for the guide detail page). */
+export async function getPublishedGuide(id: string): Promise<CommunityGuideRow> {
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      profileJson: true,
+      sellerProfile: { select: { ratingAvg: true, ratingCount: true } },
+    },
+  });
+  const guide = u ? toCommunityGuide(u) : null;
+  if (!guide) throw new HttpError(404, 'not_found', 'Guide not found');
+  return guide;
+}

@@ -12,9 +12,11 @@ import {
   YEARS,
   ADMISSIONS,
   FOCUSES,
+  communityGuideToGuide,
   type Guide,
   type GuideService,
 } from '@/lib/guides';
+import { guidesApi } from '@/lib/client-api';
 
 type Sort = 'recommended' | 'rating' | 'price-asc' | 'price-desc';
 
@@ -116,7 +118,25 @@ export function SearchResults({
   const [admissions, setAdmissions] = useState<string[]>([]);
   const [focuses, setFocuses] = useState<string[]>([]);
 
+  // Real, admin-approved guides — shown at the top, ahead of the sample guides.
+  const [liveGuides, setLiveGuides] = useState<Guide[]>([]);
+
   const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    guidesApi
+      .community()
+      .then((res) => {
+        if (active) setLiveGuides(res.data.map(communityGuideToGuide));
+      })
+      .catch(() => {
+        /* Browse still works with the sample guides if the fetch fails. */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function toggle(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -125,8 +145,11 @@ export function SearchResults({
   const activeFilterCount =
     genders.length + years.length + admissions.length + focuses.length;
 
+  const liveIds = useMemo(() => new Set(liveGuides.map((g) => g.id)), [liveGuides]);
+
   const results = useMemo(() => {
-    let list = GUIDES.filter((g) => {
+    // Approved guides first, then the sample guides.
+    let list = [...liveGuides, ...GUIDES].filter((g) => {
       const q = query.toLowerCase();
       const matchesQuery =
         !query ||
@@ -147,14 +170,17 @@ export function SearchResults({
         matchesFocus
       );
     });
+    const isLive = (g: Guide) => liveIds.has(g.id);
     list = [...list].sort((a, b) => {
       if (sort === 'rating') return b.rating - a.rating;
       if (sort === 'price-asc') return a.price - b.price;
       if (sort === 'price-desc') return b.price - a.price;
+      // Recommended: real approved guides first, then by review count.
+      if (isLive(a) !== isLive(b)) return isLive(a) ? -1 : 1;
       return b.reviews - a.reviews;
     });
     return list;
-  }, [query, service, genders, years, admissions, focuses, sort]);
+  }, [liveGuides, liveIds, query, service, genders, years, admissions, focuses, sort]);
 
   const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
 

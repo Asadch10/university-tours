@@ -1,6 +1,8 @@
 import * as argon2 from 'argon2';
 import { prisma, Prisma } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
+import { logger } from '../lib/logger.js';
+import { sendProfileUnderReviewEmail } from './mailer.service.js';
 
 // ─── User profile ─────────────────────────────────────────────────────────────
 
@@ -71,16 +73,25 @@ export async function completeOnboarding(userId: string, data: { intent?: string
  * than being overwritten by a later step that only carries its own fields.
  */
 export async function saveGuideListing(userId: string, listing: Record<string, unknown>) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { profileJson: true, role: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { profileJson: true, role: true, name: true, email: true } });
   if (!user) throw new HttpError(404, 'not_found', 'User not found');
   const prev = (user.profileJson ?? {}) as Record<string, unknown>;
   const prevListing = (prev.guideListing ?? {}) as Record<string, unknown>;
   const isDraft = listing.status === 'draft';
 
-  const guideListing: Record<string, unknown> = {
-    ...prevListing, // keep fields saved by earlier steps
-    ...listing,
-  };
+  // Merge onto the existing draft, but never let a blank value from a later step
+  // overwrite a non-empty value saved earlier. (The multi-step form re-sends the
+  // whole details object on publish; if an uncontrolled field wasn't repopulated
+  // on resume it can come back empty — this guard keeps the previously-saved value.)
+  const isEmpty = (v: unknown) =>
+    v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0);
+  const isNonEmpty = (v: unknown) => !isEmpty(v);
+
+  const guideListing: Record<string, unknown> = { ...prevListing };
+  for (const [key, value] of Object.entries(listing)) {
+    if (isEmpty(value) && isNonEmpty(prevListing[key])) continue; // keep the saved value
+    guideListing[key] = value;
+  }
   if (isDraft) {
     guideListing.status = 'draft';
   } else {
@@ -93,11 +104,23 @@ export async function saveGuideListing(userId: string, listing: Record<string, u
   };
   // Only submitting a completed listing makes the user a guide — a draft leaves the role untouched.
   if (!isDraft && user.role !== 'ADMIN') patch.role = 'SELLER' as never;
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: patch,
     select: { id: true, role: true, profileJson: true },
   });
+
+  // Notify the applicant that their profile is under review — but only on the
+  // transition into review (not on every draft save, and not if it was already
+  // under review). Best-effort: a mail failure must not fail the save.
+  const enteringReview = !isDraft && prevListing.status !== 'under_review';
+  if (enteringReview) {
+    sendProfileUnderReviewEmail({ to: user.email, name: user.name }).catch((err) => {
+      logger.error({ err, userId }, 'Under-review email dispatch failed');
+    });
+  }
+
+  return updated;
 }
 
 /**
