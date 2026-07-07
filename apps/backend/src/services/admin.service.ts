@@ -79,8 +79,8 @@ export async function listApplications(opts: { status?: string; q?: string; page
   if (q) {
     where.seller = {
       OR: [
-        { name: { contains: q, mode: 'insensitive' } },
-        { email: { contains: q, mode: 'insensitive' } },
+        { name: { contains: q } },
+        { email: { contains: q } },
       ],
     };
   }
@@ -216,8 +216,8 @@ export async function listUsers(opts: { q?: string; role?: string; status?: stri
   if (status && status !== 'ALL') where.status = status;
   if (q) {
     where.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { email: { contains: q, mode: 'insensitive' } },
+      { name: { contains: q } },
+      { email: { contains: q } },
     ];
   }
   const [data, total] = await Promise.all([
@@ -436,8 +436,8 @@ export async function listBookings(opts: { status?: string; q?: string; page?: n
   if (status && status !== 'ALL') where.status = status;
   if (q) {
     where.OR = [
-      { buyer: { name: { contains: q, mode: 'insensitive' } } },
-      { seller: { name: { contains: q, mode: 'insensitive' } } },
+      { buyer: { name: { contains: q } } },
+      { seller: { name: { contains: q } } },
     ];
   }
   const [data, total] = await Promise.all([
@@ -525,9 +525,9 @@ export async function listReviews(opts: { hidden?: boolean; q?: string; page?: n
   if (hidden !== undefined) where.hidden = hidden;
   if (q) {
     where.OR = [
-      { buyer: { name: { contains: q, mode: 'insensitive' } } },
-      { seller: { name: { contains: q, mode: 'insensitive' } } },
-      { text: { contains: q, mode: 'insensitive' } },
+      { buyer: { name: { contains: q } } },
+      { seller: { name: { contains: q } } },
+      { text: { contains: q } },
     ];
   }
   const [data, total] = await Promise.all([
@@ -671,7 +671,7 @@ export async function listSchools(opts: { q?: string; enabled?: boolean; page?: 
   const { q, enabled, page = 1, limit = 50 } = opts;
   const where: Record<string, unknown> = {};
   if (enabled !== undefined) where.enabled = enabled;
-  if (q) where.name = { contains: q, mode: 'insensitive' };
+  if (q) where.name = { contains: q };
   const [data, total] = await Promise.all([
     prisma.school.findMany({
       where,
@@ -885,9 +885,9 @@ export async function listAuditLogs(opts: { q?: string; page?: number; limit?: n
   const where: Record<string, unknown> = {};
   if (q) {
     where.OR = [
-      { action: { contains: q, mode: 'insensitive' } },
-      { entity: { contains: q, mode: 'insensitive' } },
-      { admin: { name: { contains: q, mode: 'insensitive' } } },
+      { action: { contains: q } },
+      { entity: { contains: q } },
+      { admin: { name: { contains: q } } },
     ];
   }
   const [data, total] = await Promise.all([
