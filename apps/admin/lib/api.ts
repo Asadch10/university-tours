@@ -105,7 +105,9 @@ function forceLogout() {
   } catch {
     /* storage unavailable */
   }
-  if (!window.location.pathname.startsWith('/login')) window.location.assign('/login');
+  // basePath ('/admin') isn't applied to raw window.location — prefix it manually.
+  const loginPath = '/admin/login';
+  if (!window.location.pathname.startsWith(loginPath)) window.location.assign(loginPath);
 }
 
 /** Authenticated request with one transparent refresh-and-retry on 401. */
