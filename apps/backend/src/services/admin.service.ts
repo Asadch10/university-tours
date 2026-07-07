@@ -240,31 +240,171 @@ export async function updateUser(id: string, data: { status?: string }, adminId?
 
 // ─── Listings ─────────────────────────────────────────────────────────────────
 
-export async function listListings(opts: { q?: string; status?: string; schoolId?: string; service?: string; page?: number; limit?: number }) {
-  const { q, status, schoolId, service, page = 1, limit = 20 } = opts;
-  const where: Record<string, unknown> = {};
-  if (status && status !== 'ALL') where.status = status;
-  if (schoolId) where.schoolId = schoolId;
-  if (service && service !== 'ALL') where.serviceType = service;
-  if (q) where.title = { contains: q, mode: 'insensitive' };
-  const [data, total] = await Promise.all([
-    prisma.listing.findMany({
-      where,
-      include: { school: true, options: true, seller: { select: { id: true, name: true } }, _count: { select: { bookings: true } } },
-      orderBy: { status: 'asc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.listing.count({ where }),
-  ]);
+// Guide listings live on the owner's user record (`profileJson.guideListing`) —
+// the same JSON the website's become-a-guide flow writes ('draft' → 'under_review'
+// on publish; the admin review below moves it to 'published' / 'suspended').
+// One listing per user, so the owner's user id doubles as the listing id.
+
+const GUIDE_LISTING_STATUSES = ['DRAFT', 'UNDER_REVIEW', 'PUBLISHED', 'SUSPENDED'] as const;
+export type GuideListingStatus = (typeof GUIDE_LISTING_STATUSES)[number];
+
+const guideListingStatus = (s: unknown): GuideListingStatus =>
+  s === 'published' ? 'PUBLISHED' : s === 'suspended' ? 'SUSPENDED' : s === 'draft' ? 'DRAFT' : 'UNDER_REVIEW';
+
+export async function listListings(opts: { q?: string; status?: string; service?: string; page?: number; limit?: number }) {
+  const { q, status, service, page = 1, limit = 20 } = opts;
+  // JSON-path filters on nullable Json columns are error-prone across Prisma
+  // versions, so fetch candidates and filter in JS — one listing per user keeps
+  // this small.
+  const users = await prisma.user.findMany({
+    where: { role: { not: 'ADMIN' } },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      profileJson: true,
+      _count: { select: { sellerBookings: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  let rows = users
+    .map((u) => {
+      const gl = ((u.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as Record<string, unknown> | null;
+      if (!gl) return null;
+      return {
+        id: u.id,
+        title: typeof gl.listingTitle === 'string' && gl.listingTitle.trim() ? gl.listingTitle : 'Untitled listing',
+        school: typeof gl.school === 'string' && gl.school.trim() ? gl.school : null,
+        tourTypes: Array.isArray(gl.tourTypes) ? gl.tourTypes.filter((t): t is string => typeof t === 'string') : [],
+        photos: Array.isArray(gl.photos) ? gl.photos.filter((p): p is string => typeof p === 'string') : [],
+        intro: typeof gl.intro === 'string' ? gl.intro : null,
+        status: guideListingStatus(gl.status),
+        submittedAt: typeof gl.submittedAt === 'string' ? gl.submittedAt : null,
+        createdAt: u.createdAt,
+        seller: { id: u.id, name: u.name, email: u.email },
+        bookings: u._count.sellerBookings,
+        // Full form answers as saved by the website, for the admin detail view.
+        details: gl,
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  if (status && status !== 'ALL') rows = rows.filter((r) => r.status === status);
+  if (service && service !== 'ALL') rows = rows.filter((r) => r.tourTypes.includes(service));
+  if (q) {
+    const needle = q.toLowerCase();
+    rows = rows.filter(
+      (r) =>
+        r.title.toLowerCase().includes(needle) ||
+        r.seller.name.toLowerCase().includes(needle) ||
+        (r.school ?? '').toLowerCase().includes(needle),
+    );
+  }
+
+  const total = rows.length;
+  const data = rows.slice((page - 1) * limit, (page - 1) * limit + limit);
   return { data, total, page, limit };
 }
 
+/** Everything the admin detail page needs: the website listing JSON plus the owner's account and seller profile. */
+export async function getListingDetail(id: string) {
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      emailVerifiedAt: true,
+      createdAt: true,
+      profileJson: true,
+      sellerProfile: {
+        select: {
+          school: { select: { name: true } },
+          major: true,
+          gradYear: true,
+          bio: true,
+          applicationStatus: true,
+          approvedAt: true,
+          ratingAvg: true,
+          ratingCount: true,
+        },
+      },
+      _count: { select: { sellerBookings: true, buyerBookings: true } },
+    },
+  });
+  const gl = ((u?.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as Record<string, unknown> | null;
+  if (!u || !gl) throw new HttpError(404, 'not_found', 'Listing not found');
+
+  return {
+    id: u.id,
+    title: typeof gl.listingTitle === 'string' && gl.listingTitle.trim() ? gl.listingTitle : 'Untitled listing',
+    school: typeof gl.school === 'string' && gl.school.trim() ? gl.school : null,
+    tourTypes: Array.isArray(gl.tourTypes) ? gl.tourTypes.filter((t): t is string => typeof t === 'string') : [],
+    photos: Array.isArray(gl.photos) ? gl.photos.filter((p): p is string => typeof p === 'string') : [],
+    intro: typeof gl.intro === 'string' ? gl.intro : null,
+    status: guideListingStatus(gl.status),
+    submittedAt: typeof gl.submittedAt === 'string' ? gl.submittedAt : null,
+    publishedAt: typeof gl.publishedAt === 'string' ? gl.publishedAt : null,
+    createdAt: u.createdAt,
+    bookings: u._count.sellerBookings,
+    details: gl,
+    user: {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      emailVerified: !!u.emailVerifiedAt,
+      joinedAt: u.createdAt,
+      buyerBookings: u._count.buyerBookings,
+    },
+    sellerProfile: u.sellerProfile
+      ? {
+          school: u.sellerProfile.school?.name ?? null,
+          major: u.sellerProfile.major,
+          gradYear: u.sellerProfile.gradYear,
+          bio: u.sellerProfile.bio,
+          applicationStatus: u.sellerProfile.applicationStatus,
+          approvedAt: u.sellerProfile.approvedAt,
+          ratingAvg: u.sellerProfile.ratingAvg,
+          ratingCount: u.sellerProfile.ratingCount,
+        }
+      : null,
+  };
+}
+
 export async function moderateListing(id: string, data: { status?: string }, adminId?: string) {
-  const listing = await prisma.listing.findUnique({ where: { id } });
-  if (!listing) throw new HttpError(404, 'not_found', 'Listing not found');
-  const updated = await prisma.listing.update({ where: { id }, data: { status: data.status as never } });
-  if (adminId) await prisma.auditLog.create({ data: { adminId, action: `listing.${data.status?.toLowerCase()}`, entity: `listings/${id}`, ip: '127.0.0.1' } });
+  const toJson: Record<string, string> = {
+    PUBLISHED: 'published',
+    SUSPENDED: 'suspended',
+    UNDER_REVIEW: 'under_review',
+    DRAFT: 'draft',
+  };
+  const next = toJson[data.status ?? ''];
+  if (!next) throw new HttpError(400, 'validation_error', `status must be one of ${GUIDE_LISTING_STATUSES.join(', ')}`);
+
+  const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, profileJson: true } });
+  const profile = (user?.profileJson ?? {}) as Record<string, unknown>;
+  const gl = profile.guideListing as Record<string, unknown> | undefined;
+  if (!user || !gl) throw new HttpError(404, 'not_found', 'Listing not found');
+
+  const guideListing: Record<string, unknown> = { ...gl, status: next };
+  if (next === 'published' && !guideListing.publishedAt) guideListing.publishedAt = new Date().toISOString();
+
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { profileJson: { ...profile, guideListing } as Prisma.InputJsonValue },
+    select: { id: true },
+  });
+  if (adminId) {
+    await prisma.auditLog.create({
+      data: { adminId, action: `listing.${next}`, entity: `listings/${id} (${user.name})`, ip: '127.0.0.1' },
+    });
+  }
   return updated;
 }
 
@@ -537,6 +677,8 @@ export interface SchoolInput {
   tags?: string[];
   toursFromCents?: number | null;
   seoContent?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   enabled?: boolean;
 }
 
@@ -551,6 +693,8 @@ function pickSchoolFields(data: SchoolInput): SchoolInput {
   if (data.tags !== undefined) out.tags = data.tags;
   if (data.toursFromCents !== undefined) out.toursFromCents = data.toursFromCents;
   if (data.seoContent !== undefined) out.seoContent = data.seoContent;
+  if (data.lat !== undefined) out.lat = data.lat;
+  if (data.lng !== undefined) out.lng = data.lng;
   if (data.enabled !== undefined) out.enabled = data.enabled;
   return out;
 }

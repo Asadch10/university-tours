@@ -42,7 +42,11 @@ export function GroupToursIntro() {
           preload="auto"
           aria-hidden="true"
         >
-          <source src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-540p.mp4" type="video/mp4" />
+          {/* Browsers play the first supported source, so highest quality goes first */}
+          <source
+            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p-av1.mp4"
+            type='video/mp4; codecs="av01.0.05M.08"'
+          />
           <source src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p.mp4" type="video/mp4" />
         </video>
         <div

@@ -25,6 +25,7 @@ const STATUS_VARIANT: Record<string, Variant> = {
   CHANGES_REQUESTED: 'info',
   // Listings
   INACTIVE: 'neutral',
+  UNDER_REVIEW: 'warning',
   // Refunds / payouts / campaigns
   PROCESSING: 'warning',
   SENT: 'success',

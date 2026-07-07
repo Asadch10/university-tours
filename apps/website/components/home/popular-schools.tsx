@@ -20,12 +20,15 @@ const SCHOOLS: School[] = [
     image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Harvard_Yard%2C_Harvard_University%2C_Cambridge_MA.jpg/960px-Harvard_Yard%2C_Harvard_University%2C_Cambridge_MA.jpg',
     href: '/universities/harvard',
   },
+ 
+
   {
     id: 'stanford',
     name: 'Stanford University',
     image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Stanford_University_campus_in_2016.jpg/960px-Stanford_University_campus_in_2016.jpg',
     href: '/universities/stanford',
   },
+
   {
     id: 'ucla',
     name: 'University of California, Los Angeles',
@@ -44,6 +47,7 @@ const SCHOOLS: School[] = [
     image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Washington_Square_Park_in_2012.jpg/960px-Washington_Square_Park_in_2012.jpg',
     href: '/universities/nyu',
   },
+  
   {
     id: 'umich',
     name: 'University of Michigan',

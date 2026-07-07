@@ -210,24 +210,27 @@ export function Hero() {
   };
 
   return (
-    <section className="flex flex-col bg-white sm:min-h-dvh">
+    <section className="flex flex-col bg-white">
       {/* Fixed-header offset */}
       <div className="h-[var(--header-h)] shrink-0" />
 
       {/*
-       * Mobile  (< sm): rounded video strip with side margins; search card sits below.
-       * sm–md:          full-bleed video (no side margins), card overlays left side.
-       * lg+:            same but wider card padding.
+       * Full-bleed video at the native 16:9 ratio, with the height capped
+       * so it always fits on one screen below the header (no scrolling to
+       * see the rest of the video).
+       * Mobile (< sm): rounded video strip with side margins; card below.
+       * sm–lg:         card below (16:9 is too short to overlay).
+       * lg+:           card overlays left side.
        */}
 
       {/* ── Video container ───────────────────────────────────────────── */}
       <div
         className={[
-          'relative overflow-hidden',
-          /* Mobile: rounded strip with gutters, capped so it isn't huge on tall phones */
-          'mx-4 h-[44vh] min-h-[240px] max-h-[440px] rounded-2xl',
-          /* sm+: edge-to-edge, fills remaining height, but tall enough to never clip the card */
-          'sm:mx-0 sm:h-auto sm:max-h-none sm:flex-1 sm:min-h-[600px] sm:rounded-t-none sm:rounded-b-[2rem]',
+          'relative aspect-video overflow-hidden',
+          /* Mobile: rounded strip with gutters */
+          'mx-4 rounded-2xl',
+          /* sm+: edge-to-edge, height never exceeds screen minus header */
+          'sm:mx-0 sm:max-h-[calc(100dvh-var(--header-h))] sm:rounded-t-none sm:rounded-b-[2rem]',
         ].join(' ')}
       >
         {/* Background video */}
@@ -240,21 +243,14 @@ export function Hero() {
           preload="auto"
           aria-hidden="true"
         >
+          {/* Browsers play the first supported source, so highest quality goes first */}
           <source
-            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-540p.mp4"
-            type="video/mp4"
+            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p-av1.mp4"
+            type='video/mp4; codecs="av01.0.05M.08"'
           />
           <source
             src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p.mp4"
             type="video/mp4"
-          />
-          <source
-            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-540p.hevc.mp4"
-            type='video/mp4; codecs="hvc1"'
-          />
-          <source
-            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p-av1.mp4"
-            type='video/mp4; codecs="av01.0.05M.08"'
           />
         </video>
 
@@ -268,16 +264,18 @@ export function Hero() {
           }}
         />
 
-        {/* Desktop / tablet card — overlays left side of video, hidden on mobile */}
-        <div className="absolute inset-y-0 left-0 hidden items-center px-6 py-10 sm:flex md:px-10 lg:px-14 xl:px-20">
-          <div className="w-full max-w-[340px] rounded-2xl bg-white p-6 shadow-[0_12px_48px_rgba(0,0,0,0.24)] md:max-w-[390px] md:p-8 lg:max-w-[430px] lg:p-9">
+        {/* Desktop card — overlays left side of video, anchored near the top
+            so it stays above the fold even when the 16:9 video runs taller
+            than the viewport; hidden below lg */}
+        <div className="absolute inset-y-0 left-0 hidden items-start px-6 pb-6 pt-10 lg:flex lg:px-14 xl:px-20 xl:pt-14">
+          <div className="w-full max-w-[390px] rounded-2xl bg-white p-6 shadow-[0_12px_48px_rgba(0,0,0,0.24)] lg:max-w-[430px] lg:p-8 xl:p-9">
             <SearchCard idPrefix="hero-d" {...sharedProps} />
           </div>
         </div>
       </div>
 
-      {/* Mobile card — stacks below video, hidden on sm+ */}
-      <div className="mx-4 mb-4 mt-3 sm:hidden">
+      {/* Mobile / tablet card — stacks below video, hidden on lg+ */}
+      <div className="mx-4 mb-4 mt-3 sm:mx-auto sm:mt-5 sm:w-full sm:max-w-[480px] sm:px-4 lg:hidden">
         <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-sm">
           <SearchCard idPrefix="hero-m" {...sharedProps} />
         </div>

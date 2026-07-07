@@ -56,7 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
-      if (tokenStore.access) {
+      if (!tokenStore.access && !tokenStore.refresh) {
+        // Tokens are gone (cleared refresh, or a session from before live auth) —
+        // a stored user without tokens must not appear signed in.
+        if (!cancelled) persist(null);
+      } else {
+        // Validate the session; `request` refreshes the access token if needed.
         try {
           const me = await authApi.me();
           if (!cancelled) {
@@ -65,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               name: me.name,
               email: me.email,
               role: 'ADMIN',
-              avatar: `https://i.pravatar.cc/200?u=${encodeURIComponent(me.email)}`,
             });
           }
         } catch {
@@ -92,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: res.user.name,
           email: res.user.email,
           role: 'ADMIN',
-          avatar: `https://i.pravatar.cc/200?u=${encodeURIComponent(res.user.email)}`,
         });
         return { ok: true };
       } catch (e) {

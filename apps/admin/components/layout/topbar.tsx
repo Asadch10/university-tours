@@ -7,7 +7,7 @@ import { navItemForPath, sectionForPath } from '@/lib/nav';
 import { Avatar } from '@/components/ui/avatar';
 import { Dropdown } from '@/components/ui/dropdown';
 import { timeAgo } from '@/lib/utils';
-import { auditLogs } from '@/lib/data';
+import { useAuditLogs } from '@/lib/queries';
 
 export function Topbar({
   collapsed,
@@ -21,6 +21,7 @@ export function Topbar({
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { data: auditLogs = [] } = useAuditLogs();
   const current = navItemForPath(pathname);
   const section = sectionForPath(pathname);
 
@@ -73,10 +74,12 @@ export function Topbar({
           </span>
         }
         items={[
-          ...auditLogs.slice(0, 4).map((log) => ({
-            label: `${log.action} · ${timeAgo(log.createdAt)}`,
-            onClick: () => router.push('/roles'),
-          })),
+          ...(auditLogs.length
+            ? auditLogs.slice(0, 4).map((log) => ({
+                label: `${log.action} · ${timeAgo(log.createdAt)}`,
+                onClick: () => router.push('/roles'),
+              }))
+            : [{ label: 'No recent activity', onClick: () => router.push('/roles') }]),
           'separator' as const,
           { label: 'View all activity', onClick: () => router.push('/roles') },
         ]}

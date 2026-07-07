@@ -14,18 +14,19 @@ import { Input, Select, Textarea, Field } from '@/components/ui/input';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
-import { bookings, type Refund } from '@/lib/data';
-import { useRefunds, useBookingActions } from '@/lib/queries';
+import type { Refund } from '@/lib/data';
+import { useRefunds, useBookings, useBookingActions } from '@/lib/queries';
 import { formatPrice, formatDate } from '@/lib/utils';
-
-const eligibleBookings = bookings.filter(
-  (b) => b.status === 'COMPLETED' || b.status === 'UPCOMING',
-);
 
 export default function RefundsPage() {
   const { data: refundsData, isLoading: loading } = useRefunds();
+  const { data: bookingsData } = useBookings();
   const { refund } = useBookingActions();
   const refunds = refundsData ?? [];
+  const eligibleBookings = useMemo(
+    () => (bookingsData ?? []).filter((b) => b.status === 'COMPLETED' || b.status === 'UPCOMING'),
+    [bookingsData],
+  );
   const [open, setOpen] = useState(false);
 
   // Issue-refund form state

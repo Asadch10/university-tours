@@ -13,6 +13,7 @@ import {
   Users,
   MoreHorizontal,
   X,
+  MapPin,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
@@ -43,6 +44,8 @@ const EMPTY_FORM = {
   toursFrom: '', // dollars, as typed
   tags: [] as string[],
   image: null as string | null,
+  lat: '', // as typed; parsed on save
+  lng: '',
   enabled: true,
 };
 
@@ -66,6 +69,7 @@ export default function UniversitiesPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
+  const [detecting, setDetecting] = useState(false);
 
   const stats = useMemo(() => {
     const enabled = rows.filter((s) => s.enabled).length;
@@ -114,6 +118,8 @@ export default function UniversitiesPage() {
       toursFrom: s.toursFromCents != null ? String(s.toursFromCents / 100) : '',
       tags: s.tags ?? [],
       image: s.image ?? null,
+      lat: s.lat != null ? String(s.lat) : '',
+      lng: s.lng != null ? String(s.lng) : '',
       enabled: s.enabled,
     });
     setErrors({});
@@ -149,8 +155,43 @@ export default function UniversitiesPage() {
     if (!form.state.trim()) next.state = 'State is required.';
     if (form.toursFrom.trim() && !(Number(form.toursFrom) >= 0))
       next.toursFrom = 'Enter a valid amount (or leave blank).';
+    const lat = form.lat.trim();
+    const lng = form.lng.trim();
+    if (lat || lng) {
+      if (!(Number(lat) >= -90 && Number(lat) <= 90)) next.lat = 'Latitude must be between −90 and 90.';
+      if (!(Number(lng) >= -180 && Number(lng) <= 180)) next.lng = 'Longitude must be between −180 and 180.';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
+  }
+
+  /** Look up campus coordinates from the name/location via OpenStreetMap (Nominatim). */
+  async function detectCoordinates() {
+    const q = [form.name.trim(), form.location.trim()].filter(Boolean).join(', ');
+    if (!q) {
+      toast.error('Add a name or location first', 'Coordinates are detected from those fields.');
+      return;
+    }
+    setDetecting(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+        { headers: { Accept: 'application/json' } },
+      );
+      const results = (await res.json()) as { lat: string; lon: string }[];
+      const hit = results[0];
+      if (!hit) {
+        toast.error('No match found', 'Try refining the name/location, or enter coordinates manually.');
+        return;
+      }
+      setForm((f) => ({ ...f, lat: Number(hit.lat).toFixed(4), lng: Number(hit.lon).toFixed(4) }));
+      setErrors((e) => ({ ...e, lat: undefined, lng: undefined }));
+      toast.success('Location detected', 'Check the map preview and adjust if needed.');
+    } catch {
+      toast.error('Detection failed', 'Check your connection, or enter coordinates manually.');
+    } finally {
+      setDetecting(false);
+    }
   }
 
   async function handleSave() {
@@ -165,6 +206,8 @@ export default function UniversitiesPage() {
       tags: form.tags,
       toursFromCents,
       image: form.image,
+      lat: form.lat.trim() ? Number(form.lat) : null,
+      lng: form.lng.trim() ? Number(form.lng) : null,
       enabled: form.enabled,
     };
 
@@ -237,7 +280,16 @@ export default function UniversitiesPage() {
       key: 'location',
       header: 'Location',
       hideOnMobile: true,
-      cell: (s) => <span className="text-ink-700">{s.location}</span>,
+      cell: (s) => (
+        <span className="inline-flex items-center gap-1.5 text-ink-700">
+          {s.location}
+          {s.lat != null && s.lng != null ? (
+            <MapPin size={13} className="shrink-0 text-success" aria-label="On the explore map" />
+          ) : (
+            <MapPin size={13} className="shrink-0 text-ink-300" aria-label="No map coordinates" />
+          )}
+        </span>
+      ),
     },
     {
       key: 'ambassadors',
@@ -421,6 +473,52 @@ export default function UniversitiesPage() {
                 placeholder="California"
               />
             </Field>
+          </div>
+
+          {/* Map location — drives the pin on the website's explore map */}
+          <div className="rounded-xl border border-ink-200 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-ink-900">Map location</p>
+                <p className="text-xs text-ink-500">
+                  Places the pin on the website&apos;s Explore schools map. Without coordinates the school is listed but not pinned.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" loading={detecting} onClick={detectCoordinates}>
+                <MapPin size={14} /> Detect from location
+              </Button>
+            </div>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <Field label="Latitude" htmlFor="uni-lat" error={errors.lat}>
+                <Input
+                  id="uni-lat"
+                  type="number"
+                  step="any"
+                  value={form.lat}
+                  onChange={(e) => setField('lat', e.target.value)}
+                  placeholder="37.4275"
+                />
+              </Field>
+              <Field label="Longitude" htmlFor="uni-lng" error={errors.lng}>
+                <Input
+                  id="uni-lng"
+                  type="number"
+                  step="any"
+                  value={form.lng}
+                  onChange={(e) => setField('lng', e.target.value)}
+                  placeholder="-122.1697"
+                />
+              </Field>
+            </div>
+
+            {Number(form.lat) >= -90 && Number(form.lat) <= 90 && Number(form.lng) >= -180 && Number(form.lng) <= 180 && form.lat.trim() && form.lng.trim() && (
+              <iframe
+                title="Map preview"
+                className="mt-3 h-44 w-full rounded-xl border border-ink-200"
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.lng) - 0.02},${Number(form.lat) - 0.012},${Number(form.lng) + 0.02},${Number(form.lat) + 0.012}&layer=mapnik&marker=${Number(form.lat)},${Number(form.lng)}`}
+              />
+            )}
           </div>
 
           <div className="grid items-start gap-4 sm:grid-cols-2">
