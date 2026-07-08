@@ -23,7 +23,7 @@ import {
   usePayouts,
   usePayoutActions,
 } from '@/lib/queries';
-import { formatPrice, formatDate, humanize, toCsv, downloadCsv } from '@/lib/utils';
+import { formatPrice, formatDate, humanize, toCsv, downloadCsv, paymentStatusMeta } from '@/lib/utils';
 
 type TabValue = 'ledger' | 'balances' | 'payouts';
 
@@ -35,15 +35,6 @@ const ledgerTypeVariant: Record<LedgerEntry['type'], 'success' | 'info' | 'warni
   REFUND: 'warning',
 };
 
-// Payment status → badge. Shown per transaction row so admins can tell an authorized
-// hold from a captured charge or a refund at a glance.
-const paymentStatusMeta: Record<string, { label: string; variant: 'success' | 'info' | 'warning' | 'danger' | 'neutral' }> = {
-  requires_capture: { label: 'Authorized', variant: 'info' },
-  succeeded: { label: 'Captured', variant: 'success' },
-  refunded: { label: 'Refunded', variant: 'danger' },
-  partially_refunded: { label: 'Part. refunded', variant: 'warning' },
-  canceled: { label: 'Canceled', variant: 'neutral' },
-};
 
 type GuideBalanceRow = GuideBalance & { sellerId: string };
 
@@ -140,7 +131,7 @@ export default function TransactionsPage() {
       key: 'invoice',
       header: 'Invoice',
       cell: (r) => {
-        const meta = paymentStatusMeta[r.status] ?? { label: humanize(r.type), variant: ledgerTypeVariant[r.type] };
+        const meta = r.status ? paymentStatusMeta(r.status) : { label: humanize(r.type), variant: ledgerTypeVariant[r.type] };
         return (
           <div className="flex flex-col gap-1">
             <span className="font-mono text-xs font-semibold text-brand-900">{r.invoiceNo}</span>

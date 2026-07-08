@@ -309,6 +309,10 @@ export function useBookings() {
       return res.data.map((b) => {
         const pct = b.commissionPctSnapshot ?? 25;
         const commission = Math.round((b.grossCents * pct) / 100);
+        const pay = b.payment;
+        const card = pay?.cardBrand && pay.cardLast4
+          ? `${pay.cardBrand.charAt(0).toUpperCase()}${pay.cardBrand.slice(1)} ···· ${pay.cardLast4}`
+          : null;
         return {
           id: b.id,
           buyer: b.buyer.name,
@@ -325,6 +329,9 @@ export function useBookings() {
           commissionPct: pct,
           netCents: b.grossCents - commission,
           createdAt: b.requestedAt,
+          paymentStatus: pay?.status ?? null,
+          paymentCard: card,
+          amountRefundedCents: pay?.amountRefundedCents ?? 0,
         };
       });
     },

@@ -74,9 +74,12 @@ apps/admin/
 │       ├── dashboard/          # KPIs, revenue/booking charts, queues
 │       ├── applications/       # approve / reject / request-changes
 │       ├── questionnaire/      # versioned no-code builder (fully live)
-│       ├── universities/  listings/
-│       ├── bookings/  users/  reviews/
-│       ├── transactions/  refunds/  commission/
+│       ├── universities/
+│       ├── listings/  [id]/    # list + listing detail (listing-details.tsx)
+│       ├── bookings/  [id]/    # list + booking detail (read-only money breakdown)
+│       ├── users/  reviews/
+│       ├── transactions/  [bookingId]/   # payments list + INVOICE DETAIL (Stripe)
+│       ├── refunds/  commission/
 │       ├── cms/  templates/  app-config/
 │       └── roles/              # admins list · audit log (single-admin mode)
 ├── components/
@@ -85,18 +88,24 @@ apps/admin/
 │   │                           # Tabs, Dropdown, SearchInput, Skeleton, states, StatCard
 │   ├── auth/permission-gate.tsx # <RequirePermission> (page) + <Can> (action)
 │   ├── layout/                 # AppShell, Sidebar, Topbar
+│   ├── listings/listing-details.tsx
 │   ├── dashboard/charts.tsx    # Recharts (revenue area + bookings bar)
 │   └── brand/logo.tsx          # inline crest mark
 └── lib/
     ├── rbac.ts                 # single-admin mode — all permission checks pass
     ├── auth.tsx                # real JWT session via /api/v1/auth/login + /refresh
-    ├── api.ts                  # typed fetch client (access/refresh token rotation)
+    ├── api.ts                  # typed fetch client (token rotation) + all DTOs
     ├── queries.ts              # TanStack Query hooks (all live backend calls)
-    ├── nav.ts                  # 15-module nav map (route → icon → permissions)
+    ├── nav.ts                  # nav map (route → icon → permissions)
     ├── toast.tsx               # toast provider/hook
-    ├── data.ts                 # typed mock store for modules not yet wired live
-    └── utils.ts                # cn, formatPrice (cents), dates, CSV export
+    ├── data.ts                 # UI-facing types (+ a few legacy mock shapes)
+    └── utils.ts                # cn, formatPrice (cents), dates, humanize, CSV export
 ```
+
+Data flow per module: page → `queries.ts` hook (`useX`) → `adminApi.x()` in `api.ts` (typed fetch,
+returns a `…Dto`) → hook maps the DTO into the UI shape declared in `data.ts`. To add/change a field
+end-to-end you touch the backend service/route, then `api.ts` (DTO), `queries.ts` (mapping), and the
+page. `data.ts` is now mostly **types** — the modules below are all live.
 
 ---
 
@@ -171,6 +180,38 @@ no local state needed for the question list.
 
 ---
 
+## Transactions, invoices & Stripe (money)
+
+The platform uses **authorize-then-capture** Stripe payments (see the backend). What the admin needs
+to know:
+
+- **`Payment` model** (backend/DB): one per booking. Stores the full Stripe PaymentIntent payload
+  (`rawJson`) plus extracted invoice fields — card brand/last4/exp, billing name/email, receipt URL,
+  status, amount, amount refunded, authorized/captured timestamps. Written when the card is authorized,
+  updated on capture and refund.
+- **Transactions list** (`/transactions`, "Payments" tab) is **payment-based**: `GET /admin/transactions`
+  returns one row per `Payment` (so a transaction appears the moment the card is **authorized**, not
+  only after capture). Rows show **Invoice #** (`INV-<last8 of bookingId>`, via `invoiceNo()` in
+  `queries.ts`), a **payment-status badge** (Authorized / Captured / Refunded / …), **Guest**,
+  **Guide**, **Card** (`Visa ···· 4242`), gross / commission / net. Abandoned carts
+  (`requires_payment_method`, etc.) are filtered out server-side. Rows are **clickable** → invoice.
+- **Invoice detail** (`/transactions/[bookingId]`): `GET /admin/transactions/:bookingId`
+  (`getInvoice`) → billed-to/paid-to, booking details, money breakdown, ledger, refunds, a
+  payment-method sidebar (card, receipt link, "View in Stripe"), and a collapsible **raw Stripe
+  payload** viewer.
+- **Refunds** (`/refunds` + invoice) call Stripe `refunds.create` and store `stripeRefundId`; a
+  compensating REFUND ledger entry keeps balances correct.
+- **Guide balances / Payouts** tabs still derive from the append-only **`LedgerEntry`** (CAPTURE on
+  accept, REFUND on refund). Payouts are **manually recorded** by admins (Stripe Connect is a later
+  phase). Commission % lives in `Settings.commissionPct`, snapshotted per booking.
+- **Backfill**: `apps/backend/src/scripts/backfill-payments.ts` re-creates `Payment` rows from Stripe
+  for bookings that predate the model — `pnpm exec tsx src/scripts/backfill-payments.ts` from `apps/backend`.
+
+Booking status includes **`PENDING_PAYMENT`** (card not yet authorized). It's added to the admin
+`BookingStatus` union (`data.ts`) and `StatusBadge`; unpaid bookings are generally hidden from lists.
+
+---
+
 ## Environment & deployment
 
 Runs standalone on **port 3001**, deployed independently of the public website (separate
@@ -184,6 +225,7 @@ front of the admin domain. The console is `noindex` and excluded from sitemaps b
 
 ## Roadmap
 
+- Stripe Connect for automatic guide payouts (replaces manual payout recording)
 - Real document viewer for encrypted enrollment proofs (presigned, admin-only)
 - Server-side pagination/filtering/sorting on large tables (TanStack Query is already wired)
 - TOTP 2FA enrollment + enforcement

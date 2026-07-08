@@ -110,3 +110,35 @@ export function downloadCsv(filename: string, csv: string) {
 export function simulate<T>(value: T, ms = 600): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
+
+/**
+ * Map a Stripe payment status to a UI label + badge variant. Used across the
+ * bookings and transactions surfaces so payment state reads consistently.
+ * In authorize-then-capture: `requires_capture` = card held (money not yet taken)
+ * → "Pending"; `succeeded` = captured → "Paid".
+ */
+export type PaymentBadgeVariant = 'success' | 'info' | 'warning' | 'danger' | 'neutral';
+
+export function paymentStatusMeta(
+  status: string | null | undefined,
+): { label: string; variant: PaymentBadgeVariant } {
+  switch (status) {
+    case 'succeeded':
+      return { label: 'Paid', variant: 'success' };
+    case 'requires_capture':
+      return { label: 'Pending', variant: 'warning' };
+    case 'partially_refunded':
+      return { label: 'Part. refunded', variant: 'warning' };
+    case 'refunded':
+      return { label: 'Refunded', variant: 'danger' };
+    case 'canceled':
+      return { label: 'Canceled', variant: 'neutral' };
+    case null:
+    case undefined:
+    case '':
+      return { label: 'No payment', variant: 'neutral' };
+    default:
+      // requires_payment_method / requires_confirmation / requires_action / processing
+      return { label: 'Pending', variant: 'warning' };
+  }
+}

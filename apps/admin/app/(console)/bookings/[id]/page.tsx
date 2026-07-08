@@ -1,12 +1,23 @@
 'use client';
 
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Info } from 'lucide-react';
+import { ArrowLeft, Loader2, Info, CreditCard, Receipt, ExternalLink, FileText } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { BookingStatus } from '@/lib/data';
-import { useBookings } from '@/lib/queries';
-import { formatPrice, formatDateTime, humanize } from '@/lib/utils';
+import { useBookings, useInvoice } from '@/lib/queries';
+import { formatPrice, formatDateTime, humanize, paymentStatusMeta } from '@/lib/utils';
+
+// One-line explanation of what a payment status means in the authorize-then-capture flow.
+const PAYMENT_HINT: Record<string, string> = {
+  succeeded: 'Payment captured — funds have been collected.',
+  requires_capture: 'Card authorized — the hold is captured automatically when the guide accepts.',
+  partially_refunded: 'Payment captured, then partially refunded.',
+  refunded: 'Payment was fully refunded.',
+  canceled: 'The card hold was released — no charge was made.',
+};
 
 function fmtDuration(mins: number | null) {
   if (!mins) return null;
@@ -17,6 +28,8 @@ export default function BookingDetailPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const { data: rows = [], isLoading } = useBookings();
+  // Full invoice (payment payload) for the dynamic Payment section.
+  const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
 
   const b = rows.find((r) => r.id === id);
 
@@ -41,16 +54,23 @@ export default function BookingDetailPage() {
   }
 
   const commissionCents = Math.round((b.grossCents * b.commissionPct) / 100);
+  const pay = invoice?.payment ?? null;
+  const payMeta = paymentStatusMeta(b.paymentStatus);
+  const card =
+    pay?.cardBrand && pay.cardLast4
+      ? `${humanize(pay.cardBrand)} ···· ${pay.cardLast4}`
+      : b.paymentCard;
 
   return (
     <RequirePermission anyOf={['bookings.view']}>
       <div className="space-y-6">
         <BackLink onClick={() => router.push('/bookings')} />
 
-        {/* Header (read-only — status is managed by the guide) */}
-        <div className="flex items-center gap-3">
+        {/* Header: booking id + booking status + payment status */}
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-mono text-lg font-semibold text-ink-900">{b.id}</h1>
           <StatusBadge status={b.status as BookingStatus} />
+          <Badge variant={payMeta.variant}>Payment: {payMeta.label}</Badge>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -68,6 +88,72 @@ export default function BookingDetailPage() {
                 <Detail label="Guests" value={`${b.guestCount} guest${b.guestCount > 1 ? 's' : ''}`} />
                 <Detail label="Requested" value={formatDateTime(b.createdAt)} />
               </dl>
+            </section>
+
+            {/* Payment — fully dynamic from the stored Stripe payment record */}
+            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-500">
+                  <CreditCard size={14} /> Payment
+                </h2>
+                <Badge variant={payMeta.variant}>{payMeta.label}</Badge>
+              </div>
+
+              {invoiceLoading ? (
+                <div className="mt-4 flex items-center gap-2 text-sm text-ink-400">
+                  <Loader2 size={15} className="animate-spin" /> Loading payment…
+                </div>
+              ) : pay ? (
+                <>
+                  <p className="mt-2 text-sm text-ink-500">{PAYMENT_HINT[pay.status] ?? 'Payment recorded.'}</p>
+                  <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                    {card && <Detail label="Card" value={card} />}
+                    {pay.cardExpMonth && pay.cardExpYear && (
+                      <Detail label="Expiry" value={`${String(pay.cardExpMonth).padStart(2, '0')}/${pay.cardExpYear}`} />
+                    )}
+                    <Detail label="Amount" value={`${formatPrice(pay.amountCents)} ${pay.currency.toUpperCase()}`} />
+                    {pay.amountRefundedCents > 0 && (
+                      <Detail label="Refunded" value={formatPrice(pay.amountRefundedCents)} />
+                    )}
+                    {pay.billingName && <Detail label="Cardholder" value={pay.billingName} />}
+                    {pay.authorizedAt && <Detail label="Authorized" value={formatDateTime(pay.authorizedAt)} />}
+                    {pay.capturedAt && <Detail label="Captured" value={formatDateTime(pay.capturedAt)} />}
+                  </dl>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link
+                      href={`/transactions/${b.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 px-3.5 py-2 text-sm font-semibold text-ink-800 hover:bg-ink-50"
+                    >
+                      <FileText size={15} /> View invoice
+                    </Link>
+                    {pay.receiptUrl && (
+                      <a
+                        href={pay.receiptUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 px-3.5 py-2 text-sm font-semibold text-ink-800 hover:bg-ink-50"
+                      >
+                        <Receipt size={15} /> Receipt
+                      </a>
+                    )}
+                    {pay.stripePaymentIntentId && (
+                      <a
+                        href={`https://dashboard.stripe.com/test/payments/${pay.stripePaymentIntentId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 px-3.5 py-2 text-sm font-semibold text-ink-800 hover:bg-ink-50"
+                      >
+                        <ExternalLink size={15} /> Stripe
+                      </a>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="mt-3 text-sm text-ink-500">
+                  No Stripe payment is recorded for this booking — it was created before payments were
+                  enabled, or the guest hasn&apos;t completed checkout yet.
+                </p>
+              )}
             </section>
 
             <section className="rounded-2xl border border-ink-200/70 bg-ink-50/40 p-6">

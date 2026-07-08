@@ -455,6 +455,7 @@ export async function listBookings(opts: { status?: string; q?: string; page?: n
         buyer: { select: { id: true, name: true, email: true } },
         seller: { select: { id: true, name: true, email: true } },
         listing: { select: { title: true, serviceType: true, school: { select: { name: true } } } },
+        payment: { select: { status: true, amountCents: true, amountRefundedCents: true, cardBrand: true, cardLast4: true } },
       },
       orderBy: { requestedAt: 'desc' },
       skip: (page - 1) * limit,
