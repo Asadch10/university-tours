@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { FileText, GraduationCap, Lock, Mail, Bell } from 'lucide-react';
+import { GraduationCap, MapPin, Video, MessageSquare } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
-import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -16,27 +15,58 @@ import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { timeAgo } from '@/lib/utils';
-import { useApplications, useApplicationActions } from '@/lib/queries';
-import type { Application, ApplicationStatus } from '@/lib/data';
+import { useGuideApplications, useGuideApplicationActions, type GuideApplication } from '@/lib/queries';
 
-type Filter = 'ALL' | ApplicationStatus;
+type Status = GuideApplication['status'];
+type Filter = 'ALL' | Status;
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'PENDING', label: 'Pending' },
-  { value: 'CHANGES_REQUESTED', label: 'Changes requested' },
   { value: 'APPROVED', label: 'Approved' },
   { value: 'REJECTED', label: 'Rejected' },
 ];
 
+// Field key → label, in the order shown in the detail view (empty values skipped).
+const DETAIL_FIELDS: [string, string][] = [
+  ['gender', 'Gender'],
+  ['academicYear', 'Academic year'],
+  ['age', 'Age'],
+  ['admissionType', 'Admission type'],
+  ['hometown', 'Hometown'],
+  ['academicFocus', 'Academic focus'],
+  ['majors', 'Major(s)'],
+  ['minors', 'Minor(s)'],
+  ['extracurriculars', 'Extracurriculars'],
+  ['clubs', 'Clubs & involvement'],
+  ['housing', 'Housing'],
+  ['personality', 'Personality'],
+  ['experienceRating', 'Experience rating'],
+  ['describeExperience', 'College experience'],
+  ['tip', 'Tip for future students'],
+  ['favoriteClass', 'Favorite class'],
+  ['careerGoals', 'Career goals'],
+  ['freeNight', 'Ideal free night'],
+  ['highSchool', 'High school'],
+  ['previousCollege', 'Previous college'],
+  ['groupTours', 'Open to group tours'],
+  ['referral', 'Referred by'],
+];
+
+const asText = (v: unknown): string => {
+  if (Array.isArray(v)) return v.filter((x) => typeof x === 'string' && x.trim()).join(', ');
+  return typeof v === 'string' ? v.trim() : v == null ? '' : String(v);
+};
+const httpPhoto = (p: unknown): p is string => typeof p === 'string' && /^https?:\/\//.test(p);
+
 export default function ApplicationsPage() {
-  const { data: rows = [], isLoading: loading } = useApplications();
-  const { approve, reject, requestChanges } = useApplicationActions();
+  const { data: rows = [], isLoading: loading } = useGuideApplications();
+  const { approve, reject } = useGuideApplicationActions();
   const [filter, setFilter] = useState<Filter>('ALL');
   const [query, setQuery] = useState('');
-  const [active, setActive] = useState<Application | null>(null);
+  const [active, setActive] = useState<GuideApplication | null>(null);
 
-  const { success, info, error } = useToast();
+  const { success, error } = useToast();
   const confirm = useConfirm();
 
   const counts = useMemo(
@@ -46,7 +76,7 @@ export default function ApplicationsPage() {
           acc[f.value] = f.value === 'ALL' ? rows.length : rows.filter((r) => r.status === f.value).length;
           return acc;
         },
-        { ALL: 0, PENDING: 0, CHANGES_REQUESTED: 0, APPROVED: 0, REJECTED: 0 },
+        { ALL: 0, PENDING: 0, APPROVED: 0, REJECTED: 0 },
       ),
     [rows],
   );
@@ -64,59 +94,40 @@ export default function ApplicationsPage() {
     });
   }, [rows, filter, query]);
 
-  async function onApprove(app: Application) {
+  async function onApprove(app: GuideApplication) {
     try {
       await approve.mutateAsync(app.id);
       setActive(null);
-      success('Application approved', `${app.applicant} can now create listings. They’ve been notified.`);
+      success('Application approved', `${app.applicant}'s guide profile is now live. They've been emailed.`);
     } catch (e) {
       error((e as Error).message);
     }
   }
 
-  async function onRequestChanges(app: Application) {
-    const { confirmed, reason } = await confirm({
-      title: 'Request changes',
-      description: `Send ${app.applicant} a request to revise and resubmit their application.`,
-      confirmLabel: 'Request changes',
-      tone: 'default',
-      reason: { label: 'What needs to change?', placeholder: 'e.g. Re-upload a clearer enrollment document.', required: true },
-    });
-    if (!confirmed) return;
-    try {
-      await requestChanges.mutateAsync({ id: app.id, reason: reason ?? '' });
-      setActive(null);
-      success('Changes requested', `${app.applicant} was notified by email and push.`);
-    } catch (e) {
-      error((e as Error).message);
-    }
-  }
-
-  async function onReject(app: Application) {
-    const { confirmed, reason } = await confirm({
+  async function onReject(app: GuideApplication) {
+    const { confirmed } = await confirm({
       title: 'Reject application',
-      description: `This permanently rejects ${app.applicant}’s application. They will be notified.`,
+      description: `This suspends ${app.applicant}'s guide profile. They will be notified by email.`,
       confirmLabel: 'Reject application',
       tone: 'danger',
-      reason: { label: 'Reason for rejection', placeholder: 'e.g. Could not verify current enrollment.', required: true },
     });
     if (!confirmed) return;
     try {
-      await reject.mutateAsync({ id: app.id, reason: reason ?? '' });
+      await reject.mutateAsync(app.id);
       setActive(null);
-      success('Application rejected', `${app.applicant} was notified by email and push.`);
+      success('Application rejected', `${app.applicant} was notified by email.`);
     } catch (e) {
       error((e as Error).message);
     }
   }
 
-  const columns: Column<Application>[] = [
+  const columns: Column<GuideApplication>[] = [
     {
       key: 'applicant',
       header: 'Applicant',
       cell: (a) => (
         <div className="flex items-center gap-3">
-          <Avatar name={a.applicant} src={a.avatar} size={38} />
+          <Avatar name={a.applicant} size={38} />
           <div className="min-w-0">
             <p className="truncate font-semibold text-ink-900">{a.applicant}</p>
             <p className="truncate text-xs text-ink-500">{a.email}</p>
@@ -126,16 +137,12 @@ export default function ApplicationsPage() {
     },
     { key: 'school', header: 'School', hideOnMobile: true, cell: (a) => <span className="text-ink-700">{a.school}</span> },
     {
-      key: 'major',
-      header: 'Major · Grad year',
+      key: 'tourTypes',
+      header: 'Tour types',
       hideOnMobile: true,
-      cell: (a) => (
-        <span className="text-ink-700">
-          {a.major} · {a.gradYear}
-        </span>
-      ),
+      cell: (a) => <span className="text-ink-600">{a.tourTypes.join(', ') || '—'}</span>,
     },
-    { key: 'submitted', header: 'Submitted', hideOnMobile: true, cell: (a) => <span className="text-ink-500">{timeAgo(a.submittedAt)}</span> },
+    { key: 'submitted', header: 'Submitted', hideOnMobile: true, cell: (a) => <span className="text-ink-500">{a.submittedAt ? timeAgo(a.submittedAt) : '—'}</span> },
     { key: 'status', header: 'Status', cell: (a) => <StatusBadge status={a.status} /> },
     {
       key: 'actions',
@@ -153,8 +160,8 @@ export default function ApplicationsPage() {
     <RequirePermission anyOf={['applications.decide']}>
       <div className="space-y-6">
         <PageHeader
-          title="Applications"
-          description="Review guide applications — verify enrollment, read questionnaire answers, and approve, request changes, or reject."
+          title="Guide applications"
+          description="Review become-a-guide submissions — read every answer, view photos, then approve (publish) or reject."
         />
 
         {loading ? (
@@ -181,23 +188,16 @@ export default function ApplicationsPage() {
               rowKey={(a) => a.id}
               onRowClick={(a) => setActive(a)}
               empty={{
-                title: query ? 'No matching applications' : 'No applications here',
+                title: query ? 'No matching applications' : 'No guide applications yet',
                 description: query
                   ? 'Try a different name, email, or school.'
-                  : 'Applications with this status will appear here.',
+                  : 'Become-a-guide submissions will appear here for review.',
               }}
             />
           </div>
         )}
 
-        <ApplicationDetailModal
-          app={active}
-          onClose={() => setActive(null)}
-          onApprove={onApprove}
-          onRequestChanges={onRequestChanges}
-          onReject={onReject}
-          onViewDoc={() => info('Opening secure document…', 'Enrollment documents are encrypted and admin-only.')}
-        />
+        <ApplicationDetailModal app={active} onClose={() => setActive(null)} onApprove={onApprove} onReject={onReject} />
       </div>
     </RequirePermission>
   );
@@ -207,60 +207,56 @@ function ApplicationDetailModal({
   app,
   onClose,
   onApprove,
-  onRequestChanges,
   onReject,
-  onViewDoc,
 }: {
-  app: Application | null;
+  app: GuideApplication | null;
   onClose: () => void;
-  onApprove: (a: Application) => void;
-  onRequestChanges: (a: Application) => void;
-  onReject: (a: Application) => void;
-  onViewDoc: () => void;
+  onApprove: (a: GuideApplication) => void;
+  onReject: (a: GuideApplication) => void;
 }) {
-  const open = !!app;
-  const decidable = app?.status === 'PENDING' || app?.status === 'CHANGES_REQUESTED';
+  const rows = app ? DETAIL_FIELDS.map(([k, label]) => [label, asText(app.details[k])] as const).filter(([, v]) => v) : [];
+  const photos = app ? app.photos.filter(httpPhoto) : [];
+  const title = app ? asText(app.details.listingTitle) || 'Guide application' : '';
 
   return (
     <Modal
-      open={open}
+      open={!!app}
       onClose={onClose}
       size="lg"
       title="Guide application"
       footer={
         app ? (
-          decidable ? (
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="flex items-center gap-1.5 text-2xs text-ink-500">
-                <Mail size={13} /> <Bell size={13} /> Applicant is notified by email + push.
-              </p>
+          <div className="flex w-full items-center justify-end gap-2.5">
+            {app.status === 'REJECTED' || app.status === 'PENDING' ? (
               <Can perm="applications.decide">
-                <div className="flex flex-wrap items-center justify-end gap-2.5">
+                {app.status === 'PENDING' && (
                   <Button variant="danger-outline" size="sm" onClick={() => onReject(app)}>
                     Reject
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onRequestChanges(app)}>
-                    Request changes
-                  </Button>
-                  <Button variant="primary" size="sm" onClick={() => onApprove(app)}>
-                    Approve
-                  </Button>
-                </div>
+                )}
+                <Button variant="primary" size="sm" onClick={() => onApprove(app)}>
+                  {app.status === 'REJECTED' ? 'Re-approve (publish)' : 'Approve'}
+                </Button>
               </Can>
-            </div>
-          ) : (
+            ) : (
+              <Can perm="applications.decide">
+                <Button variant="danger-outline" size="sm" onClick={() => onReject(app)}>
+                  Suspend
+                </Button>
+              </Can>
+            )}
             <Button variant="ghost" size="sm" onClick={onClose}>
               Close
             </Button>
-          )
+          </div>
         ) : null
       }
     >
       {app && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Header */}
           <div className="flex items-start gap-4">
-            <Avatar name={app.applicant} src={app.avatar} size={56} ring />
+            <Avatar name={app.applicant} size={56} ring />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-display text-lg font-semibold text-ink-900">{app.applicant}</h3>
@@ -268,53 +264,74 @@ function ApplicationDetailModal({
               </div>
               <p className="mt-0.5 text-sm text-ink-600">{app.email}</p>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-500">
-                <GraduationCap size={15} className="text-brand-800" />
-                {app.school} · {app.major} · Class of {app.gradYear}
+                <GraduationCap size={15} className="text-brand-800" /> {app.school}
               </p>
             </div>
           </div>
 
-          {/* Prior decision reason */}
-          {!decidable && app.reason && (
-            <div className="rounded-xl border border-ink-200/70 bg-ink-50/60 p-3.5 text-sm">
-              <p className="font-semibold text-ink-900">Decision note</p>
-              <p className="mt-0.5 text-ink-600">{app.reason}</p>
-            </div>
-          )}
+          {/* Proof of identity — the ID the admin verifies to approve */}
+          <section>
+            <p className="mb-2 text-2xs font-semibold uppercase tracking-wider text-ink-500">Proof of identity · student ID</p>
+            {httpPhoto(app.details.idPhoto) ? (
+              <a
+                href={app.details.idPhoto}
+                target="_blank"
+                rel="noreferrer"
+                className="block max-w-xs overflow-hidden rounded-xl border border-ink-200/70 bg-ink-50 transition-opacity hover:opacity-90"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={app.details.idPhoto} alt="Student ID" className="w-full object-contain" />
+              </a>
+            ) : (
+              <p className="rounded-xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-6 text-center text-sm text-ink-400">
+                No student ID was uploaded with this application.
+              </p>
+            )}
+          </section>
 
-          {/* Enrollment document */}
-          <div>
-            <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-500">Enrollment document</p>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-200/70 bg-white p-3 shadow-soft">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-800">
-                  <FileText size={18} />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-ink-900">{app.enrollmentDoc}</p>
-                  <p className="flex items-center gap-1 text-2xs text-ink-500">
-                    <Lock size={11} /> Encrypted · admin-only
-                  </p>
-                </div>
+          {/* Listing title + intro + tour types */}
+          <section>
+            <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Listing</p>
+            <p className="mt-1 font-semibold text-ink-900">{title}</p>
+            {app.intro && <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink-600">{app.intro}</p>}
+            {app.tourTypes.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {app.tourTypes.map((t) => (
+                  <span key={t} className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800">
+                    {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
+                  </span>
+                ))}
               </div>
-              <Button variant="subtle" size="sm" onClick={onViewDoc}>
-                View
-              </Button>
-            </div>
-          </div>
+            )}
+          </section>
 
-          {/* Answers */}
-          <div>
-            <p className="mb-2 text-2xs font-semibold uppercase tracking-wider text-ink-500">Questionnaire answers</p>
-            <div className="space-y-3.5">
-              {app.answers.map((qa, i) => (
-                <div key={i}>
-                  <p className="text-sm font-semibold text-ink-900">{qa.question}</p>
-                  <p className="mt-0.5 text-sm text-ink-600">{qa.answer}</p>
+          {/* All answers */}
+          <section>
+            <p className="mb-2 text-2xs font-semibold uppercase tracking-wider text-ink-500">Application answers</p>
+            <dl className="grid gap-x-6 gap-y-3.5 sm:grid-cols-2">
+              {rows.map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-400">{label}</dt>
+                  <dd className="mt-0.5 whitespace-pre-line text-sm text-ink-800">{value}</dd>
                 </div>
               ))}
-            </div>
-          </div>
+            </dl>
+          </section>
+
+          {/* Photos */}
+          {photos.length > 0 && (
+            <section>
+              <p className="mb-2 text-2xs font-semibold uppercase tracking-wider text-ink-500">Photos ({photos.length})</p>
+              <div className="grid grid-cols-3 gap-3">
+                {photos.map((src, i) => (
+                  <div key={i} className="aspect-square overflow-hidden rounded-xl bg-ink-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </Modal>

@@ -156,6 +156,11 @@ adminRouter.get('/transactions', requirePermission('transactions.view'), asyncHa
   res.json(await svc.listTransactions({ type, page: page ? +page : 1, limit: limit ? +limit : 20 }));
 }));
 
+// Invoice detail for a single booking (payment payload, ledger, refunds).
+adminRouter.get('/transactions/:bookingId', requirePermission('transactions.view'), asyncHandler(async (req, res) => {
+  res.json(await svc.getInvoice(req.params['bookingId'] as string));
+}));
+
 adminRouter.get('/guide-balances', requirePermission('payouts.record'), asyncHandler(async (_req, res) => {
   res.json(await svc.getGuideBalances());
 }));
@@ -237,7 +242,7 @@ adminRouter.get('/app-config', requirePermission('appconfig.manage'), asyncHandl
 }));
 
 adminRouter.put('/app-config', requirePermission('appconfig.manage'), asyncHandler(async (req, res) => {
-  res.json(await svc.setAppConfig(req.body as { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown }, req.user!.id));
+  res.json(await svc.setAppConfig(req.body as { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown; emailNotificationsEnabled?: boolean }, req.user!.id));
 }));
 
 // ─── Templates ────────────────────────────────────────────────────────────────

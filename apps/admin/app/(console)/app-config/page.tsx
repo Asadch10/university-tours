@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Send, AlertTriangle, Smartphone, Flag, Wrench, Megaphone } from 'lucide-react';
+import { Plus, Send, AlertTriangle, Smartphone, Flag, Wrench, Megaphone, Mail } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,8 +43,10 @@ export default function AppConfigPage() {
   const [forceMsg, setForceMsg] = useState('');
   const [maintenance, setMaintenance] = useState(false);
   const [banner, setBanner] = useState('');
+  const [emailEnabled, setEmailEnabled] = useState(true);
   const [savingRelease, setSavingRelease] = useState(false);
   const [savingMaint, setSavingMaint] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
 
   // Composer
   const [composerOpen, setComposerOpen] = useState(false);
@@ -60,7 +62,33 @@ export default function AppConfigPage() {
     setForceMsg(config.forceUpdateMessage);
     setMaintenance(config.maintenanceMode);
     setBanner(config.maintenanceBanner);
+    setEmailEnabled(config.emailNotificationsEnabled);
   }, [config]);
+
+  const toggleEmail = async (next: boolean) => {
+    if (!next) {
+      const { confirmed } = await confirm({
+        title: 'Turn off all email notifications?',
+        description:
+          'While off, NO emails go out — no booking requests, confirmations, verifications, or password resets. Guides and guests will not be notified by email.',
+        confirmLabel: 'Turn off emails',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
+    }
+    setSavingEmail(true);
+    const prev = emailEnabled;
+    setEmailEnabled(next);
+    try {
+      await save.mutateAsync({ emailNotificationsEnabled: next });
+      toast.success(next ? 'Email notifications on' : 'Email notifications off', next ? 'Guides and guests will receive emails again.' : 'No emails will be sent until you turn this back on.');
+    } catch (e) {
+      setEmailEnabled(prev); // revert
+      toast.error((e as Error).message);
+    } finally {
+      setSavingEmail(false);
+    }
+  };
 
   const flagsToJson = (list: AppConfig['featureFlags']) =>
     Object.fromEntries(list.map((f) => [f.key, f.enabled]));
@@ -211,6 +239,37 @@ export default function AppConfigPage() {
           title="App Configuration"
           description="Remote configuration for the mobile and web clients — feature flags, release gating, maintenance mode, and push campaigns."
         />
+
+        {/* Email notifications — master switch */}
+        <Card>
+          <CardHeader
+            title={
+              <span className="flex items-center gap-2">
+                <Mail size={16} className="text-brand-800" /> Email notifications
+              </span>
+            }
+            description="Master switch for all outbound email. When on, guides & guests get booking and account emails. When off, no email of any kind is sent."
+          />
+          <CardBody>
+            {loading ? (
+              <Skeleton className="h-12 w-full" />
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink-900">Send emails to guides &amp; guests</p>
+                  <p className="text-xs text-ink-500">
+                    {emailEnabled
+                      ? 'On — booking requests, confirmations, verifications, and resets are delivered.'
+                      : 'Off — no emails are being sent to anyone.'}
+                  </p>
+                </div>
+                <Can perm="appconfig.manage">
+                  <Switch checked={emailEnabled} onChange={toggleEmail} disabled={savingEmail} label="Email notifications" />
+                </Can>
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
         {/* Feature flags */}
         <Card>

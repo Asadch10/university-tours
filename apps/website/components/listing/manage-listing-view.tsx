@@ -16,12 +16,12 @@ import {
   MapPin,
   Wallet,
   Ban,
-  Camera,
   Sparkles,
   X,
   Eye,
-  User,
-  ListChecks,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { accountApi, friendlyError, tokenStore } from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
@@ -35,6 +35,7 @@ interface GuideListing {
   school?: string;
   tourTypes?: string[];
   photos?: string[];
+  idPhoto?: string; // proof of identity (student ID)
   status?: string;
   submittedAt?: string;
   publishedAt?: string;
@@ -69,11 +70,6 @@ interface GuideListing {
 
 /* Photos are object URLs during the session; they don't survive a reload. */
 const usablePhoto = (p?: string) => (p && !p.startsWith('blob:') ? p : null);
-
-const fmtDate = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : null;
 
 export function ManageListingView() {
   const router = useRouter();
@@ -365,34 +361,26 @@ function DraftState({ listing, onDelete }: { listing: GuideListing; onDelete: ()
   );
 }
 
-/* ═══ Submitted — preview + status panel ═══════════════════════════════ */
+/* ═══ Submitted — photo slider + progress ══════════════════════════════ */
 
 function SubmittedState({ listing, name }: { listing: GuideListing; name: string }) {
   const status = listing.status ?? 'under_review';
-  const photo = usablePhoto(listing.photos?.find(usablePhoto) ?? undefined);
-  const photoCount = (listing.photos ?? []).length;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const photos = (listing.photos ?? []).map(usablePhoto).filter((p): p is string => !!p);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-      {/* ── Listing preview card ── */}
-      <section className="self-start overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
-        <div className="relative aspect-[4/3.4] overflow-hidden">
-          {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="Listing photo" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-maroon-gradient font-display text-5xl font-bold text-ivory">
-              {(name.trim()[0] ?? 'U').toUpperCase()}
-            </div>
-          )}
-          <StatusChip status={status} />
-        </div>
-        <div className="p-5">
+    <div className="space-y-6">
+      {/* ── Progress / status on top ── */}
+      <StatusPanel status={status} submittedAt={listing.submittedAt} publishedAt={listing.publishedAt} />
+
+      {/* ── Compact listing card with photo slider ── */}
+      <section className="max-w-sm overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+        <PhotoSlider photos={photos} status={status} fallbackInitial={(name.trim()[0] ?? 'U').toUpperCase()} />
+        <div className="p-5 sm:p-6">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
             {name || 'Your name'}
           </p>
-          <p className="mt-1.5 font-display text-lg font-semibold leading-snug text-ink-900">
+          <p className="mt-1.5 font-display text-xl font-semibold leading-snug text-ink-900">
             {listing.listingTitle?.trim() || 'Untitled listing'}
           </p>
           {listing.school && (
@@ -407,7 +395,7 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
                   key={t}
                   className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
                 >
-                  {t === 'Video chat' ? <Video size={11} /> : <MapPin size={11} />} {t}
+                  {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
                 </span>
               ))}
             </div>
@@ -423,39 +411,6 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
         </div>
       </section>
 
-      {/* ── Right column: status + details ── */}
-      <div className="space-y-6">
-        <StatusPanel status={status} submittedAt={listing.submittedAt} publishedAt={listing.publishedAt} />
-
-        {/* Details */}
-        <section className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card sm:p-7">
-          <h3 className="font-display text-lg font-semibold text-ink-900">Listing details</h3>
-          <dl className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-            <DetailItem label="School" value={listing.school || '—'} />
-            <DetailItem label="Tour types" value={listing.tourTypes?.join(', ') || '—'} />
-            <DetailItem label="Submitted" value={fmtDate(listing.submittedAt) ?? '—'} />
-            <DetailItem
-              label="Photos"
-              value={
-                <span className="inline-flex items-center gap-1.5">
-                  <Camera size={14} className="text-ink-400" /> {photoCount} photo{photoCount !== 1 ? 's' : ''}
-                </span>
-              }
-            />
-          </dl>
-          {listing.intro?.trim() && (
-            <div className="mt-5 border-t border-ink-100 pt-5">
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-                Introduction
-              </p>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-700">
-                {listing.intro}
-              </p>
-            </div>
-          )}
-        </section>
-      </div>
-
       {detailsOpen && (
         <DetailsModal listing={listing} name={name} onClose={() => setDetailsOpen(false)} />
       )}
@@ -463,85 +418,139 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
   );
 }
 
-/* ═══ Full-detail modal — Details · Getting paid · Photos ═══════════════ */
+/* ═══ Photo slider — prev / next + dots ════════════════════════════════ */
 
-const GUIDELINES = [
-  {
-    key: 'personable',
-    title: 'Be personable',
-    body: 'Share your personal story as a college student and answer questions honestly.',
-  },
-  {
-    key: 'punctual',
-    title: 'Be punctual',
-    body: 'Treat hosting like a job: be welcoming, keep availability updated, and arrive on time.',
-  },
-  {
-    key: 'prepared',
-    title: 'Be prepared',
-    body: 'Know your campus and come ready to give guests a great, informative experience.',
-  },
+function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; status: string; fallbackInitial: string }) {
+  const [i, setI] = useState(0);
+  const count = photos.length;
+  const idx = count ? ((i % count) + count) % count : 0;
+
+  return (
+    <div className="relative aspect-[16/10] overflow-hidden bg-ink-100">
+      {count ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={photos[idx]} alt={`Listing photo ${idx + 1}`} className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-maroon-gradient font-display text-5xl font-bold text-ivory">
+          {fallbackInitial}
+        </div>
+      )}
+
+      <StatusChip status={status} />
+
+      {count > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setI((c) => c - 1)}
+            aria-label="Previous photo"
+            className="absolute left-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow-md transition hover:bg-white"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setI((c) => c + 1)}
+            aria-label="Next photo"
+            className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow-md transition hover:bg-white"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <span className="absolute right-3 top-3 rounded-full bg-ink-900/60 px-2 py-0.5 text-xs font-semibold text-white">
+            {idx + 1} / {count}
+          </span>
+          <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
+            {photos.map((_, k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setI(k)}
+                aria-label={`Go to photo ${k + 1}`}
+                className={cn('h-1.5 rounded-full transition-all', k === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/60 hover:bg-white/80')}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ═══ Full-detail modal — mirrors the admin application review ══════════ */
+
+const ANSWER_ROWS: [keyof GuideListing, string][] = [
+  ['gender', 'Gender'],
+  ['academicYear', 'Academic year'],
+  ['age', 'Age'],
+  ['admissionType', 'Admission type'],
+  ['hometown', 'Hometown'],
+  ['academicFocus', 'Academic focus'],
+  ['majors', 'Major(s)'],
+  ['minors', 'Minor(s)'],
+  ['extracurriculars', 'Extracurriculars'],
+  ['clubs', 'Clubs & involvement'],
+  ['housing', 'Housing'],
+  ['personality', 'Personality'],
+  ['experienceRating', 'Experience rating'],
+  ['describeExperience', 'College experience'],
+  ['tip', 'Tip for future students'],
+  ['favoriteClass', 'Favorite class'],
+  ['careerGoals', 'Career goals'],
+  ['freeNight', 'Ideal free night'],
+  ['highSchool', 'High school'],
+  ['previousCollege', 'Previous college'],
+  ['groupTours', 'Open to group tours'],
+  ['referral', 'How they heard about us'],
 ];
 
-function DetailsModal({
-  listing,
-  name,
-  onClose,
-}: {
-  listing: GuideListing;
-  name: string;
-  onClose: () => void;
-}) {
-  const photos = (listing.photos ?? []).map(usablePhoto).filter((p): p is string => !!p);
+const asText = (v: unknown): string =>
+  Array.isArray(v)
+    ? v.filter((x) => typeof x === 'string' && x.trim()).join(', ')
+    : typeof v === 'string'
+      ? v.trim()
+      : '';
 
-  // Ordered rows for the "Details" section — empty values are skipped.
-  const rows: { label: string; value?: string }[] = [
-    { label: 'Listing title', value: listing.listingTitle },
-    { label: 'School', value: listing.school },
-    { label: 'Tour types', value: listing.tourTypes?.join(', ') },
-    { label: 'Gender', value: listing.gender },
-    { label: 'Academic year', value: listing.academicYear },
-    { label: 'Age', value: listing.age },
-    { label: 'Admission type', value: listing.admissionType },
-    { label: 'Hometown', value: listing.hometown },
-    { label: 'Academic focus', value: listing.academicFocus },
-    { label: 'Major(s)', value: listing.majors },
-    { label: 'Minor(s)', value: listing.minors },
-    { label: 'Extracurriculars', value: listing.extracurriculars?.join(', ') },
-    { label: 'Clubs & involvement', value: listing.clubs },
-    { label: 'Housing', value: listing.housing?.join(', ') },
-    { label: 'Personality', value: listing.personality },
-    { label: 'Experience rating', value: listing.experienceRating },
-    { label: 'College experience', value: listing.describeExperience },
-    { label: 'Tip for future students', value: listing.tip },
-    { label: 'Favorite class', value: listing.favoriteClass },
-    { label: 'Career goals', value: listing.careerGoals },
-    { label: 'Ideal free night', value: listing.freeNight },
-    { label: 'High school', value: listing.highSchool },
-    { label: 'Previous college', value: listing.previousCollege },
-    { label: 'Open to group tours', value: listing.groupTours },
-    { label: 'How they heard about us', value: listing.referral },
-  ].filter((r) => r.value && r.value.trim());
+function statusPill(status: string) {
+  return status === 'published'
+    ? { label: 'Live', cls: 'bg-emerald-100 text-emerald-700' }
+    : status === 'suspended'
+      ? { label: 'Suspended', cls: 'bg-red-100 text-red-700' }
+      : { label: 'Under review', cls: 'bg-gold-100 text-gold-800' };
+}
+
+function DetailsModal({ listing, name, onClose }: { listing: GuideListing; name: string; onClose: () => void }) {
+  const photos = (listing.photos ?? []).map(usablePhoto).filter((p): p is string => !!p);
+  const idPhoto = usablePhoto(listing.idPhoto);
+  const st = statusPill(listing.status ?? 'under_review');
+  const rows = ANSWER_ROWS.map(([k, label]) => [label, asText(listing[k])] as const).filter(([, v]) => v);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/50 px-4 py-8 backdrop-blur-[2px] sm:py-12"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 px-4 py-6 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-label="Guide listing details"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-3xl bg-white shadow-xl"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-ink-100 bg-white/95 px-6 py-4 backdrop-blur sm:px-8">
-          <div>
-            <h2 className="font-display text-xl font-semibold text-ink-900">
-              {listing.listingTitle?.trim() || 'Your guide profile'}
-            </h2>
-            <p className="mt-0.5 text-sm text-ink-500">{name || 'Guide'}</p>
+        {/* Header — fixed; only the body below scrolls */}
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 bg-white px-6 py-4 sm:px-7">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate font-display text-lg font-semibold text-ink-900">
+                {listing.listingTitle?.trim() || 'Your guide profile'}
+              </h2>
+              <span className={cn('inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', st.cls)}>
+                {st.label}
+              </span>
+            </div>
+            <p className="mt-0.5 truncate text-sm text-ink-500">
+              {name || 'Guide'}
+              {listing.school ? ` · ${listing.school}` : ''}
+            </p>
           </div>
           <button
             type="button"
@@ -553,86 +562,73 @@ function DetailsModal({
           </button>
         </div>
 
-        <div className="px-6 py-7 sm:px-8">
-          {/* ── Section 1: Details ── */}
-          <div className="space-y-5">
-            <SectionHeader icon={User} step={1} title="Details" subtitle="About you & your school" />
-            {listing.intro?.trim() && (
-              <div className="rounded-2xl bg-ink-50/70 p-4">
-                <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-                  Introduction
-                </p>
-                <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">
-                  {listing.intro}
-                </p>
-              </div>
+        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6 sm:px-7">
+          {/* Proof of identity */}
+          <section>
+            <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
+              Proof of identity · student ID
+            </p>
+            {idPhoto ? (
+              <a
+                href={idPhoto}
+                target="_blank"
+                rel="noreferrer"
+                className="block max-w-xs overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 transition-opacity hover:opacity-90"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={idPhoto} alt="Student ID" className="w-full object-contain" />
+              </a>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-6 text-center text-sm text-ink-400">
+                No student ID on file yet.
+              </p>
             )}
-            <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-              {rows.map((r) => (
-                <div key={r.label}>
-                  <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-                    {r.label}
-                  </dt>
-                  <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">
-                    {r.value}
-                  </dd>
+          </section>
+
+          {/* About + tour types */}
+          {(listing.intro?.trim() || listing.tourTypes?.length) && (
+            <section className="border-t border-ink-100 pt-6">
+              <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">About</p>
+              {listing.intro?.trim() && (
+                <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{listing.intro}</p>
+              )}
+              {!!listing.tourTypes?.length && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {listing.tourTypes.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
+                    >
+                      {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </dl>
-          </div>
+              )}
+            </section>
+          )}
 
-          {/* ── Section 2: Getting paid ── */}
-          <div className="mt-8 border-t border-ink-100 pt-7">
-            <SectionHeader
-              icon={Wallet}
-              step={2}
-              title="Getting paid"
-              subtitle="Guidelines you agreed to"
-            />
-            <ul className="mt-1 space-y-3">
-              {GUIDELINES.map((g) => (
-                <li
-                  key={g.key}
-                  className="flex items-start gap-3 rounded-2xl border border-ink-100 bg-white p-4"
-                >
-                  <span
-                    className={cn(
-                      'mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-                      listing.agreedGuidelines
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-ink-100 text-ink-400',
-                    )}
-                  >
-                    <CheckCircle2 size={15} />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-ink-900">{g.title}</p>
-                    <p className="mt-0.5 text-[0.82rem] leading-relaxed text-ink-500">{g.body}</p>
+          {/* Application answers */}
+          {rows.length > 0 && (
+            <section className="border-t border-ink-100 pt-6">
+              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">Application answers</p>
+              <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                {rows.map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{label}</dt>
+                    <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">{value}</dd>
                   </div>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 flex items-center gap-2 text-sm text-ink-600">
-              <ListChecks size={15} className="text-maroon-800" />
-              <span>
-                Guide agreement:{' '}
-                <span className="font-semibold text-ink-900">
-                  {listing.agreedContract ? 'Accepted' : 'Not accepted'}
-                </span>
-              </span>
-            </div>
-          </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
-          {/* ── Section 3: Photos ── */}
-          <div className="mt-8 border-t border-ink-100 pt-7">
-            <SectionHeader
-              icon={Camera}
-              step={3}
-              title="Photos"
-              subtitle={`${photos.length} photo${photos.length !== 1 ? 's' : ''} uploaded`}
-            />
-            {photos.length ? (
-              <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {/* Photos */}
+          {photos.length > 0 && (
+            <section className="border-t border-ink-100 pt-6">
+              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
+                Photos ({photos.length})
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {photos.map((src, i) => (
                   <div key={i} className="aspect-square overflow-hidden rounded-2xl bg-ink-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -640,50 +636,10 @@ function DetailsModal({
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="mt-1 rounded-2xl bg-ink-50 p-4 text-sm text-ink-500">
-                Photos are added during setup and shown here once uploaded.
-              </p>
-            )}
-          </div>
+            </section>
+          )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function SectionHeader({
-  icon: Icon,
-  step,
-  title,
-  subtitle,
-}: {
-  icon: typeof User;
-  step: number;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-900">
-        <Icon size={18} />
-      </span>
-      <div>
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-          Step {step}
-        </p>
-        <h3 className="font-display text-lg font-semibold leading-tight text-ink-900">{title}</h3>
-        <p className="text-[0.82rem] text-ink-500">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
-
-function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-ink-800">{value}</dd>
     </div>
   );
 }
@@ -720,14 +676,14 @@ function StatusPanel({
 }) {
   if (status === 'suspended') {
     return (
-      <section className="rounded-3xl border border-red-200 bg-red-50/70 p-6 sm:p-7">
-        <div className="flex items-start gap-4">
-          <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
-            <Ban size={20} />
+      <section className="rounded-2xl border border-red-200 bg-red-50/70 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+            <Ban size={16} />
           </span>
           <div>
-            <h3 className="font-display text-lg font-semibold text-ink-900">Listing suspended</h3>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+            <h3 className="font-display text-base font-semibold text-ink-900">Listing suspended</h3>
+            <p className="mt-0.5 text-[0.82rem] leading-relaxed text-ink-600">
               Your listing was taken off the site by our team. If you think this is a mistake, or
               want to know what to fix,{' '}
               <Link href="/contact" className="font-semibold text-maroon-900 underline-offset-2 hover:underline">
@@ -746,24 +702,24 @@ function StatusPanel({
   return (
     <section
       className={cn(
-        'rounded-3xl border p-6 sm:p-7',
+        'rounded-2xl border p-4 sm:p-5',
         published ? 'border-emerald-200 bg-emerald-50/60' : 'border-gold-600/25 bg-gold-100/40',
       )}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         <span
           className={cn(
-            'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+            'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
             published ? 'bg-emerald-100 text-emerald-700' : 'bg-gold-100 text-gold-800',
           )}
         >
-          {published ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+          {published ? <CheckCircle2 size={16} /> : <Clock size={16} />}
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="font-display text-lg font-semibold text-ink-900">
+          <h3 className="font-display text-base font-semibold text-ink-900">
             {published ? 'Your listing is live' : 'Your listing is under review'}
           </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+          <p className="mt-0.5 text-[0.82rem] leading-relaxed text-ink-600">
             {published
               ? 'Families can now find you and request tours. Keep your profile fresh — great photos get more bookings.'
               : 'Our team is reviewing your listing to keep the marketplace safe. This usually takes up to 48 hours — we’ll publish it as soon as it’s approved.'}
@@ -771,7 +727,7 @@ function StatusPanel({
 
           {/* Timeline — steps are data, ready to come from the backend later */}
           <ListingProgress
-            className="mt-5"
+            className="mt-3.5"
             tone={published ? 'emerald' : 'gold'}
             steps={reviewStepsFor({ status, submittedAt, publishedAt })}
           />

@@ -36,6 +36,7 @@ enum AdminRoleName {
 enum ServiceType {
   CAMPUS_TOUR
   VIDEO_CONSULTATION
+  CONSULTATION
 }
 
 enum ListingStatus {
@@ -54,6 +55,7 @@ enum ApplicationStatus {
 }
 
 enum BookingStatus {
+  PENDING_PAYMENT // card not yet authorized — hidden from the guide until the hold clears
   PENDING
   CONFIRMED
   DECLINED
@@ -279,13 +281,19 @@ model Booking {
   buyer                 User          @relation("BuyerBookings", fields: [buyerId], references: [id], onDelete: Restrict)
   sellerId              String        @map("seller_id")
   seller                User          @relation("SellerBookings", fields: [sellerId], references: [id], onDelete: Restrict)
-  listingId             String        @map("listing_id")
-  listing               Listing       @relation(fields: [listingId], references: [id], onDelete: Restrict)
-  optionId              String        @map("option_id")
-  option                ListingOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
-  serviceType           ServiceType   @map("service_type")
-  schoolId              String?       @map("school_id")
-  scheduledDate         DateTime      @map("scheduled_date")
+  // Nullable: website "become a guide" listings live in User.profileJson, not the
+  // Listing table, so a guide booking has no Listing/Option row — the snapshot
+  // fields below (listingTitle, durationMinutes, grossCents…) carry what was booked.
+  listingId             String?        @map("listing_id")
+  listing               Listing?       @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  optionId              String?        @map("option_id")
+  option                ListingOption? @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  listingTitle          String?        @db.Text @map("listing_title") // snapshot of what was booked
+  durationMinutes       Int?           @map("duration_minutes")
+  serviceType           ServiceType    @map("service_type")
+  schoolId              String?        @map("school_id")
+  schoolName            String?        @map("school_name") // snapshot (guides have no Listing→School link)
+  scheduledDate         DateTime       @map("scheduled_date")
   scheduledTime         String?       @map("scheduled_time")
   guestCount            Int           @default(1) @map("guest_count")
   noteForGuide          String?       @db.Text @map("note_for_guide")
@@ -307,6 +315,7 @@ model Booking {
   refunds Refund[]
   review  Review?
   convo   Conversation?
+  payment Payment?
 
   @@index([sellerId, status])
   @@index([buyerId, status])
@@ -372,6 +381,36 @@ model Refund {
 
   @@index([bookingId])
   @@map("refunds")
+}
+
+// Stripe payment record — one per booking. Captures the full PaymentIntent payload
+// (rawJson) plus the extracted fields the admin invoice view needs. Written when the
+// card is authorized, updated on capture / refund.
+model Payment {
+  id                    String    @id @default(cuid())
+  bookingId             String    @unique @map("booking_id")
+  booking               Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId String    @map("stripe_payment_intent_id")
+  stripeChargeId        String?   @map("stripe_charge_id")
+  amountCents           Int       @map("amount_cents")
+  amountRefundedCents   Int       @default(0) @map("amount_refunded_cents")
+  currency              String    @default("usd")
+  status                String // requires_capture | succeeded | canceled | refunded | partially_refunded
+  cardBrand             String?   @map("card_brand")
+  cardLast4             String?   @map("card_last4")
+  cardExpMonth          Int?      @map("card_exp_month")
+  cardExpYear           Int?      @map("card_exp_year")
+  billingName           String?   @map("billing_name")
+  billingEmail          String?   @map("billing_email")
+  receiptUrl            String?   @db.Text @map("receipt_url")
+  rawJson               Json      @map("raw_json") // full Stripe PaymentIntent payload
+  authorizedAt          DateTime? @map("authorized_at")
+  capturedAt            DateTime? @map("captured_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([stripePaymentIntentId])
+  @@map("payments")
 }
 
 // ----------------------------------------------------------------------------
@@ -520,11 +559,12 @@ model CmsBlock {
 }
 
 model AppConfig {
-  id                  String  @id @default(cuid())
-  featureFlagsJson    Json    @map("feature_flags_json")
-  minSupportedVersion String  @map("min_supported_version")
-  forceUpdateMessage  String? @map("force_update_message")
-  maintenanceBanner   String? @map("maintenance_banner")
+  id                        String  @id @default(cuid())
+  featureFlagsJson          Json    @map("feature_flags_json")
+  minSupportedVersion       String  @map("min_supported_version")
+  forceUpdateMessage        String? @map("force_update_message")
+  maintenanceBanner         String? @map("maintenance_banner")
+  emailNotificationsEnabled Boolean @default(true) @map("email_notifications_enabled") // master switch: off = no emails sent
 
   @@map("app_config")
 }

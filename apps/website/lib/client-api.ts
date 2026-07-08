@@ -260,16 +260,28 @@ export const accountApi = {
 
 // ─── Bookings (My tours) ──────────────────────────────────────────────────────
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'DECLINED' | 'EXPIRED' | 'CANCELLED' | 'COMPLETED';
+export type BookingStatus =
+  | 'PENDING_PAYMENT'
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'DECLINED'
+  | 'EXPIRED'
+  | 'CANCELLED'
+  | 'COMPLETED';
+
+export type BookingServiceType = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULTATION';
 
 export interface BookingDto {
   id: string;
   status: BookingStatus;
-  serviceType: 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION';
+  serviceType: BookingServiceType;
   scheduledDate: string;
   scheduledTime: string | null;
   guestCount: number;
   grossCents: number;
+  durationMinutes: number | null;
+  listingTitle: string | null;
+  schoolName: string | null;
   listing: { title: string; serviceType: string; school: { name: string } | null } | null;
   buyer: { id: string; name: string } | null;
   seller: { id: string; name: string } | null;
@@ -282,9 +294,40 @@ interface Paged<T> {
   limit: number;
 }
 
+export interface CreateGuideBookingInput {
+  sellerId: string;
+  serviceType: BookingServiceType;
+  scheduledDate: string; // YYYY-MM-DD
+  scheduledTime?: string;
+  guestCount?: number;
+  durationMinutes?: number;
+  priceCents: number;
+  listingTitle?: string;
+  schoolName?: string;
+  noteForGuide?: string;
+}
+
+// createGuide returns the booking plus the Stripe fields needed to collect payment.
+// clientSecret/publishableKey are null when payments are disabled (booking is live immediately).
+export interface CreateGuideBookingResult extends BookingDto {
+  clientSecret: string | null;
+  publishableKey: string | null;
+}
+
 export const bookingsApi = {
   // as: 'guest' (tours I booked) | 'guide' (tours I host)
   list: (as: 'guest' | 'guide') => request<Paged<BookingDto>>('GET', `/bookings?as=${as}`),
+  // Book a website "become a guide" listing (requires sign-in). Creates the booking
+  // as PENDING_PAYMENT and returns a Stripe client secret to authorize the card.
+  createGuide: (input: CreateGuideBookingInput) =>
+    request<CreateGuideBookingResult>('POST', '/bookings/guide', input),
+  // Called after the Payment Element authorizes — flips the booking to PENDING.
+  confirmPayment: (id: string) =>
+    request<{ ok: true; status: BookingStatus }>('POST', `/bookings/${id}/confirm-payment`),
+  // Guide-only status actions (backend enforces seller ownership + role).
+  accept: (id: string) => request<{ ok: true }>('POST', `/bookings/${id}/accept`),
+  decline: (id: string, reason?: string) => request<{ ok: true }>('POST', `/bookings/${id}/decline`, { reason }),
+  complete: (id: string) => request<{ ok: true }>('POST', `/bookings/${id}/complete`),
 };
 
 // ─── Reviews ──────────────────────────────────────────────────────────────────

@@ -89,6 +89,7 @@ export function GuideApplication() {
   const [schoolNotListed, setSchoolNotListed] = useState(false);
   const [agree, setAgree] = useState(false);
   const [idPhoto, setIdPhoto] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState(false);
   const idInput = useRef<HTMLInputElement>(null);
   const [paidAgreed, setPaidAgreed] = useState<Record<string, boolean>>({});
   const [photos, setPhotos] = useState<string[]>([]);
@@ -121,6 +122,9 @@ export function GuideApplication() {
           // Restore previously-uploaded photos (ignore legacy in-session blob URLs).
           if (Array.isArray(draft.photos)) {
             setPhotos(draft.photos.filter((p): p is string => typeof p === 'string' && /^https?:\/\//.test(p)));
+          }
+          if (typeof draft.idPhoto === 'string' && /^https?:\/\//.test(draft.idPhoto)) {
+            setIdPhoto(draft.idPhoto);
           }
           // Resume at the step after the last one the user completed.
           if (draft.completedStep === 'paid') setStep('photos');
@@ -233,9 +237,14 @@ export function GuideApplication() {
       toast.error('Tour type required', 'Please select at least one tour type before continuing.');
       return;
     }
+    if (!idPhoto) {
+      toast.error('Student ID required', 'Please upload a photo of your student ID — admins verify it to approve you.');
+      return;
+    }
     setSavingStep(true);
     try {
-      await accountApi.saveGuideListing({ ...details, status: 'draft', completedStep: 'details' });
+      // idPhoto is the proof-of-identity the admin reviews to approve the application.
+      await accountApi.saveGuideListing({ ...details, idPhoto, status: 'draft', completedStep: 'details' });
       setStep('paid');
     } catch (e) {
       toast.error('Could not save your details', friendlyError(e));
@@ -263,6 +272,7 @@ export function GuideApplication() {
     try {
       const res = await accountApi.saveGuideListing({
         ...collectDetails(),
+        idPhoto, // proof-of-identity — carried through so it's never lost at publish
         agreedGuidelines: allPaidAgreed,
         photos,
         completedStep: 'photos',
@@ -343,7 +353,7 @@ export function GuideApplication() {
               </Field>
 
               <Field label="Tour type" desc="Select which tours you can host. Campus tours are held in-person on campus, while video chats take place virtually. Hint: select both to increase your likelihood of getting bookings.">
-                <CheckboxList name="tourType" options={['Campus tour', 'Video chat']} />
+                <CheckboxList name="tourType" options={['Campus tour', 'Video chat', 'Consultancy']} />
               </Field>
 
               <Field label="Gender"><Select name="gender" options={GENDERS} /></Field>
@@ -388,16 +398,22 @@ export function GuideApplication() {
                 <button
                   type="button"
                   onClick={() => idInput.current?.click()}
-                  className="flex aspect-square w-full max-w-xs flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40"
+                  disabled={uploadingId}
+                  className="flex aspect-square w-full max-w-xs flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {idPhoto ? (
+                  {uploadingId ? (
+                    <>
+                      <Loader2 size={24} className="animate-spin text-maroon-800" />
+                      <span className="text-xs text-ink-400">Uploading…</span>
+                    </>
+                  ) : idPhoto ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={idPhoto} alt="Student ID" className="h-full w-full rounded-xl object-cover" />
                   ) : (
                     <>
                       <ImagePlus size={24} className="text-ink-400" />
                       <span className="text-lg font-bold text-ink-900">+ Add a photo…</span>
-                      <span className="text-xs text-ink-400">.JPG, .GIF or .PNG. Max 4MB</span>
+                      <span className="text-xs text-ink-400">.JPG, .GIF or .PNG. Max 5MB</span>
                     </>
                   )}
                 </button>
@@ -406,9 +422,20 @@ export function GuideApplication() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const f = e.target.files?.[0];
-                    if (f) setIdPhoto(URL.createObjectURL(f));
+                    if (idInput.current) idInput.current.value = '';
+                    if (!f) return;
+                    setUploadingId(true);
+                    try {
+                      // Upload so the ID persists and reaches the admin for verification.
+                      const url = await accountApi.uploadPhoto(f);
+                      setIdPhoto(url);
+                    } catch (err) {
+                      toast.error('Couldn’t upload your ID', friendlyError(err));
+                    } finally {
+                      setUploadingId(false);
+                    }
                   }}
                 />
               </Field>

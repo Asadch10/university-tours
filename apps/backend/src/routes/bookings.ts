@@ -14,6 +14,37 @@ bookingsRouter.post('/', requireAuth, requireRole('BUYER'), asyncHandler(async (
   res.status(201).json(await svc.createBooking(req.user!.id, body));
 }));
 
+// Booking against a website "become a guide" listing (no Listing/Option row).
+// Any signed-in user can book a guide (except themselves).
+bookingsRouter.post('/guide', requireAuth, asyncHandler(async (req, res) => {
+  const body = req.body as {
+    sellerId?: string; serviceType?: string; scheduledDate?: string; scheduledTime?: string;
+    guestCount?: number; durationMinutes?: number; priceCents?: number; listingTitle?: string;
+    schoolName?: string; noteForGuide?: string;
+  };
+  if (!body.sellerId || !body.serviceType || !body.scheduledDate || typeof body.priceCents !== 'number') {
+    throw new HttpError(400, 'validation_error', 'sellerId, serviceType, scheduledDate and priceCents are required');
+  }
+  res.status(201).json(await svc.createGuideBooking(req.user!.id, {
+    sellerId: body.sellerId,
+    serviceType: body.serviceType,
+    scheduledDate: body.scheduledDate,
+    scheduledTime: body.scheduledTime,
+    guestCount: body.guestCount,
+    durationMinutes: body.durationMinutes,
+    priceCents: body.priceCents,
+    listingTitle: body.listingTitle,
+    schoolName: body.schoolName,
+    noteForGuide: body.noteForGuide,
+  }));
+}));
+
+// Called by the browser after the Payment Element authorizes the card — flips the
+// booking from PENDING_PAYMENT → PENDING (idempotent; the webhook is a backstop).
+bookingsRouter.post('/:id/confirm-payment', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await svc.confirmBookingPayment(req.params['id'] as string, req.user!.id));
+}));
+
 bookingsRouter.get('/', requireAuth, asyncHandler(async (req, res) => {
   const { page, limit, as } = req.query as Record<string, string>;
   // ?as=guide → tours I host (seller); default ?as=guest → tours I booked (buyer).

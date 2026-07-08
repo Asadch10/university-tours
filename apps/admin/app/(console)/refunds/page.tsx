@@ -24,7 +24,7 @@ export default function RefundsPage() {
   const { refund } = useBookingActions();
   const refunds = refundsData ?? [];
   const eligibleBookings = useMemo(
-    () => (bookingsData ?? []).filter((b) => b.status === 'COMPLETED' || b.status === 'UPCOMING'),
+    () => (bookingsData ?? []).filter((b) => b.status === 'COMPLETED' || b.status === 'CONFIRMED'),
     [bookingsData],
   );
   const [open, setOpen] = useState(false);

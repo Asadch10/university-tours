@@ -39,8 +39,15 @@ git clone https://github.com/Asadch10/university-tours.git .
 # already cloned?  run instead:  git pull
 ```
 
+> **All remaining commands (steps 5–13) run from this repo root** — it's a pnpm
+> monorepo, so one `pnpm install` here installs every app, and the
+> `pnpm --filter @ucpt/<app>` commands target individual packages from the root.
+> Do **not** `cd` into `apps/*`.
+
 ### 5. Backend env — `apps/backend/.env`
-(fill DB_USER / DB_PASS / DB_NAME from step 1; URL-encode special chars in the password)
+Fill DB_USER / DB_PASS / DB_NAME from step 1. **URL-encode special chars in the
+password** (e.g. `@` → `%40`, `#` → `%23`). Cloudways MySQL listens on TCP, so
+the host is `localhost:3306` (no socket needed).
 ```bash
 cat > apps/backend/.env <<'EOF'
 NODE_ENV=production
@@ -58,6 +65,15 @@ MAIL_USERNAME=resend
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
 MAIL_FROM_ADDRESS=no-reply@ahmadnaeem.com
 MAIL_FROM_NAME=University Campus Private Tours
+EOF
+```
+
+### 5b. Prisma env — `packages/db/.env`  ⚠️ required
+The Prisma CLI + seed read **this** file (not the backend's), so it needs the
+**same** `DATABASE_URL` or `prisma db push` / `seed` will fail.
+```bash
+cat > packages/db/.env <<'EOF'
+DATABASE_URL=mysql://DB_USER:DB_PASS@localhost:3306/DB_NAME
 EOF
 ```
 
@@ -82,6 +98,7 @@ pnpm install --frozen-lockfile
 ```
 
 ### 9. Prisma: generate client + create the MySQL tables
+(uses `packages/db/.env` from step 5b)
 ```bash
 pnpm --filter @ucpt/db generate
 pnpm --filter @ucpt/db exec prisma db push
@@ -146,6 +163,9 @@ pm2 restart ecosystem.config.cjs
 ## Notes
 - **Database:** MySQL is native to Cloudways — no external DB, no sudo. Get the
   connection details from the panel (Access Details).
+- **Two env files hold `DATABASE_URL`** and must match: `apps/backend/.env`
+  (runtime) and `packages/db/.env` (Prisma CLI + seed). URL-encode special
+  characters in the password (`@` → `%40`, `#` → `%23`, `/` → `%2F`).
 - **`prisma db push`** builds/updates tables straight from `schema.prisma` — no
   migration files needed for a fresh database.
 - **`pm2 startup`** needs sudo (blocked on Cloudways). Instead, add a Cloudways

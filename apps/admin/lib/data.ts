@@ -7,10 +7,12 @@
  * all timestamps are ISO-8601 UTC.
  */
 
-export type ServiceType = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION';
+export type ServiceType = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULTATION';
+// Mirrors the backend/website statuses (same labels guests & guides see in My tours).
 export type BookingStatus =
-  | 'REQUESTED'
-  | 'UPCOMING'
+  | 'PENDING_PAYMENT'
+  | 'PENDING'
+  | 'CONFIRMED'
   | 'COMPLETED'
   | 'DECLINED'
   | 'EXPIRED'
@@ -111,9 +113,13 @@ export interface Listing {
 // ─────────────────────────────────────────────────────────── Bookings
 export interface Booking {
   id: string;
-  buyer: string;
+  buyer: string; // guest name (kept as `buyer` internally; shown as "Guest")
   guide: string;
   school: string;
+  title: string | null;
+  durationMinutes: number | null;
+  guestCount: number;
+  scheduledTime: string | null;
   service: ServiceType;
   status: BookingStatus;
   scheduledAt: string;
@@ -127,8 +133,12 @@ export interface Booking {
 export interface LedgerEntry {
   id: string;
   bookingId: string;
+  invoiceNo: string;
   type: 'CAPTURE' | 'REFUND' | 'PAYOUT';
+  status: string; // payment status: requires_capture | succeeded | refunded | ...
   guide: string;
+  guest: string;
+  card: string | null; // e.g. "Visa ···· 4242"
   grossCents: number;
   commissionCents: number;
   netCents: number;
@@ -219,6 +229,7 @@ export interface AppConfig {
   forceUpdateMessage: string;
   maintenanceMode: boolean;
   maintenanceBanner: string;
+  emailNotificationsEnabled: boolean;
   featureFlags: { key: string; label: string; enabled: boolean; desc: string }[];
 }
 

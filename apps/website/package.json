@@ -11,6 +11,8 @@
     "clean": "rm -rf .next node_modules .turbo"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^6.7.0",
+    "@stripe/stripe-js": "^9.9.0",
     "@tanstack/react-query": "^5.62.7",
     "@ucpt/sdk": "workspace:*",
     "@ucpt/types": "workspace:*",
