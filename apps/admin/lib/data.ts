@@ -127,6 +127,9 @@ export interface Booking {
   commissionPct: number;
   netCents: number;
   createdAt: string;
+  paymentStatus: string | null; // Stripe payment status (null = no payment record)
+  paymentCard: string | null; // e.g. "Visa ···· 4242"
+  amountRefundedCents: number;
 }
 
 // ─────────────────────────────────────────────────────────── Transactions / Ledger

@@ -19,7 +19,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { Booking } from '@/lib/data';
 import { useBookings } from '@/lib/queries';
-import { formatPrice, formatDateTime, timeAgo, humanize } from '@/lib/utils';
+import { formatPrice, formatDateTime, timeAgo, humanize, paymentStatusMeta } from '@/lib/utils';
 
 const STATUS_TABS: { value: string; label: string }[] = [
   { value: 'ALL', label: 'All' },
@@ -102,7 +102,15 @@ export default function BookingsPage() {
       align: 'right',
       cell: (b) => <span className="font-semibold text-ink-900">{formatPrice(b.grossCents)}</span>,
     },
-    { key: 'status', header: 'Status', cell: (b) => <StatusBadge status={b.status} /> },
+    {
+      key: 'payment',
+      header: 'Payment',
+      cell: (b) => {
+        const meta = paymentStatusMeta(b.paymentStatus);
+        return <Badge variant={meta.variant}>{meta.label}</Badge>;
+      },
+    },
+    { key: 'status', header: 'Booking', cell: (b) => <StatusBadge status={b.status} /> },
   ];
 
   return (

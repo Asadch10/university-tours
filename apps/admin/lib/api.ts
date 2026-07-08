@@ -397,6 +397,13 @@ export interface BookingDto {
   schoolName?: string | null;
   durationMinutes?: number | null;
   schoolId?: string | null;
+  payment?: {
+    status: string;
+    amountCents: number;
+    amountRefundedCents: number;
+    cardBrand: string | null;
+    cardLast4: string | null;
+  } | null;
 }
 
 export interface ReviewDto {

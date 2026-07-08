@@ -1,23 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, CreditCard, ExternalLink, Receipt, Code2 } from 'lucide-react';
+import { ArrowLeft, Loader2, CreditCard, ExternalLink, Receipt } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { BookingStatus } from '@/lib/data';
 import { useInvoice, invoiceNo } from '@/lib/queries';
-import { formatPrice, formatDateTime, humanize } from '@/lib/utils';
-
-const paymentStatusVariant: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'neutral'> = {
-  succeeded: 'success',
-  requires_capture: 'info',
-  refunded: 'danger',
-  partially_refunded: 'warning',
-  canceled: 'neutral',
-};
+import { formatPrice, formatDateTime, humanize, paymentStatusMeta } from '@/lib/utils';
 
 function fmtDuration(mins: number | null) {
   if (!mins) return null;
@@ -28,7 +19,6 @@ export default function InvoiceDetailPage() {
   const router = useRouter();
   const { bookingId } = useParams<{ bookingId: string }>();
   const { data: inv, isLoading, isError } = useInvoice(bookingId);
-  const [showRaw, setShowRaw] = useState(false);
 
   if (isLoading) {
     return (
@@ -66,9 +56,10 @@ export default function InvoiceDetailPage() {
           <Receipt size={22} className="text-brand-700" />
           <h1 className="font-mono text-lg font-semibold text-ink-900">{invoiceNo(inv.id)}</h1>
           <StatusBadge status={inv.status as BookingStatus} />
-          {pay && (
-            <Badge variant={paymentStatusVariant[pay.status] ?? 'neutral'}>{humanize(pay.status)}</Badge>
-          )}
+          {pay && (() => {
+            const meta = paymentStatusMeta(pay.status);
+            return <Badge variant={meta.variant}>Payment: {meta.label}</Badge>;
+          })()}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -154,26 +145,6 @@ export default function InvoiceDetailPage() {
               </section>
             )}
 
-            {/* Raw Stripe payload */}
-            {pay?.rawJson != null && (
-              <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
-                <button
-                  type="button"
-                  onClick={() => setShowRaw((s) => !s)}
-                  className="flex w-full items-center justify-between text-2xs font-semibold uppercase tracking-wider text-ink-500 hover:text-ink-800"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Code2 size={14} /> Stripe payment payload
-                  </span>
-                  <span className="text-ink-400">{showRaw ? 'Hide' : 'Show'}</span>
-                </button>
-                {showRaw && (
-                  <pre className="mt-4 max-h-96 overflow-auto rounded-xl bg-ink-900 p-4 text-2xs leading-relaxed text-ink-100">
-                    {JSON.stringify(pay.rawJson, null, 2)}
-                  </pre>
-                )}
-              </section>
-            )}
           </div>
 
           {/* Payment method card */}

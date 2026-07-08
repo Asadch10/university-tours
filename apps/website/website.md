@@ -1,283 +1,172 @@
 # University Campus Private Tours — Public Website
 
-The premium, SEO-critical **public website** for University Campus Private Tours — a two-sided
-education marketplace where families discover universities and book **private campus tours** and
-**video consultations** with verified current-student ambassadors.
+The premium, SEO-critical **public website** — a two-sided education marketplace where families
+discover universities and book **private campus tours**, **video chats**, and **consultations** with
+verified current-student ambassadors ("guides").
 
-Built with **Next.js 15 (App Router)**, **React 19**, **Tailwind CSS**, and **Framer Motion**, it
-consumes the shared backend API via `@ucpt/sdk`. This package is part of the
-[University Campus Private Tours monorepo](../../README.md).
+Built with **Next.js 15 (App Router)**, **React 19**, **Tailwind CSS**, **Framer Motion**,
+**TanStack Query**, **Stripe** (Payment Element), and **Leaflet** (explore map). Part of the
+[monorepo](../../README.md). Design spec: [`design.md`](./design.md).
 
-> **Design reference:** the full design system and page spec lives in [`DESIGN.md`](./DESIGN.md).
-
----
-
-## Table of contents
-
-1. [Quick start](#quick-start)
-2. [Scripts](#scripts)
-3. [Tech stack](#tech-stack)
-4. [Brand & design system](#brand--design-system)
-5. [Project structure](#project-structure)
-6. [Pages & routes](#pages--routes)
-7. [Component library](#component-library)
-8. [Data layer](#data-layer)
-9. [Animations & micro-interactions](#animations--micro-interactions)
-10. [Accessibility](#accessibility)
-11. [Performance & SEO](#performance--seo)
-12. [Replacing the logo & assets](#replacing-the-logo--assets)
-13. [Environment variables](#environment-variables)
-14. [Roadmap](#roadmap)
+> **For future Claude sessions:** this file is the map — read it before exploring. The two flows that
+> matter most are the **guide-listing lifecycle** and the **Stripe booking flow** (both documented
+> below). Money is always **integer cents**; render with `formatPrice()` from `lib/utils.ts`.
 
 ---
 
 ## Quick start
 
-From this folder (`apps/website`):
-
 ```bash
-pnpm dev          # start dev server → http://localhost:3000
+pnpm --filter @ucpt/website dev    # → http://localhost:3000
+pnpm --filter @ucpt/backend dev    # → http://localhost:4000 (required)
 ```
 
-Or from anywhere in the monorepo:
+The user runs the dev servers themselves — verify changes with `pnpm --filter @ucpt/website typecheck`,
+not by starting `pnpm dev`.
 
-```bash
-pnpm --filter @ucpt/website dev
-```
-
-If dependencies aren’t installed yet, run `pnpm install` once from the repo root.
-
----
-
-## Scripts
-
-| Command          | Description                                  |
-| ---------------- | -------------------------------------------- |
-| `pnpm dev`       | Dev server with hot reload (port 3000)       |
-| `pnpm build`     | Production build (also type-checks & lints)  |
-| `pnpm start`     | Serve the production build                    |
-| `pnpm typecheck` | `tsc --noEmit` type-check                     |
-| `pnpm lint`      | Next.js ESLint                               |
-| `pnpm clean`     | Remove `.next`, `node_modules`, `.turbo`     |
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Dev server, port **3000** |
+| `pnpm build` | Production build (type-checks & lints) |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm lint` | Next.js ESLint |
 
 ---
 
-## Tech stack
+## Two-sided model (important)
 
-| Concern        | Choice                                                            |
-| -------------- | ---------------------------------------------------------------- |
-| Framework      | Next.js 15 (App Router), React 19, TypeScript                    |
-| Styling        | Tailwind CSS 3.4 + `@tailwindcss/typography`                     |
-| Animation      | Framer Motion 11 (scroll reveals, carousels, counters)          |
-| Icons          | `lucide-react` (SVG only — never emoji)                          |
-| Variants/utils | `class-variance-authority`, `clsx`, `tailwind-merge` (`cn`)      |
-| Fonts          | `next/font` — Playfair Display (display) + Inter (body)          |
-| API contract   | `@ucpt/sdk`, `@ucpt/types`, `@ucpt/validation` (workspace pkgs)  |
-
----
-
-## Brand & design system
-
-Derived from the collegiate **crest logo**.
-
-| Token        | Value                                            | Use                                    |
-| ------------ | ------------------------------------------------ | -------------------------------------- |
-| Primary      | `maroon-900 #6b1521` / `maroon-800 #7a1a32`      | Headers, primary buttons, crest        |
-| Accent       | `gold-500 #cf9526` (gradient `bg-gold-sheen`)    | Premium accents, highlight text, CTAs  |
-| Canvas       | `ivory #fbf8f3`, `cream #f6f0e7`                  | Page + alternating section backgrounds |
-| Text         | `ink-900 / ink-600 / ink-500`                    | Headings / body / muted                |
-| Success      | `verified #2f7d57`                               | Verified badges, checkmarks            |
-
-- **Type:** Playfair Display headings (`font-display`) + Inter body (`font-sans`) — the
-  “Classic Elegant” premium pairing.
-- **Motion:** 150–300ms, easing `ease-premium` = `cubic-bezier(0.22, 1, 0.36, 1)`.
-- **Shadows:** `shadow-soft` (rest) → `shadow-lift` (hover) → `shadow-glow` (gold focus).
-- **Layout helpers:** `.container-page` (max 1280px), `.eyebrow`, `.text-gold-gradient`, `.bg-grid`.
-- **Section rhythm:** `py-20 sm:py-28`, alternating `bg-ivory` / `bg-cream/60`.
-
-Tokens are defined in [`tailwind.config.ts`](./tailwind.config.ts) and base styles in
-[`app/globals.css`](./app/globals.css).
-
----
-
-## Project structure
-
-```
-apps/website/
-├── app/                       # App Router routes
-│   ├── layout.tsx             # Root layout: fonts, Navbar, Footer, metadata, skip-link
-│   ├── globals.css            # Tailwind layers, base styles, reduced-motion
-│   ├── fonts.ts               # next/font (Playfair + Inter) → CSS variables
-│   ├── page.tsx               # Homepage
-│   ├── search/page.tsx        # Guide search
-│   ├── universities/          # index + [slug] detail
-│   ├── ambassadors/[id]/      # guide profile + booking
-│   ├── how-it-works/  become-a-guide/  for-parents/
-│   ├── about/  contact/  faq/
-│   ├── login/  register/
-│   └── terms/  privacy/  trust-safety/
-├── components/
-│   ├── ui/                    # Button, Badge, SectionHeading, StarRating, Avatar, Accordion, Reveal
-│   ├── cards/                 # UniversityCard, AmbassadorCard
-│   ├── layout/                # Navbar, Footer
-│   ├── home/                  # Hero, StatCounter, TestimonialCarousel
-│   ├── search/                # SearchBar, SearchResults (filters)
-│   ├── booking/               # BookingWidget
-│   ├── contact/               # ContactForm
-│   └── brand/                 # Logo
-├── lib/
-│   ├── data.ts                # Mock content (universities, ambassadors, testimonials, FAQs…)
-│   ├── utils.ts               # cn(), formatPrice()
-│   └── api.ts                 # @ucpt/sdk instance for live data
-├── public/logo.svg            # Crest mark (replaceable)
-├── tailwind.config.ts         # Design tokens
-├── DESIGN.md                  # Design system spec
-└── README.md                  # This file
-```
-
----
-
-## Pages & routes
-
-| Route                    | Rendering        | Description                                                                          |
-| ------------------------ | ---------------- | ----------------------------------------------------------------------------------- |
-| `/`                      | Static (ISR-ready) | Hero search, trust marquee, how-it-works, featured universities, services, animated stats, ambassadors, testimonial carousel, become-a-guide, FAQ, CTA |
-| `/universities`          | Static           | Browse all universities                                                              |
-| `/universities/[slug]`   | SSG/ISR          | University detail — hero, highlights, programs, student guides, CTA (SEO + canonical) |
-| `/search`                | Dynamic (query)  | Guide search with live filters (university, service, price, rating), sort, mobile filter sheet, empty state |
-| `/ambassadors/[id]`      | SSG/ISR          | Guide profile — bio, languages, interests, reviews + sticky **booking widget**       |
-| `/how-it-works`          | Static           | Buyer + guide journeys, trust strip, FAQ                                             |
-| `/become-a-guide`        | Static           | Student conversion page — earnings, steps, requirements, guide FAQ                   |
-| `/for-parents`           | Static           | Trust-focused page for parents                                                       |
-| `/about`                 | Static           | Brand story, values, impact stats, team                                             |
-| `/contact`               | Static + form    | Contact methods + interactive contact form                                          |
-| `/faq`                   | Static           | Grouped help center (booking, guides, safety)                                        |
-| `/login`                 | Client           | Premium split-screen sign-in                                                         |
-| `/register`              | Client           | Split-screen sign-up with buyer/guide role toggle                                    |
-| `/terms`                 | Static           | Terms of Service (prose)                                                             |
-| `/privacy`               | Static           | Privacy Policy (prose)                                                               |
-| `/trust-safety`          | Static           | Trust & Safety pillars + report a concern                                            |
-
-**Core user flow:** Home → Search → Ambassador profile → Booking widget (request) — charged only on
-guide acceptance.
-
----
-
-## Component library
-
-**UI primitives** (`components/ui/`)
-
-| Component        | Notes                                                                       |
-| ---------------- | --------------------------------------------------------------------------- |
-| `Button` / `ButtonLink` | Variants: `primary · gold · outline · ghost · light · outline-light`; sizes `sm · md · lg · icon` |
-| `Badge`          | Variants: `maroon · gold · verified · neutral · light`                       |
-| `SectionHeading` | Eyebrow + title + description; `align`, `variant`                            |
-| `StarRating`     | Accessible (announces value via `aria-label`)                               |
-| `Avatar`         | Initials with brand tint; optional `ring`                                    |
-| `Accordion`      | Animated expand/collapse (FAQ)                                               |
-| `Reveal` / `RevealGroup` | Scroll-triggered fade/slide; reduced-motion aware                  |
-
-**Feature components**
-
-- `cards/` — `UniversityCard`, `AmbassadorCard`
-- `layout/` — `Navbar` (always-solid frosted header, hover cover + animated underline, mobile drawer), `Footer`
-- `home/` — `Hero`, `StatCounter` (count-up on view), `TestimonialCarousel`
-- `search/` — `SearchBar` (hero/compact; **popular chips search on click**), `SearchResults` (filters + grid)
-- `booking/` — `BookingWidget` (service/duration/date/time → price; **request flow with confirmation summary + in-widget message composer**)
-- `contact/` — `ContactForm`
-- `brand/` — `Logo` (`default` | `light` variants)
+- A `User.role` is **`null` until onboarding** decides `BUYER` (books tours) or `SELLER` (a guide).
+  Any signed-in user can book a guide (except themselves); becoming a guide is a separate opt-in.
+- **Guide listings live in `User.profileJson.guideListing`**, NOT the `Listing`/`ListingOption`
+  tables. A published guide is a `User` with `profileJson.guideListing.status === 'published'`.
+  Bookings against a guide therefore store **snapshots** (title, school, duration, price) rather than
+  FK references — see the backend's `createGuideBooking`.
+- The `Listing` table exists in the schema but the current website booking path is the **guide** path.
 
 ---
 
 ## Data layer
 
-Marketing/discovery content is currently **mock data** in [`lib/data.ts`](./lib/data.ts)
-(universities, ambassadors, testimonials, services, stats, FAQs, how-it-works). Shapes mirror the
-documented backend domain model so they swap cleanly for live data via
-[`lib/api.ts`](./lib/api.ts), which creates a typed `@ucpt/sdk` client pointed at
-`NEXT_PUBLIC_API_BASE_URL`.
+Two clients, by rendering context:
 
-Ambassadors carry an optional `avatar` photo URL (currently placeholder images, rendered by the
-`Avatar` component with an initials fallback) — swap these for real uploads when the backend lands.
+| File | Used by | What it is |
+| --- | --- | --- |
+| [`lib/client-api.ts`](./lib/client-api.ts) | **Client components** | Browser REST client to the backend. JWT access/refresh + user in `localStorage` (`ucpt_access` / `ucpt_refresh` / `ucpt_user`); a 401 transparently refreshes once and retries. Exposes `authApi`, `guidesApi`, `accountApi`, `bookingsApi`, `reviewsApi`, plus `tokenStore`, `ApiError`, `friendlyError`. `API_URL` = `NEXT_PUBLIC_API_URL` \|\| `NEXT_PUBLIC_API_BASE_URL` \|\| `http://localhost:4000`. |
+| [`lib/api.ts`](./lib/api.ts) | **Server components** | `@ucpt/sdk` instance for server-side data fetching. |
+| [`lib/guides.ts`](./lib/guides.ts) | both | `GuideProfile` / `Guide` / `CommunityGuideDto` types + `GuideService` union; some legacy mock guides. |
+| [`lib/schools.ts`](./lib/schools.ts) | both | School/university types + data helpers. |
+| [`lib/data.ts`](./lib/data.ts) | marketing pages | Static mock content (testimonials, FAQs, how-it-works, etc.). |
+| [`lib/auth.ts`](./lib/auth.ts) | client | Session helpers over `tokenStore`. |
+| [`lib/toast.tsx`](./lib/toast.tsx) | client | `useToast()` provider/hook. |
+| [`lib/utils.ts`](./lib/utils.ts) | all | `cn()`, `formatPrice()` (cents → `$`), date helpers. |
 
-Money is handled in **integer cents** and rendered with `formatPrice()` from `lib/utils.ts`.
-
-> **Interactive flows** (booking request, in-widget messaging, login/email-link, register, contact)
-> currently **simulate** success on the client — each handler is marked with a comment where the real
-> `@ucpt/sdk` call goes once the backend is wired.
-
----
-
-## Animations & micro-interactions
-
-- **Scroll reveals** via `Reveal` / `RevealGroup` (staggered).
-- **Hero** entrance animation + floating crest.
-- **Stat counters** count up when scrolled into view.
-- **Testimonial carousel** with animated slide transitions + dots.
-- **FAQ accordion** height/opacity transitions.
-- **Navbar** transparent → frosted on scroll, animated active-link underline, animated mobile drawer.
-- **Cards** lift on hover (`-translate-y-1`, shadow `soft → lift`).
-- All motion respects `prefers-reduced-motion` (globally disabled in `globals.css` + via Framer’s
-  `useReducedMotion`).
+`client-api.ts` API groups (all under `/api/v1`):
+- `authApi` — login, register, refresh, me, verify-email, forgot/reset-password
+- `guidesApi` — public community guides (`/search/community-guides`), guide detail
+- `accountApi` — profile, onboarding role choice, `saveGuideListing` / `deleteGuideListing` (writes `profileJson.guideListing`)
+- `bookingsApi` — `createGuide`, `confirmPayment`, `list('guest'|'guide')`, `accept`, `decline`, `complete`
+- `reviewsApi` — reviews received by a guide
 
 ---
 
-## Accessibility
+## Stripe booking flow (authorize-then-capture)
 
-- WCAG AA color contrast; visible `:focus-visible` gold ring on all interactive elements.
-- Skip-to-content link; semantic landmarks and heading hierarchy (one `h1` per page).
-- `aria-label`s on icon-only buttons; accessible star ratings, carousel controls, and forms
-  (`htmlFor`/`id`, `autocomplete`, `aria-pressed` on toggles, `aria-live` on form status).
-- SVG icons only (lucide-react) — never emoji as icons.
-- Responsive at 375 / 768 / 1024 / 1280; grids collapse 3→2→1; navbar → drawer below `lg`.
+Payment model: the card is **authorized (held)** at booking, and only **captured when the guide
+accepts**. Backend booking status gains a `PENDING_PAYMENT` state (hidden from both parties until the
+hold clears). See the backend memory / `apps/backend/src/services/booking.service.ts`.
+
+Frontend sequence (in [`components/guide/guide-detail.tsx`](./components/guide/guide-detail.tsx) →
+`BookingCard`, `status: 'idle' | 'submitting' | 'paying' | 'requested'`):
+
+1. Guest configures tour type / guests / date / time / duration → clicks **Reserve**.
+2. `bookingsApi.createGuide(input)` creates the booking (`PENDING_PAYMENT`) + a manual-capture
+   PaymentIntent and returns `{ id, clientSecret, publishableKey }`.
+3. If `clientSecret` is present → `status: 'paying'` renders
+   [`components/guide/booking-payment.tsx`](./components/guide/booking-payment.tsx) — a Stripe
+   **`<Elements>` + `<PaymentElement>`** step (`@stripe/react-stripe-js`, `loadStripe` cached per
+   publishable key), maroon-themed. `stripe.confirmPayment({ redirect: 'if_required' })` authorizes
+   the card, then `bookingsApi.confirmPayment(bookingId)` flips the booking `PENDING_PAYMENT → PENDING`
+   (a webhook is the idempotent backstop). → `status: 'requested'` ("Request sent").
+4. If Stripe is disabled, `clientSecret` is `null` and the booking is live immediately.
+
+`my-tours` (guest/guide views) never shows `PENDING_PAYMENT` — the backend filters it. When adding a
+`Record<BookingStatus, …>` (e.g. `STATUS_STYLE` in `my-tours-view.tsx`), include the
+`PENDING_PAYMENT` key to satisfy the type.
+
+Guide payouts are **manual/admin-recorded** for now (Stripe Connect is a later phase).
 
 ---
 
-## Performance & SEO
+## Routes
 
-- `next/font` (no layout shift), `next/image` for real photos, balanced text wrapping.
-- Static/ISR rendering for SEO surfaces; dynamic params prerendered via `generateStaticParams`.
-- Per-page `metadata` (titles, descriptions, canonical URLs), Open Graph + Twitter defaults in the
-  root layout; admin/console surfaces excluded (this is the public, indexable site).
-- Production build: ~102 KB shared First-Load JS; pages 102–158 KB.
+```
+app/
+├── page.tsx                     # Homepage (hero search, explore map, featured guides, …)
+├── layout.tsx                   # fonts, Navbar, Footer, metadata, Providers
+├── search/                      # guide search (filters, sort, map)
+├── universities/  [slug]/       # index + university detail
+├── ambassadors/[id]/            # public guide profile → GuideDetail + booking card
+├── my-tours/                    # buyer + guide bookings ("as guest" / "as guide")
+├── onboarding/                  # choose BUYER vs SELLER (sets role)
+├── become-a-guide/              # guide conversion landing
+├── manage-listing/              # guide listing builder (writes profileJson.guideListing)
+├── payouts/  settings/  profile/# guide/account surfaces
+├── login/ register/ forgot-password/ reset-password/ verify-email/
+├── how-it-works/ for-parents/ group-tours/ virtual-tours/ about/ contact/
+├── faq/ help/ resources/ blog/ [slug]/ testimonials/ partnerships/ refer/
+└── terms/ privacy/ trust-safety/
+```
 
 ---
 
-## Replacing the logo & assets
+## Components (by folder)
 
-A placeholder crest is provided at [`public/logo.svg`](./public/logo.svg). To use your exact brand
-mark, **replace that file** (keep the name `logo.svg`) — it’s referenced by the `Logo` component, the
-hero, footer, university cards, and the become-a-guide panel, so it updates everywhere at once.
-For a raster file, drop `public/logo.png` and update the `src` in
-[`components/brand/logo.tsx`](./components/brand/logo.tsx).
+- `ui/` — `Button`, `Badge`, `Avatar`, `Accordion`, `Reveal`/`RevealGroup`, `SectionHeading`,
+  `StarRating`, `Pagination`
+- `guide/` — **`guide-detail.tsx`** (profile + `BookingCard`), **`booking-payment.tsx`** (Stripe
+  Payment Element), `guide-application.tsx`, `guide-landing.tsx`, `become-guide-gate.tsx`
+- `tours/` — `my-tours-view.tsx` (guest/guide booking lists, accept/decline/complete)
+- `listing/` — `manage-listing-view.tsx`, `listing-progress.tsx` (step-by-step guide-listing builder,
+  draft saves, resume, edit/delete)
+- `settings/` — account, contact, college status, password, **payments**, **payouts**
+- `home/` — `hero`, `explore-map` / `map-view` (Leaflet), `featured-guides`, `popular-schools`,
+  `trusted-reviews`, `personal-way`, `become-guide`, `faq-section`
+- `search/` — `guide-search-bar`, `search-bar`, `search-results`
+- `cards/` — `ambassador-card`, `university-card`
+- `layout/` — `navbar`, `footer`, `user-menu`, `newsletter-form`, `coming-soon`
+- `universities/` — `university-explorer`, `explore-screen`
+- `auth/`, `about/`, `blog/`, `contact/`, `onboarding/`, `parents/`, `help/`, `resources/`,
+  `testimonials/`, `partnerships/`, `refer/`, `group-tours/`, `virtual-tours/`, `brand/logo.tsx`
+
+---
+
+## Brand & design system
+
+Collegiate crest palette. **Maroon** primary (`maroon-900 #6b1521` / `maroon-800`), **gold** accent
+(`gold-500 #cf9526`), **ivory/cream/ink** canvas, `verified #2f7d57` for success. Type: **Playfair
+Display** (`font-display`) + **Inter** (`font-sans`). Motion 150–300ms, `ease-premium`. Helpers:
+`.container-page`, `.eyebrow`, `.text-gold-gradient`, `.bg-grid`. Tokens in
+[`tailwind.config.ts`](./tailwind.config.ts); base styles in `app/globals.css`. Full spec in
+[`design.md`](./design.md). Icons: `lucide-react` only (never emoji). All motion respects
+`prefers-reduced-motion`.
 
 ---
 
 ## Environment variables
 
-Configured at the monorepo root (`.env`, see `.env.example`):
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` (or `NEXT_PUBLIC_API_BASE_URL`) | Backend base URL for `client-api.ts` |
 
-| Variable                            | Purpose                                  |
-| ----------------------------------- | ---------------------------------------- |
-| `NEXT_PUBLIC_API_BASE_URL`          | Backend API base URL for `@ucpt/sdk`     |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`| Stripe Elements (checkout, future)       |
+The Stripe **publishable key is returned by the backend** in the `createGuide` response and passed to
+`loadStripe` — no `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` needed on the website.
 
 ---
 
-## Roadmap
+## Conventions for edits
 
-Done:
-
-- Booking **request flow** with confirmation summary + in-widget message composer (client-side)
-- Hero search "popular" chips trigger a real search; `/search` filters, sort & mobile sheet
-- Auth pages with simulated submit + login email-link ("magic link") state
-- Ambassador profile photos via the `Avatar` `src` field (placeholder images)
-
-Not yet implemented (next steps):
-
-- Persist booking requests + payment hold; **checkout flow** (Stripe Elements) and receipts
-- Buyer dashboard (my bookings, messages, receipts, reviews)
-- Ambassador dashboard (listings, requests, earnings, payouts)
-- Wire `@ucpt/sdk` to the live backend (replace `lib/data.ts` mocks + simulated handlers)
-- Real photography/imagery via `next/image` (swap placeholder avatars)
-- Component refinement with Magic MCP
+- Client components that call the backend use `client-api.ts` (`'use client'`, `tokenStore` for auth).
+- Money in integer cents everywhere; `formatPrice()` to render.
+- Catch `ApiError` and surface `friendlyError(e)` via `useToast()`.
+- Adding a booking status → update the `BookingStatus` union in `client-api.ts` **and** any
+  `Record<BookingStatus, …>` (e.g. `my-tours-view.tsx`).
