@@ -2,6 +2,8 @@ import { prisma, Prisma } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
 import { config } from '../config.js';
+import { stripe, isStripeEnabled } from '../lib/stripe.js';
+import { syncPaymentRecord } from './booking.service.js';
 import { sendProfileApprovedEmail, sendProfileDeclinedEmail } from './mailer.service.js';
 import * as argon2 from 'argon2';
 
@@ -36,16 +38,16 @@ export async function getDashboard() {
       orderBy: { listings: { _count: 'desc' } },
       take: 5,
     }),
-    prisma.$queryRaw<{ month: string; gross: number; commission: number }[]>`
+    prisma.$queryRaw<{ month: string; gross: number | bigint; commission: number | bigint }[]>`
       SELECT
-        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') AS month,
-        SUM(gross_cents)::integer AS gross,
-        SUM(commission_cents)::integer AS commission
+        DATE_FORMAT(created_at, '%b') AS month,
+        SUM(gross_cents) AS gross,
+        SUM(commission_cents) AS commission
       FROM ledger_entries
       WHERE type = 'CAPTURE'
-        AND created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY DATE_TRUNC('month', created_at)
-      ORDER BY DATE_TRUNC('month', created_at)
+        AND created_at >= (NOW() - INTERVAL 6 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
+      ORDER BY DATE_FORMAT(created_at, '%Y-%m')
     `,
   ]);
 
@@ -66,7 +68,13 @@ export async function getDashboard() {
     pendingPayoutsCents,
     bookingsByStatus: bookingsByStatus.map((b) => ({ status: b.status, count: b._count })),
     topSchools: topSchools.map((s) => ({ id: s.id, name: s.name, slug: s.slug, listings: s._count.listings })),
-    revenueSeries: Array.isArray(revenueSeries) ? revenueSeries : [],
+    // MySQL SUM() can come back as BigInt/string — coerce to plain numbers so the
+    // response serializes to JSON cleanly.
+    revenueSeries: (Array.isArray(revenueSeries) ? revenueSeries : []).map((r) => ({
+      month: r.month,
+      gross: Number(r.gross ?? 0),
+      commission: Number(r.commission ?? 0),
+    })),
   };
 }
 
@@ -468,13 +476,30 @@ export async function forceCancelBooking(id: string, reason: string, adminId: st
   return { ok: true };
 }
 
+
 export async function refundBooking(id: string, amountCents: number | undefined, reason: string, adminId: string) {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) throw new HttpError(404, 'not_found', 'Booking not found');
   const refundAmount = amountCents ?? booking.grossCents;
 
+  // Issue the money back through Stripe (partial or full). Skipped for bookings with
+  // no captured PaymentIntent (legacy / pre-payments) so the ledger still reconciles.
+  let stripeRefundId: string | null = null;
+  if (isStripeEnabled() && booking.stripePaymentIntentId) {
+    try {
+      const refund = await stripe().refunds.create({
+        payment_intent: booking.stripePaymentIntentId,
+        amount: refundAmount,
+      });
+      stripeRefundId = refund.id;
+    } catch (err) {
+      logger.error({ err, bookingId: id }, 'Stripe refund failed');
+      throw new HttpError(502, 'refund_failed', 'Stripe refund failed — please try again');
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
-    await tx.refund.create({ data: { bookingId: id, amountCents: refundAmount, reason, createdBy: adminId } });
+    await tx.refund.create({ data: { bookingId: id, amountCents: refundAmount, stripeRefundId, reason, createdBy: adminId } });
     // Compensating ledger entry
     if (booking.commissionPctSnapshot !== null) {
       const commissionCents = Math.round((refundAmount * booking.commissionPctSnapshot) / 100);
@@ -491,6 +516,8 @@ export async function refundBooking(id: string, amountCents: number | undefined,
     }
     await tx.auditLog.create({ data: { adminId, action: 'refund.issue', entity: `bookings/${id} → $${(refundAmount / 100).toFixed(2)}`, ip: '127.0.0.1' } });
   });
+  // Refresh the stored Payment so the invoice view reflects the refund.
+  if (booking.stripePaymentIntentId) await syncPaymentRecord(id, booking.stripePaymentIntentId);
   return { ok: true };
 }
 
@@ -557,21 +584,85 @@ export async function moderateReview(id: string, data: { hidden: boolean }, admi
 
 // ─── Transactions / Ledger ────────────────────────────────────────────────────
 
+// Transactions are sourced from Payment records so each shows the moment the card is
+// authorized (not only after capture). Commission/net are derived from the booking's
+// snapshot. Refunded payments surface as REFUND rows.
 export async function listTransactions(opts: { type?: string; page?: number; limit?: number }) {
-  const { type, page = 1, limit = 20 } = opts;
-  const where: Record<string, unknown> = {};
-  if (type && type !== 'ALL') where.type = type;
-  const [data, total] = await Promise.all([
-    prisma.ledgerEntry.findMany({
+  const { page = 1, limit = 20 } = opts;
+  // Only surface payments that actually reached (at least) an authorized hold — hide
+  // abandoned carts that never got a card (requires_payment_method / _confirmation / _action).
+  const where = { status: { notIn: ['requires_payment_method', 'requires_confirmation', 'requires_action', 'processing'] } };
+  const [payments, total] = await Promise.all([
+    prisma.payment.findMany({
       where,
-      include: { booking: { select: { id: true, buyer: { select: { name: true } }, seller: { select: { name: true } }, serviceType: true } } },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            serviceType: true,
+            scheduledDate: true,
+            grossCents: true,
+            commissionPctSnapshot: true,
+            commissionCents: true,
+            sellerNetCents: true,
+            buyer: { select: { name: true, email: true } },
+            seller: { select: { name: true } },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
-    prisma.ledgerEntry.count({ where }),
+    prisma.payment.count({ where }),
   ]);
+
+  const data = payments.map((p) => {
+    const gross = p.amountCents;
+    const pct = p.booking?.commissionPctSnapshot ?? 0;
+    const commission = p.booking?.commissionCents ?? Math.round((gross * pct) / 100);
+    const net = p.booking?.sellerNetCents ?? gross - commission;
+    return {
+      id: p.id,
+      type: p.status === 'refunded' ? 'REFUND' : 'CAPTURE',
+      status: p.status,
+      grossCents: gross,
+      commissionCents: commission,
+      sellerNetCents: net,
+      createdAt: p.createdAt,
+      booking: p.booking
+        ? {
+            id: p.booking.id,
+            serviceType: p.booking.serviceType,
+            scheduledDate: p.booking.scheduledDate,
+            buyer: p.booking.buyer,
+            seller: p.booking.seller,
+            payment: { cardBrand: p.cardBrand, cardLast4: p.cardLast4, status: p.status, billingName: p.billingName },
+          }
+        : null,
+    };
+  });
   return { data, total, page, limit };
+}
+
+/**
+ * Full invoice for one booking: booking snapshot, guest/guide, the stored Stripe
+ * Payment (card, receipt, raw payload), the ledger entries and refunds.
+ */
+export async function getInvoice(bookingId: string) {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      buyer: { select: { id: true, name: true, email: true } },
+      seller: { select: { id: true, name: true, email: true } },
+      payment: true,
+      ledger: { orderBy: { createdAt: 'asc' } },
+      refunds: { orderBy: { createdAt: 'desc' }, include: { createdByUser: { select: { name: true } } } },
+      events: { orderBy: { createdAt: 'asc' } },
+    },
+  });
+  if (!booking) throw new HttpError(404, 'not_found', 'Invoice not found');
+  return booking;
 }
 
 export async function getGuideBalances() {
@@ -798,13 +889,14 @@ export async function getAppConfig() {
   return prisma.appConfig.findFirst();
 }
 
-export async function setAppConfig(data: { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown }, adminId?: string) {
+export async function setAppConfig(data: { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown; emailNotificationsEnabled?: boolean }, adminId?: string) {
   const existing = await prisma.appConfig.findFirst();
   const patch = {
     ...(data.minSupportedVersion !== undefined && { minSupportedVersion: data.minSupportedVersion }),
     ...(data.forceUpdateMessage !== undefined && { forceUpdateMessage: data.forceUpdateMessage }),
     ...(data.maintenanceBanner !== undefined && { maintenanceBanner: data.maintenanceBanner }),
     ...(data.featureFlagsJson !== undefined && { featureFlagsJson: data.featureFlagsJson as Prisma.InputJsonValue }),
+    ...(data.emailNotificationsEnabled !== undefined && { emailNotificationsEnabled: data.emailNotificationsEnabled }),
   };
   let updated;
   if (existing) {

@@ -2,12 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Star, ChevronLeft, ChevronRight, ChevronDown, Check, Share, Maximize2,
-  Footprints, Video, Minus, Plus,
+  Footprints, Video, Minus, Plus, MessageSquare, Loader2, CalendarCheck, ArrowLeft,
 } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
 import type { GuideProfile } from '@/lib/guides';
+import {
+  bookingsApi,
+  tokenStore,
+  friendlyError,
+  ApiError,
+  type BookingServiceType,
+} from '@/lib/client-api';
+import { useToast } from '@/lib/toast';
+import { BookingPayment } from './booking-payment';
 
 function initials(name: string) {
   return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -200,6 +210,7 @@ function TourType({ g }: { g: GuideProfile }) {
   const items = [
     { label: 'Campus tour', active: g.services.includes('CAMPUS_TOUR') },
     { label: 'Video chat', active: g.services.includes('VIDEO_CONSULTATION') },
+    { label: 'Consultancy', active: g.services.includes('CONSULTATION') },
   ];
   return (
     <section className="mt-10">
@@ -341,13 +352,21 @@ type Panel = 'tour' | 'guests' | 'date' | 'time' | 'duration' | null;
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const DURATIONS = [
-  { label: '1 hour', desc: 'Good for a quick campus overview and answers to your top questions.' },
+  { label: '1 hour', minutes: 60, mult: 1, desc: 'Good for a quick campus overview and answers to your top questions.' },
   {
     label: '2 hours',
+    minutes: 120,
+    mult: 2,
     recommended: true,
     desc: 'Perfect for a more thorough, personalized tour and deeper campus insights.',
   },
 ];
+
+const TOUR_LABELS: Record<BookingServiceType, string> = {
+  CAMPUS_TOUR: 'Campus tour',
+  VIDEO_CONSULTATION: 'Video chat',
+  CONSULTATION: 'Consultancy',
+};
 
 function timeSlots() {
   const slots: string[] = [];
@@ -361,17 +380,20 @@ function timeSlots() {
 const SLOTS = timeSlots();
 
 function BookingCard({ g }: { g: GuideProfile }) {
+  const router = useRouter();
+  const toast = useToast();
   const [open, setOpen] = useState<Panel>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  const [tourType, setTourType] = useState<'CAMPUS_TOUR' | 'VIDEO_CONSULTATION'>(
-    g.services[0] ?? 'CAMPUS_TOUR',
-  );
+  const [tourType, setTourType] = useState<BookingServiceType>(g.services[0] ?? 'CAMPUS_TOUR');
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [date, setDate] = useState<{ y: number; m: number; d: number } | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [duration, setDuration] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'paying' | 'requested'>('idle');
+  // Set when the backend returns a Stripe client secret — drives the payment step.
+  const [pay, setPay] = useState<{ bookingId: string; clientSecret: string; publishableKey: string } | null>(null);
 
   const now = new Date();
   const [cal, setCal] = useState({ y: now.getFullYear(), m: now.getMonth() });
@@ -388,7 +410,9 @@ function BookingCard({ g }: { g: GuideProfile }) {
 
   const guests = adults + children;
   const guestLabel = `${guests} guest${guests > 1 ? 's' : ''}`;
-  const tourLabel = tourType === 'CAMPUS_TOUR' ? 'Campus tour' : 'Video chat';
+  const tourLabel = TOUR_LABELS[tourType];
+  const selectedDuration = DURATIONS.find((d) => d.label === duration) ?? null;
+  const priceCents = Math.round((g.price * (selectedDuration?.mult ?? 1)) / 100) * 100;
   const dateLabel = date
     ? new Date(date.y, date.m, date.d).toLocaleDateString('en-US', {
         month: 'short',
@@ -409,6 +433,114 @@ function BookingCard({ g }: { g: GuideProfile }) {
     const nm = cal.m + d;
     setCal({ y: cal.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 });
   };
+
+  async function handleReserve() {
+    if (!ready || status === 'submitting' || !date) return;
+    // Booking requires an account — send guests to log in first.
+    if (!tokenStore.user) {
+      router.push('/login');
+      return;
+    }
+    const scheduledDate = `${date.y}-${String(date.m + 1).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+    setStatus('submitting');
+    try {
+      const res = await bookingsApi.createGuide({
+        sellerId: g.id,
+        serviceType: tourType,
+        scheduledDate,
+        scheduledTime: time ?? undefined,
+        guestCount: guests,
+        durationMinutes: selectedDuration?.minutes,
+        priceCents,
+        listingTitle: g.headline,
+        schoolName: g.university,
+      });
+      // Payments on → collect card in the payment step. Off → request is already live.
+      if (res.clientSecret && res.publishableKey) {
+        setPay({ bookingId: res.id, clientSecret: res.clientSecret, publishableKey: res.publishableKey });
+        setStatus('paying');
+      } else {
+        setStatus('requested');
+      }
+    } catch (e) {
+      setStatus('idle');
+      toast.error(
+        e instanceof ApiError && e.code === 'cannot_book_self' ? 'That’s your listing' : 'Couldn’t send request',
+        friendlyError(e),
+      );
+    }
+  }
+
+  // ---- Payment step (card authorization) ----
+  if (status === 'paying' && pay) {
+    return (
+      <BookingPayment
+        bookingId={pay.bookingId}
+        clientSecret={pay.clientSecret}
+        publishableKey={pay.publishableKey}
+        amountCents={priceCents}
+        guideName={g.name}
+        tourLabel={tourLabel}
+        onPaid={() => {
+          setPay(null);
+          setStatus('requested');
+        }}
+        onBack={() => {
+          setPay(null);
+          setStatus('idle');
+        }}
+      />
+    );
+  }
+
+  // ---- Confirmation ----
+  if (status === 'requested') {
+    const firstName = g.name.split(' ')[0];
+    return (
+      <div className="mt-6 rounded-3xl border border-ink-200/70 bg-white p-6 text-center shadow-card">
+        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-verified/10 text-verified">
+          <CalendarCheck size={26} />
+        </span>
+        <h3 className="mt-4 font-display text-xl font-bold text-maroon-900">Request sent</h3>
+        <p className="mt-1.5 text-sm text-ink-600">
+          {firstName} has been notified and will confirm your {tourLabel.toLowerCase()}. You won’t be
+          charged until they accept.
+        </p>
+        <dl className="mt-5 space-y-2.5 rounded-2xl bg-cream/60 p-4 text-left text-sm">
+          {[
+            ['Tour type', tourLabel],
+            ['When', `${dateLabel}${time ? ` · ${time}` : ''}`],
+            ['Guests', guestLabel],
+            ...(selectedDuration ? [['Duration', selectedDuration.label]] : []),
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-4">
+              <dt className="text-ink-500">{k}</dt>
+              <dd className="text-right font-medium text-ink-900">{v}</dd>
+            </div>
+          ))}
+          <div className="flex justify-between gap-4 border-t border-ink-200/70 pt-2.5">
+            <dt className="text-ink-500">Total if accepted</dt>
+            <dd className="text-right font-semibold text-maroon-900">{formatPrice(priceCents)}</dd>
+          </div>
+        </dl>
+        <div className="mt-5 grid gap-2">
+          <Link
+            href="/my-tours"
+            className="w-full rounded-2xl bg-maroon-900 py-3 text-center text-sm font-semibold text-ivory hover:bg-maroon-800"
+          >
+            View in My tours
+          </Link>
+          <button
+            type="button"
+            onClick={() => setStatus('idle')}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-ink-200 py-3 text-sm font-semibold text-ink-800 hover:bg-ink-50"
+          >
+            <ArrowLeft size={15} /> Book again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="mt-6 space-y-4">
@@ -438,6 +570,17 @@ function BookingCard({ g }: { g: GuideProfile }) {
                 selected={tourType === 'VIDEO_CONSULTATION'}
                 onClick={() => {
                   setTourType('VIDEO_CONSULTATION');
+                  setOpen(null);
+                }}
+              />
+              <OptionRow
+                icon={<MessageSquare size={20} />}
+                iconClass="bg-gold-500 text-white"
+                title="Consultancy"
+                desc="A focused 1-on-1 advising session on admissions, essays, or student life"
+                selected={tourType === 'CONSULTATION'}
+                onClick={() => {
+                  setTourType('CONSULTATION');
                   setOpen(null);
                 }}
               />
@@ -598,19 +741,35 @@ function BookingCard({ g }: { g: GuideProfile }) {
 
       <button
         type="button"
-        disabled={!ready}
+        disabled={!ready || status === 'submitting'}
+        onClick={handleReserve}
         className={cn(
-          'w-full rounded-2xl py-4 text-center font-semibold transition-colors',
-          ready
+          'flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-center font-semibold transition-colors',
+          ready && status !== 'submitting'
             ? 'bg-maroon-900 text-ivory hover:bg-maroon-800'
             : 'cursor-not-allowed bg-ink-200 text-ink-500',
         )}
       >
-        Reserve
+        {status === 'submitting' ? (
+          <>
+            <Loader2 size={18} className="animate-spin" /> Sending request…
+          </>
+        ) : (
+          'Reserve'
+        )}
       </button>
       <p className="text-center text-sm text-ink-500">
-        From <span className="font-semibold text-ink-900">{formatPrice(g.price)}</span> · you won’t be
-        charged yet
+        {selectedDuration ? (
+          <>
+            <span className="font-semibold text-ink-900">{formatPrice(priceCents)}</span> total · you
+            won’t be charged yet
+          </>
+        ) : (
+          <>
+            From <span className="font-semibold text-ink-900">{formatPrice(g.price)}</span> · you won’t
+            be charged yet
+          </>
+        )}
       </p>
     </div>
   );

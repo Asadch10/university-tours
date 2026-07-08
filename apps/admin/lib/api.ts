@@ -253,6 +253,7 @@ export const adminApi = {
 
   transactions: (p: { type?: string; page?: number } = {}) =>
     request<Paged<LedgerDto>>('GET', `/admin/transactions${qs({ ...p, limit: 100 })}`),
+  invoice: (bookingId: string) => request<InvoiceDto>('GET', `/admin/transactions/${bookingId}`),
   guideBalances: () => request<GuideBalanceDto[]>('GET', '/admin/guide-balances'),
   payouts: (p: { sellerId?: string; page?: number } = {}) =>
     request<Paged<PayoutDto>>('GET', `/admin/payouts${qs({ ...p, limit: 100 })}`),
@@ -384,12 +385,17 @@ export interface BookingDto {
   status: string;
   serviceType: string;
   scheduledDate: string;
+  scheduledTime?: string | null;
+  guestCount?: number;
   requestedAt: string;
   grossCents: number;
   commissionPctSnapshot: number | null;
   buyer: { id: string; name: string };
   seller: { id: string; name: string };
   listing?: { title: string; serviceType: string; school?: { name: string } | null } | null;
+  listingTitle?: string | null;
+  schoolName?: string | null;
+  durationMinutes?: number | null;
   schoolId?: string | null;
 }
 
@@ -407,11 +413,67 @@ export interface ReviewDto {
 export interface LedgerDto {
   id: string;
   type: string;
+  status?: string; // payment status: requires_capture | succeeded | refunded | ...
   grossCents: number;
   commissionCents: number;
   sellerNetCents: number;
   createdAt: string;
-  booking?: { id: string; serviceType: string; buyer?: { name: string }; seller?: { name: string } } | null;
+  booking?: {
+    id: string;
+    serviceType: string;
+    scheduledDate?: string;
+    buyer?: { name: string; email?: string };
+    seller?: { name: string };
+    payment?: { cardBrand: string | null; cardLast4: string | null; status: string; billingName: string | null } | null;
+  } | null;
+}
+
+// Full invoice for one booking (payment payload + ledger + refunds).
+export interface PaymentDto {
+  id: string;
+  stripePaymentIntentId: string;
+  stripeChargeId: string | null;
+  amountCents: number;
+  amountRefundedCents: number;
+  currency: string;
+  status: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+  cardExpMonth: number | null;
+  cardExpYear: number | null;
+  billingName: string | null;
+  billingEmail: string | null;
+  receiptUrl: string | null;
+  rawJson: unknown;
+  authorizedAt: string | null;
+  capturedAt: string | null;
+  createdAt: string;
+}
+
+export interface InvoiceDto {
+  id: string;
+  status: string;
+  serviceType: string;
+  scheduledDate: string;
+  scheduledTime: string | null;
+  guestCount: number;
+  durationMinutes: number | null;
+  listingTitle: string | null;
+  schoolName: string | null;
+  grossCents: number;
+  commissionPctSnapshot: number | null;
+  commissionCents: number | null;
+  sellerNetCents: number | null;
+  stripePaymentIntentId: string | null;
+  requestedAt: string;
+  confirmedAt: string | null;
+  completedAt: string | null;
+  buyer: { id: string; name: string; email: string };
+  seller: { id: string; name: string; email: string };
+  payment: PaymentDto | null;
+  ledger: { id: string; type: string; grossCents: number; commissionPct: number; commissionCents: number; sellerNetCents: number; createdAt: string }[];
+  refunds: { id: string; amountCents: number; reason: string | null; stripeRefundId: string | null; createdAt: string; createdByUser?: { name: string } | null }[];
+  events: { id: string; fromState: string | null; toState: string; actor: string; reason: string | null; createdAt: string }[];
 }
 
 export interface RefundDto {
@@ -494,6 +556,7 @@ export interface AppConfigDtoRaw {
   minSupportedVersion: string;
   forceUpdateMessage: string | null;
   maintenanceBanner: string | null;
+  emailNotificationsEnabled: boolean;
 }
 
 export interface TemplateDto {

@@ -4,7 +4,7 @@
 
 import { universities } from '@/lib/data';
 
-export type GuideService = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION';
+export type GuideService = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULTATION';
 
 export const GENDERS = ['Male', 'Female', 'Non-binary'];
 export const YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate student'];
@@ -261,6 +261,7 @@ function mapServices(tourTypes: unknown): GuideService[] {
   const out: GuideService[] = [];
   if (t.includes('Campus tour')) out.push('CAMPUS_TOUR');
   if (t.includes('Video chat')) out.push('VIDEO_CONSULTATION');
+  if (t.includes('Consultancy')) out.push('CONSULTATION');
   return out.length ? out : ['CAMPUS_TOUR'];
 }
 

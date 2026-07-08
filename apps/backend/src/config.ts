@@ -13,7 +13,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional(),
   REDIS_URL: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_CURRENCY: z.string().default('usd'),
 
   // Public URL of the website — used to build the email-verification link.
   APP_WEB_URL: z.string().default('http://localhost:3000'),

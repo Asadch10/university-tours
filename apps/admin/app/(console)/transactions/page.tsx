@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, DollarSign, Percent, Wallet, Banknote } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Download, DollarSign, Percent, Wallet, Banknote, CreditCard, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { StatGridSkeleton } from '@/components/ui/skeleton';
@@ -34,9 +35,20 @@ const ledgerTypeVariant: Record<LedgerEntry['type'], 'success' | 'info' | 'warni
   REFUND: 'warning',
 };
 
+// Payment status → badge. Shown per transaction row so admins can tell an authorized
+// hold from a captured charge or a refund at a glance.
+const paymentStatusMeta: Record<string, { label: string; variant: 'success' | 'info' | 'warning' | 'danger' | 'neutral' }> = {
+  requires_capture: { label: 'Authorized', variant: 'info' },
+  succeeded: { label: 'Captured', variant: 'success' },
+  refunded: { label: 'Refunded', variant: 'danger' },
+  partially_refunded: { label: 'Part. refunded', variant: 'warning' },
+  canceled: { label: 'Canceled', variant: 'neutral' },
+};
+
 type GuideBalanceRow = GuideBalance & { sellerId: string };
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<TabValue>('ledger');
 
   const { data: ledgerData, isLoading: ledgerLoading } = useTransactions();
@@ -125,16 +137,42 @@ export default function TransactionsPage() {
   // ─── Columns ────────────────────────────────────────────────────
   const ledgerCols: Column<LedgerEntry>[] = [
     {
-      key: 'type',
-      header: 'Type',
-      cell: (r) => <Badge variant={ledgerTypeVariant[r.type]}>{humanize(r.type)}</Badge>,
+      key: 'invoice',
+      header: 'Invoice',
+      cell: (r) => {
+        const meta = paymentStatusMeta[r.status] ?? { label: humanize(r.type), variant: ledgerTypeVariant[r.type] };
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="font-mono text-xs font-semibold text-brand-900">{r.invoiceNo}</span>
+            <Badge variant={meta.variant} size="sm">{meta.label}</Badge>
+          </div>
+        );
+      },
     },
     {
-      key: 'booking',
-      header: 'Booking',
-      cell: (r) => <span className="font-mono text-xs text-ink-600">{r.bookingId}</span>,
+      key: 'guest',
+      header: 'Guest',
+      cell: (r) => (
+        <div className="flex items-center gap-2.5">
+          <Avatar name={r.guest} size={28} />
+          <span className="font-medium text-ink-900">{r.guest}</span>
+        </div>
+      ),
     },
-    { key: 'guide', header: 'Guide', cell: (r) => <span className="text-ink-800">{r.guide}</span> },
+    { key: 'guide', header: 'Guide', hideOnMobile: true, cell: (r) => <span className="text-ink-700">{r.guide}</span> },
+    {
+      key: 'card',
+      header: 'Payment',
+      hideOnMobile: true,
+      cell: (r) =>
+        r.card ? (
+          <span className="inline-flex items-center gap-1.5 text-ink-700">
+            <CreditCard size={14} className="text-ink-400" /> {r.card}
+          </span>
+        ) : (
+          <span className="text-ink-400">—</span>
+        ),
+    },
     {
       key: 'gross',
       header: 'Gross',
@@ -145,6 +183,7 @@ export default function TransactionsPage() {
       key: 'commission',
       header: 'Commission',
       align: 'right',
+      hideOnMobile: true,
       cell: (r) => <span className="text-ink-600">{formatPrice(r.commissionCents)}</span>,
     },
     {
@@ -158,6 +197,12 @@ export default function TransactionsPage() {
       header: 'Date',
       hideOnMobile: true,
       cell: (r) => <span className="text-ink-500">{formatDate(r.createdAt)}</span>,
+    },
+    {
+      key: 'chevron',
+      header: '',
+      align: 'right',
+      cell: () => <ChevronRight size={16} className="text-ink-300" />,
     },
   ];
 
@@ -275,7 +320,7 @@ export default function TransactionsPage() {
 
         <Tabs
           tabs={[
-            { value: 'ledger', label: 'Ledger', count: ledger.length },
+            { value: 'ledger', label: 'Payments', count: ledger.length },
             { value: 'balances', label: 'Guide balances', count: balances.length },
             { value: 'payouts', label: 'Payouts', count: payouts.length },
           ]}
@@ -289,7 +334,8 @@ export default function TransactionsPage() {
             rows={ledger}
             rowKey={(r) => r.id}
             loading={loading}
-            empty={{ title: 'No transactions yet', description: 'Captured payments will appear here.' }}
+            onRowClick={(r) => r.bookingId !== '—' && router.push(`/transactions/${r.bookingId}`)}
+            empty={{ title: 'No transactions yet', description: 'Payments appear here as soon as a card is authorized.' }}
           />
         )}
 

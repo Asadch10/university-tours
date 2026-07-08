@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarRange, Loader2, Footprints, Video } from 'lucide-react';
+import {
+  CalendarRange, Loader2, Footprints, Video, MessageSquare, X, CalendarDays, Clock, Users,
+  GraduationCap, User, Check, Ban, CheckCircle2,
+} from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
-import { bookingsApi, tokenStore, type BookingDto, type BookingStatus } from '@/lib/client-api';
+import { bookingsApi, friendlyError, tokenStore, type BookingDto, type BookingStatus } from '@/lib/client-api';
+import { useToast } from '@/lib/toast';
 
 type View = 'guest' | 'guide';
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
@@ -30,6 +34,8 @@ const TAB_STATUSES: Record<TabKey, BookingStatus[]> = {
 };
 
 const STATUS_STYLE: Record<BookingStatus, { label: string; cls: string }> = {
+  // Never surfaced (unpaid bookings are filtered out server-side) — present only to satisfy the Record type.
+  PENDING_PAYMENT: { label: 'Awaiting payment', cls: 'bg-gold-100 text-gold-800 ring-gold-600/20' },
   PENDING: { label: 'Pending', cls: 'bg-gold-100 text-gold-800 ring-gold-600/20' },
   CONFIRMED: { label: 'Confirmed', cls: 'bg-verified/10 text-verified ring-verified/20' },
   COMPLETED: { label: 'Completed', cls: 'bg-ink-100 text-ink-700 ring-ink-300/40' },
@@ -45,25 +51,42 @@ function fmtDate(iso: string) {
     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function serviceMeta(t: BookingDto['serviceType']) {
+  if (t === 'VIDEO_CONSULTATION') return { Icon: Video, label: 'Video consultation' };
+  if (t === 'CONSULTATION') return { Icon: MessageSquare, label: 'Consultancy' };
+  return { Icon: Footprints, label: 'Campus tour' };
+}
+
+function fmtDuration(mins: number | null) {
+  if (!mins) return null;
+  return mins % 60 === 0 ? `${mins / 60} hour${mins > 60 ? 's' : ''}` : `${mins} minutes`;
+}
+
 export function MyToursView() {
   const router = useRouter();
   const [view, setView] = useState<View>('guest');
   const [tab, setTab] = useState<TabKey>('requests');
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<BookingDto | null>(null);
 
-  useEffect(() => {
-    if (!tokenStore.user) {
-      router.replace('/login');
-      return;
-    }
+  const load = useCallback(() => {
+    if (!tokenStore.user) return;
     setLoading(true);
     bookingsApi
       .list(view)
       .then((res) => setBookings(res.data))
       .catch(() => setBookings([]))
       .finally(() => setLoading(false));
-  }, [view, router]);
+  }, [view]);
+
+  useEffect(() => {
+    if (!tokenStore.user) {
+      router.replace('/login');
+      return;
+    }
+    load();
+  }, [load, router]);
 
   const grouped = useMemo(() => {
     const g: Record<TabKey, BookingDto[]> = { requests: [], confirmed: [], past: [], canceled: [] };
@@ -151,34 +174,42 @@ export function MyToursView() {
           ) : (
             <ul className="mt-6 space-y-3">
               {active.map((b) => {
-                const Icon = b.serviceType === 'VIDEO_CONSULTATION' ? Video : Footprints;
+                const { Icon, label: serviceLabel } = serviceMeta(b.serviceType);
                 const other = view === 'guest' ? b.seller?.name : b.buyer?.name;
                 const otherLabel = view === 'guest' ? 'with' : 'for';
                 const st = STATUS_STYLE[b.status];
                 return (
-                  <li key={b.id} className="flex items-center gap-4 rounded-2xl border border-ink-200/70 bg-white p-4 shadow-soft">
-                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
-                      <Icon size={20} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-ink-900">
-                        {b.listing?.title ?? (b.serviceType === 'VIDEO_CONSULTATION' ? 'Video consultation' : 'Campus tour')}
-                      </p>
-                      <p className="truncate text-sm text-ink-500">
-                        {other ? `${otherLabel} ${other}` : ''}
-                        {b.listing?.school?.name ? ` · ${b.listing.school.name}` : ''}
-                      </p>
-                      <p className="mt-0.5 text-xs text-ink-400">
-                        {fmtDate(b.scheduledDate)}
-                        {b.scheduledTime ? ` · ${b.scheduledTime}` : ''} · {b.guestCount} guest{b.guestCount > 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="font-mono text-sm font-semibold text-ink-900">{formatPrice(b.grossCents)}</p>
-                      <span className={cn('mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset', st.cls)}>
-                        {st.label}
+                  <li key={b.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(b)}
+                      className="flex w-full items-center gap-4 rounded-2xl border border-ink-200/70 bg-white p-4 text-left shadow-soft transition-colors hover:border-maroon-800/40 hover:bg-ink-50/50"
+                    >
+                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+                        <Icon size={20} />
                       </span>
-                    </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-ink-900">
+                          {b.listing?.title ?? b.listingTitle ?? serviceLabel}
+                        </p>
+                        <p className="truncate text-sm text-ink-500">
+                          {other ? `${otherLabel} ${other}` : ''}
+                          {(b.listing?.school?.name ?? b.schoolName)
+                            ? ` · ${b.listing?.school?.name ?? b.schoolName}`
+                            : ''}
+                        </p>
+                        <p className="mt-0.5 text-xs text-ink-400">
+                          {fmtDate(b.scheduledDate)}
+                          {b.scheduledTime ? ` · ${b.scheduledTime}` : ''} · {b.guestCount} guest{b.guestCount > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-mono text-sm font-semibold text-ink-900">{formatPrice(b.grossCents)}</p>
+                        <span className={cn('mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset', st.cls)}>
+                          {st.label}
+                        </span>
+                      </div>
+                    </button>
                   </li>
                 );
               })}
@@ -186,6 +217,175 @@ export function MyToursView() {
           )}
         </section>
       </div>
+
+      {selected && (
+        <BookingModal
+          booking={selected}
+          view={view}
+          onClose={() => setSelected(null)}
+          onChanged={() => {
+            setSelected(null);
+            load();
+          }}
+        />
+      )}
     </main>
+  );
+}
+
+/* ═══ Booking detail modal ═════════════════════════════════════════════ */
+
+function BookingModal({
+  booking: b,
+  view,
+  onClose,
+  onChanged,
+}: {
+  booking: BookingDto;
+  view: View;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const toast = useToast();
+  const [busy, setBusy] = useState<null | 'accept' | 'decline' | 'complete'>(null);
+  const { Icon, label: serviceLabel } = serviceMeta(b.serviceType);
+  const st = STATUS_STYLE[b.status];
+
+  // Only the guide can change status, and only on their own tours.
+  const isGuide = view === 'guide';
+  const canAcceptDecline = isGuide && b.status === 'PENDING';
+  const canComplete = isGuide && b.status === 'CONFIRMED';
+
+  async function act(action: 'accept' | 'decline' | 'complete') {
+    setBusy(action);
+    try {
+      if (action === 'accept') await bookingsApi.accept(b.id);
+      else if (action === 'decline') await bookingsApi.decline(b.id);
+      else await bookingsApi.complete(b.id);
+      toast.success(
+        action === 'accept' ? 'Booking accepted' : action === 'decline' ? 'Booking declined' : 'Marked complete',
+        'The guest has been notified by email.',
+      );
+      onChanged();
+    } catch (e) {
+      setBusy(null);
+      toast.error('Something went wrong', friendlyError(e));
+    }
+  }
+  const title = b.listing?.title ?? b.listingTitle ?? serviceLabel;
+  const school = b.listing?.school?.name ?? b.schoolName;
+  const other = view === 'guest' ? b.seller?.name : b.buyer?.name;
+  const otherRole = view === 'guest' ? 'Guide' : 'Guest';
+  const duration = fmtDuration(b.durationMinutes);
+
+  const rows: { icon: typeof User; label: string; value: string }[] = [
+    ...(other ? [{ icon: User, label: otherRole, value: other }] : []),
+    ...(school ? [{ icon: GraduationCap, label: 'School', value: school }] : []),
+    { icon: CalendarDays, label: 'Date', value: `${fmtDate(b.scheduledDate)}${b.scheduledTime ? ` · ${b.scheduledTime}` : ''}` },
+    ...(duration ? [{ icon: Clock, label: 'Duration', value: duration }] : []),
+    { icon: Users, label: 'Guests', value: `${b.guestCount} guest${b.guestCount > 1 ? 's' : ''}` },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/40 px-4 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Booking details"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-start gap-3 border-b border-ink-100 p-5">
+          <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-800">
+            <Icon size={22} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.7rem] font-bold uppercase tracking-[0.12em] text-ink-400">{serviceLabel}</p>
+            <h2 className="mt-0.5 truncate font-display text-lg font-semibold text-ink-900">{title}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="space-y-4 p-5">
+          <div className="flex items-center justify-between">
+            <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset', st.cls)}>
+              {st.label}
+            </span>
+            <span className="font-mono text-base font-semibold text-ink-900">{formatPrice(b.grossCents)}</span>
+          </div>
+
+          <dl className="divide-y divide-ink-100 rounded-2xl border border-ink-100">
+            {rows.map((r) => (
+              <div key={r.label} className="flex items-center gap-3 px-4 py-3">
+                <r.icon size={16} className="shrink-0 text-ink-400" />
+                <dt className="w-24 shrink-0 text-sm text-ink-500">{r.label}</dt>
+                <dd className="min-w-0 flex-1 text-right text-sm font-medium text-ink-900">{r.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <p className="rounded-xl bg-ink-50 px-3.5 py-2.5 text-center text-xs text-ink-500">
+            {b.status === 'PENDING'
+              ? view === 'guest'
+                ? 'Waiting for the guide to accept. You won’t be charged until they do.'
+                : 'This guest is waiting for you to accept their request.'
+              : b.status === 'CONFIRMED'
+                ? 'Confirmed — you’re all set. Check your email for details.'
+                : `This booking is ${st.label.toLowerCase()}.`}
+          </p>
+
+          {/* Guide-only status actions */}
+          {(canAcceptDecline || canComplete) && (
+            <div className="grid gap-2 pt-1">
+              {canAcceptDecline && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => act('accept')}
+                    disabled={!!busy}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-maroon-900 py-3 text-sm font-semibold text-ivory transition-colors hover:bg-maroon-800 disabled:opacity-60"
+                  >
+                    {busy === 'accept' ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                    Accept booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => act('decline')}
+                    disabled={!!busy}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+                  >
+                    {busy === 'decline' ? <Loader2 size={16} className="animate-spin" /> : <Ban size={16} />}
+                    Decline
+                  </button>
+                </>
+              )}
+              {canComplete && (
+                <button
+                  type="button"
+                  onClick={() => act('complete')}
+                  disabled={!!busy}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-maroon-900 py-3 text-sm font-semibold text-ivory transition-colors hover:bg-maroon-800 disabled:opacity-60"
+                >
+                  {busy === 'complete' ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                  Mark as complete
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

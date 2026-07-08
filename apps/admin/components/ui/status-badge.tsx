@@ -5,10 +5,10 @@ type Variant = NonNullable<BadgeProps['variant']>;
 
 /** Single source of truth for domain status → badge styling across every module. */
 const STATUS_VARIANT: Record<string, Variant> = {
-  // Bookings
+  // Bookings (same statuses guests/guides see in My tours; PENDING is shared below)
+  PENDING_PAYMENT: 'neutral',
   COMPLETED: 'success',
-  UPCOMING: 'info',
-  REQUESTED: 'warning',
+  CONFIRMED: 'info',
   DECLINED: 'neutral',
   EXPIRED: 'neutral',
   CANCELLED: 'danger',

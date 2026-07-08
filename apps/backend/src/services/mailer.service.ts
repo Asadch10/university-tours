@@ -5,8 +5,25 @@
 // message (including the verification link) instead of throwing, so local dev
 // and CI keep working without real credentials.
 import nodemailer, { type Transporter } from 'nodemailer';
+import { prisma } from '@ucpt/db';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
+
+// Master email switch (admin → App config → Email notifications). Cached briefly
+// so we don't hit the DB on every send. When off, NO emails go out.
+let switchCache: { on: boolean; at: number } | null = null;
+async function emailsEnabled(): Promise<boolean> {
+  const now = Date.now();
+  if (switchCache && now - switchCache.at < 15_000) return switchCache.on;
+  try {
+    const cfg = await prisma.appConfig.findFirst({ select: { emailNotificationsEnabled: true } });
+    const on = cfg?.emailNotificationsEnabled ?? true; // default on if unconfigured
+    switchCache = { on, at: now };
+    return on;
+  } catch {
+    return true; // fail open — a DB hiccup shouldn't silently swallow emails
+  }
+}
 
 let cachedTransport: Transporter | null | undefined;
 
@@ -42,6 +59,12 @@ interface SendArgs {
 }
 
 async function send({ to, subject, html, text }: SendArgs): Promise<void> {
+  // Global kill-switch — admins can turn off ALL outbound email from App config.
+  if (!(await emailsEnabled())) {
+    logger.info({ to, subject }, 'Email skipped — notifications disabled in app config');
+    return;
+  }
+
   const from = `${config.MAIL_FROM_NAME} <${config.MAIL_FROM_ADDRESS}>`;
   const transport = getTransport();
 
@@ -196,6 +219,150 @@ export async function sendPasswordResetEmail(opts: {
     subject: `Reset your password · ${brand}`,
     text,
     html: passwordResetEmailHtml({ first, brand, resetUrl: opts.resetUrl }),
+  });
+}
+
+// ─── Booking emails ───────────────────────────────────────────────────────────
+
+export interface BookingEmailSummary {
+  service: string; // "Campus tour" | "Video chat" | "Consultancy"
+  whenText: string; // "Aug 15, 2026 · 10:00 AM (ET)"
+  durationText?: string | null;
+  guests: number;
+  amountCents: number;
+  title?: string | null;
+  school?: string | null;
+}
+
+function usd(cents: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((cents ?? 0) / 100);
+}
+
+/** Ordered rows shown in every booking email. */
+function summaryRows(s: BookingEmailSummary): [string, string][] {
+  const rows: [string, string][] = [['Service', s.service]];
+  if (s.school) rows.push(['School', s.school]);
+  rows.push(['When', s.whenText]);
+  if (s.durationText) rows.push(['Duration', s.durationText]);
+  rows.push(['Guests', String(s.guests)]);
+  rows.push(['Amount', usd(s.amountCents)]);
+  return rows;
+}
+
+function summaryText(s: BookingEmailSummary): string {
+  return summaryRows(s).map(([k, v]) => `  ${k}: ${v}`).join('\n');
+}
+
+/**
+ * A booking was just requested. The guide gets a "new request" email; the guest
+ * gets a "request sent" confirmation. Best-effort — never throws to the caller.
+ */
+export async function sendNewBookingEmails(opts: {
+  guide: { email: string; name: string };
+  guest: { email: string; name: string };
+  summary: BookingEmailSummary;
+}): Promise<void> {
+  const brand = config.MAIL_FROM_NAME;
+  const guideFirst = firstNameOf(opts.guide.name, opts.guide.email);
+  const guestFirst = firstNameOf(opts.guest.name, opts.guest.email);
+  const dash = `${config.APP_WEB_URL.replace(/\/+$/, '')}/my-tours`;
+
+  // → Guide: you have a new booking request
+  await send({
+    to: opts.guide.email,
+    subject: `New ${opts.summary.service.toLowerCase()} request from ${opts.guest.name} · ${brand}`,
+    text:
+      `Hi ${guideFirst},\n\n` +
+      `${opts.guest.name} has requested to book a ${opts.summary.service.toLowerCase()} with you.\n\n` +
+      `${summaryText(opts.summary)}\n\n` +
+      `Review and accept or decline it here: ${dash}\n\n` +
+      `You won't be paid until you accept and complete the tour.`,
+    html: bookingEmailHtml({
+      brand,
+      heading: `New booking request`,
+      intro: `Hi ${guideFirst}, <strong>${opts.guest.name}</strong> has requested to book a ${opts.summary.service.toLowerCase()} with you.`,
+      pill: { text: '📥 New request', bg: '#fef3c7', color: '#92400e' },
+      summary: opts.summary,
+      cta: { label: 'Review the request', url: dash },
+      footer: `You won't be paid until you accept and complete the tour.`,
+    }),
+  });
+
+  // → Guest: your request has been sent
+  await send({
+    to: opts.guest.email,
+    subject: `Your ${opts.summary.service.toLowerCase()} request to ${opts.guide.name} · ${brand}`,
+    text:
+      `Hi ${guestFirst},\n\n` +
+      `Your ${opts.summary.service.toLowerCase()} request has been sent to ${opts.guide.name}.\n\n` +
+      `${summaryText(opts.summary)}\n\n` +
+      `Track it here: ${dash}\n\n` +
+      `You won't be charged until ${opts.guide.name} accepts.`,
+    html: bookingEmailHtml({
+      brand,
+      heading: `Booking request sent`,
+      intro: `Hi ${guestFirst}, your ${opts.summary.service.toLowerCase()} request has been sent to <strong>${opts.guide.name}</strong>. We'll email you the moment they respond.`,
+      pill: { text: '⏳ Awaiting the guide', bg: '#fef3c7', color: '#92400e' },
+      summary: opts.summary,
+      cta: { label: 'View in My tours', url: dash },
+      footer: `You won't be charged until ${opts.guide.name} accepts.`,
+    }),
+  });
+}
+
+/** A booking's status changed (accepted / declined / cancelled / completed). */
+export async function sendBookingStatusEmails(opts: {
+  guide: { email: string; name: string };
+  guest: { email: string; name: string };
+  status: string;
+  summary: BookingEmailSummary;
+}): Promise<void> {
+  const brand = config.MAIL_FROM_NAME;
+  const dash = `${config.APP_WEB_URL.replace(/\/+$/, '')}/my-tours`;
+  const svc = opts.summary.service.toLowerCase();
+  const guideFirst = firstNameOf(opts.guide.name, opts.guide.email);
+  const guestFirst = firstNameOf(opts.guest.name, opts.guest.email);
+
+  const map: Record<string, { pill: { text: string; bg: string; color: string }; guest: string; guide: string; subject: string } | undefined> = {
+    CONFIRMED: {
+      pill: { text: '✅ Confirmed', bg: '#dcfce7', color: '#166534' },
+      subject: `Your ${svc} is confirmed`,
+      guest: `Great news — <strong>${opts.guide.name}</strong> confirmed your ${svc}. You're all set!`,
+      guide: `You confirmed the ${svc} with <strong>${opts.guest.name}</strong>. It's on your schedule.`,
+    },
+    DECLINED: {
+      pill: { text: 'Declined', bg: '#fee2e2', color: '#991b1b' },
+      subject: `Update on your ${svc} request`,
+      guest: `Unfortunately <strong>${opts.guide.name}</strong> couldn't accept your ${svc} this time. You weren't charged — try another guide.`,
+      guide: `You declined the ${svc} request from <strong>${opts.guest.name}</strong>.`,
+    },
+    CANCELLED: {
+      pill: { text: 'Cancelled', bg: '#fee2e2', color: '#991b1b' },
+      subject: `Your ${svc} was cancelled`,
+      guest: `Your ${svc} with <strong>${opts.guide.name}</strong> has been cancelled. Any authorization has been released.`,
+      guide: `The ${svc} with <strong>${opts.guest.name}</strong> has been cancelled.`,
+    },
+    COMPLETED: {
+      pill: { text: '🎉 Completed', bg: '#dcfce7', color: '#166534' },
+      subject: `Your ${svc} is complete`,
+      guest: `Your ${svc} with <strong>${opts.guide.name}</strong> is marked complete. We hope it was insightful — leave a review!`,
+      guide: `Nice work — your ${svc} with <strong>${opts.guest.name}</strong> is complete.`,
+    },
+  };
+  const m = map[opts.status];
+  if (!m) return; // PENDING / EXPIRED → no notification
+
+  await send({
+    to: opts.guest.email,
+    subject: `${m.subject} · ${brand}`,
+    text: `Hi ${guestFirst},\n\n${m.guest.replace(/<[^>]+>/g, '')}\n\n${summaryText(opts.summary)}\n\n${dash}`,
+    html: bookingEmailHtml({ brand, heading: m.subject, intro: `Hi ${guestFirst}, ${m.guest}`, pill: m.pill, summary: opts.summary, cta: { label: 'View in My tours', url: dash } }),
+  });
+  await send({
+    to: opts.guide.email,
+    subject: `${m.subject} · ${brand}`,
+    text: `Hi ${guideFirst},\n\n${m.guide.replace(/<[^>]+>/g, '')}\n\n${summaryText(opts.summary)}\n\n${dash}`,
+    html: bookingEmailHtml({ brand, heading: m.subject, intro: `Hi ${guideFirst}, ${m.guide}`, pill: m.pill, summary: opts.summary, cta: { label: 'View in My tours', url: dash } }),
   });
 }
 
@@ -427,6 +594,74 @@ function passwordResetEmailHtml(opts: { first: string; brand: string; resetUrl: 
             <tr>
               <td style="padding:24px 40px 40px 40px;font-size:12px;line-height:1.6;color:#9ca3af;border-top:1px solid #f3f4f6;">
                 This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your password won't change.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+/** Shared booking email — heading, status pill, a details table, and a CTA. */
+function bookingEmailHtml(opts: {
+  brand: string;
+  heading: string;
+  intro: string;
+  pill: { text: string; bg: string; color: string };
+  summary: BookingEmailSummary;
+  cta: { label: string; url: string };
+  footer?: string;
+}): string {
+  const maroon = '#7A1B2E';
+  const rows = summaryRows(opts.summary)
+    .map(
+      ([k, v]) =>
+        `<tr>
+          <td style="padding:8px 0;font-size:13px;color:#6b7280;">${k}</td>
+          <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;text-align:right;">${v}</td>
+        </tr>`,
+    )
+    .join('');
+
+  return `<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <tr><td style="background:${maroon};height:6px;line-height:6px;font-size:6px;">&nbsp;</td></tr>
+            <tr>
+              <td style="padding:40px 40px 8px 40px;">
+                <div style="font-size:14px;font-weight:700;letter-spacing:.02em;color:${maroon};text-transform:uppercase;">${opts.brand}</div>
+                <h1 style="margin:18px 0 0 0;font-size:23px;line-height:1.3;font-weight:800;color:#111827;">${opts.heading}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px 40px 4px 40px;">
+                <span style="display:inline-block;background:${opts.pill.bg};color:${opts.pill.color};font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;">${opts.pill.text}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:14px 40px 8px 40px;font-size:15px;line-height:1.6;color:#374151;">${opts.intro}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 40px 8px 40px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f3f4f6;border-radius:12px;padding:6px 16px;">
+                  ${rows}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 40px 8px 40px;">
+                <a href="${opts.cta.url}" style="display:inline-block;background:${maroon};color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 28px;border-radius:12px;">${opts.cta.label}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 40px 40px 40px;font-size:12px;line-height:1.6;color:#9ca3af;border-top:1px solid #f3f4f6;">
+                ${opts.footer ?? `Manage all your bookings anytime from My tours.`}<br />— The ${opts.brand} team
               </td>
             </tr>
           </table>

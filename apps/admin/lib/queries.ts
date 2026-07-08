@@ -40,8 +40,8 @@ const appStatus = (s: string): ApplicationStatus =>
   s === 'SUBMITTED' ? 'PENDING' : (s as ApplicationStatus);
 export const appStatusToApi = (s: string) => (s === 'PENDING' ? 'SUBMITTED' : s);
 
-const bookingStatus = (s: string): BookingStatus =>
-  s === 'PENDING' ? 'REQUESTED' : s === 'CONFIRMED' ? 'UPCOMING' : (s as BookingStatus);
+// Admin now uses the same booking statuses as the website/backend — no aliasing.
+const bookingStatus = (s: string): BookingStatus => s as BookingStatus;
 
 const qType = (t: string): Questionnaire['questions'][number]['type'] =>
   t === 'TEXT' ? 'SHORT_TEXT' : t === 'SINGLE_CHOICE' ? 'SINGLE_SELECT' : t === 'MULTI_CHOICE' ? 'MULTI_SELECT' : (t as 'LONG_TEXT' | 'FILE');
@@ -105,6 +105,61 @@ export function useApplications() {
       }));
     },
   });
+}
+
+// ─── Guide applications (become-a-guide submissions in profileJson.guideListing) ──
+// The real guide applications come from the website's become-a-guide flow — not the
+// legacy Application table. They're surfaced through the same /admin/listings data.
+
+export interface GuideApplication {
+  id: string;
+  applicant: string;
+  email: string;
+  school: string;
+  submittedAt: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  tourTypes: string[];
+  photos: string[];
+  intro: string | null;
+  details: Record<string, unknown>;
+}
+
+const guideAppStatus = (s: string): GuideApplication['status'] =>
+  s === 'PUBLISHED' ? 'APPROVED' : s === 'SUSPENDED' ? 'REJECTED' : 'PENDING';
+
+export function useGuideApplications() {
+  return useQuery({
+    queryKey: ['guide-applications'],
+    queryFn: async (): Promise<GuideApplication[]> => {
+      const res = await adminApi.listings();
+      return res.data
+        .filter((l) => l.status !== 'DRAFT') // drafts aren't submitted applications
+        .map((l) => ({
+          id: l.id,
+          applicant: l.seller.name,
+          email: l.seller.email,
+          school: l.school ?? '—',
+          submittedAt: l.submittedAt,
+          status: guideAppStatus(l.status),
+          tourTypes: l.tourTypes ?? [],
+          photos: l.photos ?? [],
+          intro: l.intro,
+          details: l.details ?? {},
+        }));
+    },
+  });
+}
+
+export function useGuideApplicationActions() {
+  const qc = useQueryClient();
+  const inv = () => {
+    qc.invalidateQueries({ queryKey: ['guide-applications'] });
+    qc.invalidateQueries({ queryKey: ['listings'] });
+  };
+  return {
+    approve: useMutation({ mutationFn: (id: string) => adminApi.listingModerate(id, 'PUBLISHED'), onSuccess: inv }),
+    reject: useMutation({ mutationFn: (id: string) => adminApi.listingModerate(id, 'SUSPENDED'), onSuccess: inv }),
+  };
 }
 
 export function useApplicationActions() {
@@ -258,7 +313,11 @@ export function useBookings() {
           id: b.id,
           buyer: b.buyer.name,
           guide: b.seller.name,
-          school: b.listing?.school?.name ?? '—',
+          school: b.listing?.school?.name ?? b.schoolName ?? '—',
+          title: b.listing?.title ?? b.listingTitle ?? null,
+          durationMinutes: b.durationMinutes ?? null,
+          guestCount: b.guestCount ?? 1,
+          scheduledTime: b.scheduledTime ?? null,
           service: b.serviceType as Booking['service'],
           status: bookingStatus(b.status),
           scheduledAt: b.scheduledDate,
@@ -286,22 +345,44 @@ export function useBookingActions() {
 
 // ─── Transactions / ledger ──────────────────────────────────────────────────
 
+/** Human invoice number derived deterministically from a booking id. */
+export const invoiceNo = (bookingId: string) => `INV-${bookingId.slice(-8).toUpperCase()}`;
+
 export function useTransactions() {
   return useQuery({
     queryKey: ['transactions'],
     queryFn: async (): Promise<LedgerEntry[]> => {
       const res = await adminApi.transactions();
-      return res.data.map((t) => ({
-        id: t.id,
-        bookingId: t.booking?.id ?? '—',
-        type: t.type as LedgerEntry['type'],
-        guide: t.booking?.seller?.name ?? '—',
-        grossCents: t.grossCents,
-        commissionCents: t.commissionCents,
-        netCents: t.sellerNetCents,
-        createdAt: t.createdAt,
-      }));
+      return res.data.map((t) => {
+        const pay = t.booking?.payment;
+        const card = pay?.cardBrand && pay.cardLast4
+          ? `${pay.cardBrand.charAt(0).toUpperCase()}${pay.cardBrand.slice(1)} ···· ${pay.cardLast4}`
+          : null;
+        const bookingId = t.booking?.id ?? '—';
+        return {
+          id: t.id,
+          bookingId,
+          invoiceNo: t.booking ? invoiceNo(bookingId) : '—',
+          type: t.type as LedgerEntry['type'],
+          status: t.status ?? '',
+          guide: t.booking?.seller?.name ?? '—',
+          guest: t.booking?.buyer?.name ?? '—',
+          card,
+          grossCents: t.grossCents,
+          commissionCents: t.commissionCents,
+          netCents: t.sellerNetCents,
+          createdAt: t.createdAt,
+        };
+      });
     },
+  });
+}
+
+export function useInvoice(bookingId: string | null) {
+  return useQuery({
+    queryKey: ['invoice', bookingId],
+    enabled: !!bookingId,
+    queryFn: () => adminApi.invoice(bookingId as string),
   });
 }
 
@@ -586,6 +667,7 @@ export function useAppConfig() {
         forceUpdateMessage: c.forceUpdateMessage ?? '',
         maintenanceMode: !!c.maintenanceBanner,
         maintenanceBanner: c.maintenanceBanner ?? '',
+        emailNotificationsEnabled: c.emailNotificationsEnabled ?? true,
         featureFlags: Object.entries(flags).map(([key, enabled]) => ({
           key,
           enabled: !!enabled,
