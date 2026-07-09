@@ -112,10 +112,11 @@ export function simulate<T>(value: T, ms = 600): Promise<T> {
 }
 
 /**
- * Map a Stripe payment status to a UI label + badge variant. Used across the
- * bookings and transactions surfaces so payment state reads consistently.
- * In authorize-then-capture: `requires_capture` = card held (money not yet taken)
- * → "Pending"; `succeeded` = captured → "Paid".
+ * Map a Stripe payment status to a UI label + badge variant — answers "did the guest
+ * pay?", independent of whether the guide has confirmed the booking. In
+ * authorize-then-capture BOTH `requires_capture` (card authorized, funds held) and
+ * `succeeded` (captured) mean the guest has paid → "Paid". Use `paymentCaptured()` to
+ * tell a held payment apart from a collected one.
  */
 export type PaymentBadgeVariant = 'success' | 'info' | 'warning' | 'danger' | 'neutral';
 
@@ -124,21 +125,30 @@ export function paymentStatusMeta(
 ): { label: string; variant: PaymentBadgeVariant } {
   switch (status) {
     case 'succeeded':
-      return { label: 'Paid', variant: 'success' };
     case 'requires_capture':
-      return { label: 'Pending', variant: 'warning' };
+      return { label: 'Paid', variant: 'success' };
     case 'partially_refunded':
       return { label: 'Part. refunded', variant: 'warning' };
     case 'refunded':
       return { label: 'Refunded', variant: 'danger' };
     case 'canceled':
-      return { label: 'Canceled', variant: 'neutral' };
+      return { label: 'Released', variant: 'neutral' };
     case null:
     case undefined:
     case '':
-      return { label: 'No payment', variant: 'neutral' };
+      return { label: 'Unpaid', variant: 'neutral' };
     default:
       // requires_payment_method / requires_confirmation / requires_action / processing
       return { label: 'Pending', variant: 'warning' };
   }
+}
+
+/** True once the guest has paid (card authorized or captured). */
+export function guestHasPaid(status: string | null | undefined): boolean {
+  return status === 'requires_capture' || status === 'succeeded' || status === 'partially_refunded';
+}
+
+/** True once funds are actually captured (not just an authorized hold). */
+export function paymentCaptured(status: string | null | undefined): boolean {
+  return status === 'succeeded' || status === 'partially_refunded' || status === 'refunded';
 }

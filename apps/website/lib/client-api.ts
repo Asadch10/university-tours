@@ -285,6 +285,9 @@ export interface BookingDto {
   listing: { title: string; serviceType: string; school: { name: string } | null } | null;
   buyer: { id: string; name: string } | null;
   seller: { id: string; name: string } | null;
+  // Stripe payment status (null = no payment record). `requires_capture` = guest paid,
+  // funds held; `succeeded` = captured.
+  payment: { status: string } | null;
 }
 
 interface Paged<T> {

@@ -39,10 +39,15 @@ const STATUS_STYLE: Record<BookingStatus, { label: string; cls: string }> = {
   PENDING: { label: 'Pending', cls: 'bg-gold-100 text-gold-800 ring-gold-600/20' },
   CONFIRMED: { label: 'Confirmed', cls: 'bg-verified/10 text-verified ring-verified/20' },
   COMPLETED: { label: 'Completed', cls: 'bg-ink-100 text-ink-700 ring-ink-300/40' },
-  DECLINED: { label: 'Declined', cls: 'bg-red-50 text-red-700 ring-red-200' },
+  DECLINED: { label: 'Rejected', cls: 'bg-red-50 text-red-700 ring-red-200' },
   EXPIRED: { label: 'Expired', cls: 'bg-ink-100 text-ink-500 ring-ink-300/40' },
   CANCELLED: { label: 'Canceled', cls: 'bg-red-50 text-red-700 ring-red-200' },
 };
+
+/** True once the guest has paid (card authorized/held or captured). */
+function guestPaid(status?: string | null): boolean {
+  return status === 'requires_capture' || status === 'succeeded' || status === 'partially_refunded';
+}
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -203,11 +208,16 @@ export function MyToursView() {
                           {b.scheduledTime ? ` · ${b.scheduledTime}` : ''} · {b.guestCount} guest{b.guestCount > 1 ? 's' : ''}
                         </p>
                       </div>
-                      <div className="shrink-0 text-right">
+                      <div className="flex shrink-0 flex-col items-end gap-1">
                         <p className="font-mono text-sm font-semibold text-ink-900">{formatPrice(b.grossCents)}</p>
-                        <span className={cn('mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset', st.cls)}>
+                        <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset', st.cls)}>
                           {st.label}
                         </span>
+                        {guestPaid(b.payment?.status) && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-verified/10 px-2 py-0.5 text-[0.65rem] font-semibold text-verified ring-1 ring-inset ring-verified/20">
+                            <Check size={10} /> Paid
+                          </span>
+                        )}
                       </div>
                     </button>
                   </li>
@@ -263,8 +273,12 @@ function BookingModal({
       else if (action === 'decline') await bookingsApi.decline(b.id);
       else await bookingsApi.complete(b.id);
       toast.success(
-        action === 'accept' ? 'Booking accepted' : action === 'decline' ? 'Booking declined' : 'Marked complete',
-        'The guest has been notified by email.',
+        action === 'accept' ? 'Booking confirmed' : action === 'decline' ? 'Booking rejected' : 'Marked complete',
+        action === 'accept'
+          ? 'Payment captured. The guest has been notified by email.'
+          : action === 'decline'
+            ? 'The payment hold was released. The guest has been notified.'
+            : 'The guest has been notified by email.',
       );
       onChanged();
     } catch (e) {
@@ -320,9 +334,16 @@ function BookingModal({
         {/* Body */}
         <div className="space-y-4 p-5">
           <div className="flex items-center justify-between">
-            <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset', st.cls)}>
-              {st.label}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset', st.cls)}>
+                {st.label}
+              </span>
+              {guestPaid(b.payment?.status) && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-verified/10 px-2.5 py-1 text-xs font-semibold text-verified ring-1 ring-inset ring-verified/20">
+                  <Check size={12} /> Paid
+                </span>
+              )}
+            </div>
             <span className="font-mono text-base font-semibold text-ink-900">{formatPrice(b.grossCents)}</span>
           </div>
 
@@ -339,8 +360,8 @@ function BookingModal({
           <p className="rounded-xl bg-ink-50 px-3.5 py-2.5 text-center text-xs text-ink-500">
             {b.status === 'PENDING'
               ? view === 'guest'
-                ? 'Waiting for the guide to accept. You won’t be charged until they do.'
-                : 'This guest is waiting for you to accept their request.'
+                ? 'You’ve paid — the amount is held and only charged once the guide confirms.'
+                : 'The guest has already paid. Confirm to capture the payment, or reject to release the hold.'
               : b.status === 'CONFIRMED'
                 ? 'Confirmed — you’re all set. Check your email for details.'
                 : `This booking is ${st.label.toLowerCase()}.`}
@@ -358,7 +379,7 @@ function BookingModal({
                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-maroon-900 py-3 text-sm font-semibold text-ivory transition-colors hover:bg-maroon-800 disabled:opacity-60"
                   >
                     {busy === 'accept' ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                    Accept booking
+                    Confirm booking
                   </button>
                   <button
                     type="button"
@@ -367,7 +388,7 @@ function BookingModal({
                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
                   >
                     {busy === 'decline' ? <Loader2 size={16} className="animate-spin" /> : <Ban size={16} />}
-                    Decline
+                    Reject
                   </button>
                 </>
               )}

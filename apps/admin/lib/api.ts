@@ -245,8 +245,10 @@ export const adminApi = {
     request<Paged<ReviewDto>>('GET', `/admin/reviews${qs({ ...p, limit: 100 })}`),
   reviewModerate: (id: string, hidden: boolean) => request('PATCH', `/admin/reviews/${id}`, { hidden }),
 
-  commission: () => request<{ commissionPct: number }>('GET', '/admin/commission'),
-  commissionSet: (commissionPct: number) => request('PUT', '/admin/commission', { commissionPct }),
+  commission: () => request<{ commissionPct: number; pendingCount: number }>('GET', '/admin/commission'),
+  commissionSet: (commissionPct: number) =>
+    request<{ commissionPct: number; affected: number }>('PUT', '/admin/commission', { commissionPct }),
+  commissionHistory: () => request<CommissionChangeDto[]>('GET', '/admin/commission/history'),
 
   settings: () => request<SettingsDto>('GET', '/admin/settings'),
   settingsSet: (b: Record<string, unknown>) => request('PUT', '/admin/settings', b),
@@ -555,6 +557,15 @@ export interface SettingsDto {
   refundWindowsJson: Record<string, unknown>;
   requestExpiryHours: number;
   maskingEnabled: boolean;
+}
+
+export interface CommissionChangeDto {
+  id: string;
+  oldPct: number | null;
+  newPct: number | null;
+  reapplied: number | null;
+  actor: string;
+  changedAt: string;
 }
 
 export interface AppConfigDtoRaw {
