@@ -720,16 +720,64 @@ export async function recordPayout(sellerId: string, data: { amountCents: number
 
 // ─── Commission ───────────────────────────────────────────────────────────────
 
+// Bookings whose commission is NOT yet locked — no CAPTURE has happened, so a rate
+// change still re-applies to them. Confirmed/completed (captured) bookings are locked.
+const REPRICEABLE_STATUSES = ['PENDING', 'PENDING_PAYMENT'] as const;
+
 export async function getCommission() {
-  const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
-  return { commissionPct: settings?.commissionPct ?? 25 };
+  const [settings, pendingCount] = await Promise.all([
+    prisma.settings.findUnique({ where: { id: 'singleton' } }),
+    prisma.booking.count({ where: { status: { in: [...REPRICEABLE_STATUSES] } } }),
+  ]);
+  return { commissionPct: settings?.commissionPct ?? 25, pendingCount };
 }
 
 export async function setCommission(commissionPct: number, adminId: string) {
   const old = await prisma.settings.findUnique({ where: { id: 'singleton' } });
-  const updated = await prisma.settings.update({ where: { id: 'singleton' }, data: { commissionPct } });
-  await prisma.auditLog.create({ data: { adminId, action: 'commission.update', entity: `settings/commission → ${commissionPct}%`, beforeJson: { commissionPct: old?.commissionPct }, afterJson: { commissionPct }, ip: '127.0.0.1' } });
-  return updated;
+
+  // Update the global rate AND re-apply it to every not-yet-captured booking so the
+  // new rate takes effect immediately (captured bookings keep their locked snapshot).
+  const [updated, reapplied] = await prisma.$transaction([
+    prisma.settings.update({ where: { id: 'singleton' }, data: { commissionPct } }),
+    prisma.booking.updateMany({
+      where: { status: { in: [...REPRICEABLE_STATUSES] } },
+      data: { commissionPctSnapshot: commissionPct },
+    }),
+  ]);
+
+  await prisma.auditLog.create({
+    data: {
+      adminId,
+      action: 'commission.update',
+      entity: `settings/commission → ${commissionPct}% (${reapplied.count} bookings re-priced)`,
+      beforeJson: { commissionPct: old?.commissionPct },
+      afterJson: { commissionPct, reapplied: reapplied.count },
+      ip: '127.0.0.1',
+    },
+  });
+  return { commissionPct: updated.commissionPct, affected: reapplied.count };
+}
+
+/** Commission-rate change history, reconstructed from the immutable audit log. */
+export async function getCommissionHistory() {
+  const logs = await prisma.auditLog.findMany({
+    where: { action: 'commission.update' },
+    include: { admin: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+  return logs.map((l) => {
+    const before = (l.beforeJson ?? {}) as { commissionPct?: number };
+    const after = (l.afterJson ?? {}) as { commissionPct?: number; reapplied?: number };
+    return {
+      id: l.id,
+      oldPct: before.commissionPct ?? null,
+      newPct: after.commissionPct ?? null,
+      reapplied: after.reapplied ?? null,
+      actor: l.admin?.name ?? 'Admin',
+      changedAt: l.createdAt,
+    };
+  });
 }
 
 export async function getSettings() {

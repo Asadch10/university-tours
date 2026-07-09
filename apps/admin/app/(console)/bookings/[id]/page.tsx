@@ -2,19 +2,19 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Info, CreditCard, Receipt, ExternalLink, FileText } from 'lucide-react';
+import { ArrowLeft, Loader2, CreditCard, Receipt, ExternalLink, FileText, CheckCircle2, XCircle } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { BookingStatus } from '@/lib/data';
 import { useBookings, useInvoice } from '@/lib/queries';
-import { formatPrice, formatDateTime, humanize, paymentStatusMeta } from '@/lib/utils';
+import { formatPrice, formatDateTime, humanize, paymentStatusMeta, guestHasPaid, paymentCaptured } from '@/lib/utils';
 
 // One-line explanation of what a payment status means in the authorize-then-capture flow.
 const PAYMENT_HINT: Record<string, string> = {
-  succeeded: 'Payment captured — funds have been collected.',
-  requires_capture: 'Card authorized — the hold is captured automatically when the guide accepts.',
-  partially_refunded: 'Payment captured, then partially refunded.',
+  succeeded: 'Funds captured — money has been collected.',
+  requires_capture: 'Guest paid — funds are held and captured automatically when the guide confirms.',
+  partially_refunded: 'Funds captured, then partially refunded.',
   refunded: 'Payment was fully refunded.',
   canceled: 'The card hold was released — no charge was made.',
 };
@@ -66,11 +66,13 @@ export default function BookingDetailPage() {
       <div className="space-y-6">
         <BackLink onClick={() => router.push('/bookings')} />
 
-        {/* Header: booking id + booking status + payment status */}
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-mono text-lg font-semibold text-ink-900">{b.id}</h1>
-          <StatusBadge status={b.status as BookingStatus} />
-          <Badge variant={payMeta.variant}>Payment: {payMeta.label}</Badge>
+        {/* Header — the raw booking id is shown as a subtle, labelled reference. */}
+        <div>
+          <p className="text-2xs font-semibold uppercase tracking-wider text-ink-400">Booking reference</p>
+          <h1 className="mt-1 flex items-center gap-2 font-display text-2xl font-bold text-ink-900">
+            {b.service === 'CAMPUS_TOUR' ? 'Campus tour' : humanize(b.service)}
+            <span className="rounded-md bg-ink-100 px-2 py-0.5 font-mono text-xs font-medium text-ink-500">{b.id}</span>
+          </h1>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -105,7 +107,24 @@ export default function BookingDetailPage() {
                 </div>
               ) : pay ? (
                 <>
-                  <p className="mt-2 text-sm text-ink-500">{PAYMENT_HINT[pay.status] ?? 'Payment recorded.'}</p>
+                  {/* Did the guest pay? — answered independently of the guide's decision. */}
+                  <div className="mt-3 flex items-start gap-2">
+                    {guestHasPaid(pay.status) ? (
+                      <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-success" />
+                    ) : (
+                      <XCircle size={18} className="mt-0.5 shrink-0 text-ink-400" />
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-ink-900">
+                        {guestHasPaid(pay.status)
+                          ? paymentCaptured(pay.status)
+                            ? 'Guest paid — funds captured'
+                            : 'Guest paid — funds held'
+                          : 'Guest has not paid yet'}
+                      </p>
+                      <p className="text-sm text-ink-500">{PAYMENT_HINT[pay.status] ?? 'Payment recorded.'}</p>
+                    </div>
+                  </div>
                   <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
                     {card && <Detail label="Card" value={card} />}
                     {pay.cardExpMonth && pay.cardExpYear && (
@@ -167,17 +186,37 @@ export default function BookingDetailPage() {
             </section>
           </div>
 
-          {/* Read-only note — status authority belongs to the guide */}
+          {/* Status — booking + payment as two independent states */}
           <aside className="lg:sticky lg:top-6 lg:self-start">
             <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-ink-100 text-ink-500">
-                <Info size={18} />
-              </span>
-              <h2 className="mt-3 text-sm font-semibold text-ink-900">View only</h2>
-              <p className="mt-1 text-sm leading-relaxed text-ink-500">
-                Booking status is managed by the guide from their <span className="font-medium">My tours</span> —
-                they accept, decline, or complete each request. This screen is for monitoring only.
-              </p>
+              <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Status</h2>
+
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink-900">Booking</p>
+                    <p className="text-xs text-ink-500">Managed by the guide</p>
+                  </div>
+                  <StatusBadge status={b.status as BookingStatus} />
+                </div>
+
+                <div className="h-px bg-ink-100" />
+
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink-900">Payment</p>
+                    <p className="text-xs text-ink-500">
+                      {guestHasPaid(b.paymentStatus)
+                        ? paymentCaptured(b.paymentStatus)
+                          ? 'Funds captured'
+                          : 'Funds held'
+                        : 'Not paid yet'}
+                    </p>
+                  </div>
+                  <Badge variant={payMeta.variant}>{payMeta.label}</Badge>
+                </div>
+              </div>
+
             </section>
           </aside>
         </div>

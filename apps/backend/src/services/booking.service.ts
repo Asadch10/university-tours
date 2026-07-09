@@ -352,6 +352,7 @@ export async function listBookings(
         buyer: { select: { id: true, name: true } },
         seller: { select: { id: true, name: true } },
         option: true,
+        payment: { select: { status: true } },
       },
       // listingTitle / durationMinutes / schoolName snapshots come through by default.
       orderBy: { scheduledDate: 'desc' },

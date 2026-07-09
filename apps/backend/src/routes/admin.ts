@@ -125,6 +125,10 @@ adminRouter.get('/commission', requirePermission('commission.set'), asyncHandler
   res.json(await svc.getCommission());
 }));
 
+adminRouter.get('/commission/history', requirePermission('commission.set'), asyncHandler(async (_req, res) => {
+  res.json(await svc.getCommissionHistory());
+}));
+
 adminRouter.put('/commission', requirePermission('commission.set'), asyncHandler(async (req, res) => {
   const { commissionPct } = req.body as { commissionPct?: number };
   if (commissionPct === undefined || commissionPct < 0 || commissionPct > 100) {

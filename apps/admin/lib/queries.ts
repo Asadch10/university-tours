@@ -504,12 +504,21 @@ export function useCommission() {
   return useQuery({ queryKey: ['commission'], queryFn: () => adminApi.commission() });
 }
 
+export function useCommissionHistory() {
+  return useQuery({ queryKey: ['commission-history'], queryFn: () => adminApi.commissionHistory() });
+}
+
 export function useCommissionActions() {
   const qc = useQueryClient();
   return {
     set: useMutation({
       mutationFn: (pct: number) => adminApi.commissionSet(pct),
-      onSuccess: () => qc.invalidateQueries({ queryKey: ['commission'] }),
+      onSuccess: () => {
+        // A rate change re-prices pending bookings — refresh everything that shows commission.
+        for (const key of ['commission', 'commission-history', 'bookings', 'transactions', 'dashboard', 'guide-balances']) {
+          qc.invalidateQueries({ queryKey: [key] });
+        }
+      },
     }),
   };
 }
