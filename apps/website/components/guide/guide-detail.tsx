@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
 import type { GuideProfile } from '@/lib/guides';
+import { ymd } from '@/lib/availability';
 import {
   bookingsApi,
   tokenStore,
@@ -391,12 +392,41 @@ function BookingCard({ g }: { g: GuideProfile }) {
   const [date, setDate] = useState<{ y: number; m: number; d: number } | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [duration, setDuration] = useState<string | null>(null);
+  // Progressive reveal: only Tour type shows until the guest actively picks one,
+  // then Date → Time → (Guests + Duration + Reserve) unfold as each is filled.
+  const [tourPicked, setTourPicked] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'paying' | 'requested'>('idle');
   // Set when the backend returns a Stripe client secret — drives the payment step.
   const [pay, setPay] = useState<{ bookingId: string; clientSecret: string; publishableKey: string } | null>(null);
 
+  // Per-tour-type availability. Guests can only pick the dates/times the guide
+  // offers for the SELECTED tour type; a type with no availability (or a sample
+  // guide) keeps open scheduling. Times are shared across all of a type's dates.
+  const typeAvail = g.availability[tourType];
+  const hasAvail = !!typeAvail;
+  const availDates = new Set(typeAvail?.dates ?? []);
+  const timesForDate: string[] = hasAvail ? (date ? typeAvail!.times : []) : SLOTS;
+
   const now = new Date();
-  const [cal, setCal] = useState({ y: now.getFullYear(), m: now.getMonth() });
+  // Open the calendar on the selected type's first available month.
+  const firstAvail = typeAvail?.dates[0] ?? null;
+  const [cal, setCal] = useState(
+    firstAvail
+      ? { y: Number(firstAvail.slice(0, 4)), m: Number(firstAvail.slice(5, 7)) - 1 }
+      : { y: now.getFullYear(), m: now.getMonth() },
+  );
+
+  // Switching tour type changes the available dates/times, so clear the picks and
+  // jump the calendar to that type's first available month.
+  function changeTourType(t: BookingServiceType) {
+    setTourType(t);
+    setTourPicked(true);
+    setDate(null);
+    setTime(null);
+    const first = g.availability[t]?.dates[0];
+    if (first) setCal({ y: Number(first.slice(0, 4)), m: Number(first.slice(5, 7)) - 1 });
+    setOpen(null);
+  }
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -551,226 +581,242 @@ function BookingCard({ g }: { g: GuideProfile }) {
           <DropPanel>
             <p className="mb-3 font-bold text-ink-900">How would you like to tour?</p>
             <div className="space-y-2">
-              <OptionRow
-                icon={<Footprints size={20} />}
-                iconClass="bg-blue-600 text-white"
-                title="Campus tour"
-                desc="Explore campus on a personalized tour tailored to your interests"
-                selected={tourType === 'CAMPUS_TOUR'}
-                onClick={() => {
-                  setTourType('CAMPUS_TOUR');
-                  setOpen(null);
-                }}
-              />
-              <OptionRow
-                icon={<Video size={20} />}
-                iconClass="bg-ink-100 text-ink-700"
-                title="Video chat"
-                desc="Connect live with a current student and get the scoop from anywhere"
-                selected={tourType === 'VIDEO_CONSULTATION'}
-                onClick={() => {
-                  setTourType('VIDEO_CONSULTATION');
-                  setOpen(null);
-                }}
-              />
-              <OptionRow
-                icon={<MessageSquare size={20} />}
-                iconClass="bg-gold-500 text-white"
-                title="Consultancy"
-                desc="A focused 1-on-1 advising session on admissions, essays, or student life"
-                selected={tourType === 'CONSULTATION'}
-                onClick={() => {
-                  setTourType('CONSULTATION');
-                  setOpen(null);
-                }}
-              />
+              {g.services.includes('CAMPUS_TOUR') && (
+                <OptionRow
+                  icon={<Footprints size={20} />}
+                  iconClass="bg-blue-600 text-white"
+                  title="Campus tour"
+                  desc="Explore campus on a personalized tour tailored to your interests"
+                  selected={tourType === 'CAMPUS_TOUR'}
+                  onClick={() => changeTourType('CAMPUS_TOUR')}
+                />
+              )}
+              {g.services.includes('VIDEO_CONSULTATION') && (
+                <OptionRow
+                  icon={<Video size={20} />}
+                  iconClass="bg-ink-100 text-ink-700"
+                  title="Video chat"
+                  desc="Connect live with a current student and get the scoop from anywhere"
+                  selected={tourType === 'VIDEO_CONSULTATION'}
+                  onClick={() => changeTourType('VIDEO_CONSULTATION')}
+                />
+              )}
+              {g.services.includes('CONSULTATION') && (
+                <OptionRow
+                  icon={<MessageSquare size={20} />}
+                  iconClass="bg-gold-500 text-white"
+                  title="Consultancy"
+                  desc="A focused 1-on-1 advising session on admissions, essays, or student life"
+                  selected={tourType === 'CONSULTATION'}
+                  onClick={() => changeTourType('CONSULTATION')}
+                />
+              )}
             </div>
           </DropPanel>
         )}
       </div>
 
-      {/* Guests */}
-      <div className="relative">
-        <Trigger label="Guests" value={guestLabel} active={open === 'guests'} onClick={() => toggle('guests')} />
-        {open === 'guests' && (
-          <DropPanel>
-            <Counter label="Adults" sub="Age 18+" value={adults} min={1} onChange={setAdults} />
-            <Counter label="Children" sub="Age 2–17" value={children} min={0} onChange={setChildren} />
-            <p className="mt-4 text-sm text-ink-600">Planning a group tour with 5 or more guests?</p>
-            <Link href="/group-tours" className="text-sm font-medium text-blue-600 underline">
-              Learn more
-            </Link>
-            <div className="mt-3 text-right">
-              <button
-                type="button"
-                onClick={() => setOpen(null)}
-                className="font-semibold text-ink-900 hover:underline"
-              >
-                Close
-              </button>
-            </div>
-          </DropPanel>
-        )}
-      </div>
-
-      {/* Date */}
-      <div className="relative">
-        <Trigger label="Date" value={dateLabel} muted={!date} chevron={false} active={open === 'date'} onClick={() => toggle('date')} />
-        {open === 'date' && (
-          <DropPanel>
-            <div className="mb-3 flex items-center justify-between">
-              <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month" className="text-blue-600">
-                <ChevronLeft size={20} />
-              </button>
-              <span className="font-bold text-ink-900">{monthLabel}</span>
-              <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month" className="text-blue-600">
-                <ChevronRight size={20} />
-              </button>
-            </div>
-            <div className="grid grid-cols-7 gap-y-1 text-center text-sm">
-              {WEEKDAYS.map((w) => (
-                <span key={w} className="py-1 font-semibold text-ink-500">
-                  {w}
-                </span>
-              ))}
-              {Array.from({ length: firstWeekday }).map((_, i) => (
-                <span key={`b${i}`} />
-              ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const d = i + 1;
-                const isSel = date && date.y === cal.y && date.m === cal.m && date.d === d;
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => {
-                      setDate({ y: cal.y, m: cal.m, d });
-                      setOpen(null);
-                    }}
-                    className={cn(
-                      'mx-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-ink-100',
-                      isSel && 'bg-maroon-900 text-ivory hover:bg-maroon-900',
-                    )}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
-            </div>
-          </DropPanel>
-        )}
-      </div>
-
-      {/* Start time + Duration */}
-      <div className="relative grid grid-cols-2 gap-4">
-        <Trigger label="Start time" value={time ?? 'Add time'} muted={!time} active={open === 'time'} onClick={() => toggle('time')} />
-        <Trigger label="Duration" value={duration ?? 'Add duration'} muted={!duration} active={open === 'duration'} onClick={() => toggle('duration')} />
-
-        {open === 'time' && (
-          <DropPanel>
-            <div className="grid max-h-72 grid-cols-2 gap-x-4 overflow-y-auto">
-              {SLOTS.map((s) => {
-                const sel = time === s;
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => {
-                      setTime(s);
-                      setOpen(null);
-                    }}
-                    className="flex items-center gap-2.5 border-b border-ink-100 py-3 text-left text-sm"
-                  >
-                    <span
+      {/* Date — revealed once a tour type is chosen */}
+      {tourPicked && (
+        <div className="relative">
+          <Trigger label="Date" value={dateLabel} muted={!date} chevron={false} active={open === 'date'} onClick={() => toggle('date')} />
+          {open === 'date' && (
+            <DropPanel>
+              <div className="mb-3 flex items-center justify-between">
+                <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month" className="text-blue-600">
+                  <ChevronLeft size={20} />
+                </button>
+                <span className="font-bold text-ink-900">{monthLabel}</span>
+                <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month" className="text-blue-600">
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-y-1 text-center text-sm">
+                {WEEKDAYS.map((w) => (
+                  <span key={w} className="py-1 font-semibold text-ink-500">
+                    {w}
+                  </span>
+                ))}
+                {Array.from({ length: firstWeekday }).map((_, i) => (
+                  <span key={`b${i}`} />
+                ))}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const d = i + 1;
+                  const key = ymd(cal.y, cal.m, d);
+                  const selectable = !hasAvail || availDates.has(key);
+                  const isSel = date && date.y === cal.y && date.m === cal.m && date.d === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      disabled={!selectable}
+                      onClick={() => {
+                        setDate({ y: cal.y, m: cal.m, d });
+                        setTime(null); // times are per tour type — clear any prior pick
+                        setOpen(null);
+                      }}
                       className={cn(
-                        'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                        sel ? 'border-blue-600 bg-blue-600 text-white' : 'border-ink-300',
+                        'mx-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+                        selectable && 'hover:bg-ink-100',
+                        !selectable && 'cursor-not-allowed text-ink-300',
+                        selectable && !isSel && hasAvail && 'font-semibold text-maroon-900',
+                        isSel && 'bg-maroon-900 text-ivory hover:bg-maroon-900',
                       )}
                     >
-                      {sel && <Check size={12} />}
-                    </span>
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </DropPanel>
-        )}
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </DropPanel>
+          )}
+        </div>
+      )}
 
-        {open === 'duration' && (
-          <DropPanel>
-            <div className="space-y-1">
-              {DURATIONS.map((d) => {
-                const sel = duration === d.label;
-                return (
+      {/* Start time — revealed once a date is chosen */}
+      {tourPicked && date && (
+        <div className="relative">
+          <Trigger label="Start time" value={time ?? 'Add time'} muted={!time} active={open === 'time'} onClick={() => toggle('time')} />
+          {open === 'time' && (
+            <DropPanel>
+              {timesForDate.length === 0 ? (
+                <p className="py-2 text-sm text-ink-600">No times available for this date.</p>
+              ) : (
+                <div className="grid max-h-72 grid-cols-2 gap-x-4 overflow-y-auto">
+                  {timesForDate.map((s) => {
+                    const sel = time === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => {
+                          setTime(s);
+                          setOpen(null);
+                        }}
+                        className="flex items-center gap-2.5 border-b border-ink-100 py-3 text-left text-sm tabular-nums"
+                      >
+                        <span
+                          className={cn(
+                            'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
+                            sel ? 'border-blue-600 bg-blue-600 text-white' : 'border-ink-300',
+                          )}
+                        >
+                          {sel && <Check size={12} />}
+                        </span>
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </DropPanel>
+          )}
+        </div>
+      )}
+
+      {/* Guests, duration & reserve — revealed once a time is chosen */}
+      {tourPicked && date && time && (
+        <>
+          <div className="relative grid grid-cols-2 gap-4">
+            <Trigger label="Guests" value={guestLabel} active={open === 'guests'} onClick={() => toggle('guests')} />
+            <Trigger label="Duration" value={duration ?? 'Add duration'} muted={!duration} active={open === 'duration'} onClick={() => toggle('duration')} />
+
+            {open === 'guests' && (
+              <DropPanel>
+                <Counter label="Adults" sub="Age 18+" value={adults} min={1} onChange={setAdults} />
+                <Counter label="Children" sub="Age 2–17" value={children} min={0} onChange={setChildren} />
+                <p className="mt-4 text-sm text-ink-600">Planning a group tour with 5 or more guests?</p>
+                <Link href="/group-tours" className="text-sm font-medium text-blue-600 underline">
+                  Learn more
+                </Link>
+                <div className="mt-3 text-right">
                   <button
-                    key={d.label}
                     type="button"
-                    onClick={() => {
-                      setDuration(d.label);
-                      setOpen(null);
-                    }}
-                    className="flex w-full items-start gap-3 border-b border-ink-100 py-3 text-left last:border-0"
+                    onClick={() => setOpen(null)}
+                    className="font-semibold text-ink-900 hover:underline"
                   >
-                    <div className="flex-1">
-                      <p className="flex items-center gap-2 font-bold text-ink-900">
-                        {d.label}
-                        {d.recommended && (
-                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
-                            Recommended
-                          </span>
-                        )}
-                      </p>
-                      <p className="mt-0.5 text-sm text-ink-600">{d.desc}</p>
-                    </div>
-                    <span
-                      className={cn(
-                        'mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                        sel ? 'border-blue-600 bg-blue-600 text-white' : 'border-ink-300',
-                      )}
-                    >
-                      {sel && <Check size={12} />}
-                    </span>
+                    Close
                   </button>
-                );
-              })}
-            </div>
-          </DropPanel>
-        )}
-      </div>
+                </div>
+              </DropPanel>
+            )}
 
-      <button
-        type="button"
-        disabled={!ready || status === 'submitting'}
-        onClick={handleReserve}
-        className={cn(
-          'flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-center font-semibold transition-colors',
-          ready && status !== 'submitting'
-            ? 'bg-maroon-900 text-ivory hover:bg-maroon-800'
-            : 'cursor-not-allowed bg-ink-200 text-ink-500',
-        )}
-      >
-        {status === 'submitting' ? (
-          <>
-            <Loader2 size={18} className="animate-spin" /> Sending request…
-          </>
-        ) : (
-          'Reserve'
-        )}
-      </button>
-      <p className="text-center text-sm text-ink-500">
-        {selectedDuration ? (
-          <>
-            <span className="font-semibold text-ink-900">{formatPrice(priceCents)}</span> total · you
-            won’t be charged yet
-          </>
-        ) : (
-          <>
-            From <span className="font-semibold text-ink-900">{formatPrice(g.price)}</span> · you won’t
-            be charged yet
-          </>
-        )}
-      </p>
+            {open === 'duration' && (
+              <DropPanel>
+                <div className="space-y-1">
+                  {DURATIONS.map((d) => {
+                    const sel = duration === d.label;
+                    return (
+                      <button
+                        key={d.label}
+                        type="button"
+                        onClick={() => {
+                          setDuration(d.label);
+                          setOpen(null);
+                        }}
+                        className="flex w-full items-start gap-3 border-b border-ink-100 py-3 text-left last:border-0"
+                      >
+                        <div className="flex-1">
+                          <p className="flex items-center gap-2 font-bold text-ink-900">
+                            {d.label}
+                            {d.recommended && (
+                              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                                Recommended
+                              </span>
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-sm text-ink-600">{d.desc}</p>
+                        </div>
+                        <span
+                          className={cn(
+                            'mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
+                            sel ? 'border-blue-600 bg-blue-600 text-white' : 'border-ink-300',
+                          )}
+                        >
+                          {sel && <Check size={12} />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </DropPanel>
+            )}
+          </div>
+
+          <button
+            type="button"
+            disabled={!ready || status === 'submitting'}
+            onClick={handleReserve}
+            className={cn(
+              'flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-center font-semibold transition-colors',
+              ready && status !== 'submitting'
+                ? 'bg-maroon-900 text-ivory hover:bg-maroon-800'
+                : 'cursor-not-allowed bg-ink-200 text-ink-500',
+            )}
+          >
+            {status === 'submitting' ? (
+              <>
+                <Loader2 size={18} className="animate-spin" /> Sending request…
+              </>
+            ) : (
+              'Reserve'
+            )}
+          </button>
+          <p className="text-center text-sm text-ink-500">
+            {selectedDuration ? (
+              <>
+                <span className="font-semibold text-ink-900">{formatPrice(priceCents)}</span> total · you
+                won’t be charged yet
+              </>
+            ) : (
+              <>
+                From <span className="font-semibold text-ink-900">{formatPrice(g.price)}</span> · you won’t
+                be charged yet
+              </>
+            )}
+          </p>
+        </>
+      )}
     </div>
   );
 }

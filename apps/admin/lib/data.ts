@@ -113,6 +113,7 @@ export interface Listing {
 // ─────────────────────────────────────────────────────────── Bookings
 export interface Booking {
   id: string;
+  bookingNo: number; // human-friendly sequential reference, shown as "B-{n}"
   buyer: string; // guest name (kept as `buyer` internally; shown as "Guest")
   guide: string;
   school: string;
@@ -130,6 +131,7 @@ export interface Booking {
   paymentStatus: string | null; // Stripe payment status (null = no payment record)
   paymentCard: string | null; // e.g. "Visa ···· 4242"
   amountRefundedCents: number;
+  review: { rating: number; text: string | null; hidden: boolean; createdAt: string } | null;
 }
 
 // ─────────────────────────────────────────────────────────── Transactions / Ledger
@@ -184,8 +186,9 @@ export interface Refund {
 export interface Review {
   id: string;
   bookingId: string;
-  buyer: string;
-  guide: string;
+  bookingNo: number | null; // human-friendly booking reference (shown as "B-{n}")
+  buyer: string; // guest name
+  guide: string; // guide name
   school: string;
   rating: number;
   text: string;

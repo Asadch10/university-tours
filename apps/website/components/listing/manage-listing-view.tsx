@@ -28,6 +28,13 @@ import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { ListingProgress, reviewStepsFor } from '@/components/listing/listing-progress';
+import {
+  parseAvailability,
+  labelForDate,
+  SERVICE_TYPES,
+  TOUR_TYPE_LABELS,
+  type Availability,
+} from '@/lib/availability';
 
 interface GuideListing {
   listingTitle?: string;
@@ -63,6 +70,8 @@ interface GuideListing {
   previousCollege?: string;
   groupTours?: string;
   referral?: string;
+  // Per-tour-type dates + times the guide offers (drives the guest booking widget).
+  availability?: Availability;
   // ── Agreements captured in steps 1 & 2 ──
   agreedContract?: boolean;
   agreedGuidelines?: boolean;
@@ -606,6 +615,48 @@ function DetailsModal({ listing, name, onClose }: { listing: GuideListing; name:
               )}
             </section>
           )}
+
+          {/* Availability (per tour type) */}
+          {(() => {
+            const availability = parseAvailability(listing.availability);
+            const services = SERVICE_TYPES.filter((s) => availability[s]);
+            if (!services.length) return null;
+            return (
+              <section className="border-t border-ink-100 pt-6">
+                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">Availability</p>
+                <div className="space-y-4">
+                  {services.map((s) => {
+                    const a = availability[s]!;
+                    return (
+                      <div key={s}>
+                        <p className="text-sm font-bold text-maroon-900">{TOUR_TYPE_LABELS[s]}</p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {a.dates.map((d) => (
+                            <span
+                              key={d}
+                              className="inline-flex rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
+                            >
+                              {labelForDate(d)}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {a.times.map((t) => (
+                            <span
+                              key={t}
+                              className="inline-flex rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium tabular-nums text-ink-700"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Application answers */}
           {rows.length > 0 && (

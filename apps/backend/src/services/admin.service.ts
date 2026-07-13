@@ -456,6 +456,7 @@ export async function listBookings(opts: { status?: string; q?: string; page?: n
         seller: { select: { id: true, name: true, email: true } },
         listing: { select: { title: true, serviceType: true, school: { select: { name: true } } } },
         payment: { select: { status: true, amountCents: true, amountRefundedCents: true, cardBrand: true, cardLast4: true } },
+        review: { select: { rating: true, text: true, hidden: true, createdAt: true } },
       },
       orderBy: { requestedAt: 'desc' },
       skip: (page - 1) * limit,
@@ -564,7 +565,15 @@ export async function listReviews(opts: { hidden?: boolean; q?: string; page?: n
       include: {
         buyer: { select: { id: true, name: true } },
         seller: { select: { id: true, name: true } },
-        booking: { select: { id: true, serviceType: true } },
+        booking: {
+          select: {
+            id: true,
+            bookingNo: true,
+            serviceType: true,
+            schoolName: true,
+            listing: { select: { school: { select: { name: true } } } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,

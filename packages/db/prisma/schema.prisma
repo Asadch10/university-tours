@@ -277,6 +277,9 @@ model ServicePriceBound {
 
 model Booking {
   id                    String        @id @default(cuid())
+  // Human-friendly sequential reference shown to users as "B-1", "B-2", … while the
+  // cuid `id` stays the internal/routing key.
+  bookingNo             Int           @unique @default(autoincrement()) @map("booking_no")
   buyerId               String        @map("buyer_id")
   buyer                 User          @relation("BuyerBookings", fields: [buyerId], references: [id], onDelete: Restrict)
   sellerId              String        @map("seller_id")

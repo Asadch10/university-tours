@@ -41,6 +41,7 @@ export function serviceLabelFor(t: string): string {
 
 /** Build the summary shown in every booking email from a booking row. */
 export function bookingEmailSummary(b: {
+  bookingNo?: number;
   serviceType: string;
   scheduledDate: Date;
   scheduledTime: string | null;
@@ -49,6 +50,7 @@ export function bookingEmailSummary(b: {
   grossCents: number;
   listingTitle: string | null;
   schoolName: string | null;
+  videoLink?: string | null;
 }): BookingEmailSummary {
   const when =
     new Date(b.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) +
@@ -59,6 +61,7 @@ export function bookingEmailSummary(b: {
       : `${b.durationMinutes} minutes`
     : null;
   return {
+    ref: b.bookingNo ? `B-${b.bookingNo}` : null,
     service: serviceLabelFor(b.serviceType),
     whenText: when,
     durationText: duration,
@@ -66,6 +69,7 @@ export function bookingEmailSummary(b: {
     amountCents: b.grossCents,
     title: b.listingTitle,
     school: b.schoolName,
+    meetingLink: b.videoLink ?? null,
   };
 }
 
@@ -353,6 +357,7 @@ export async function listBookings(
         seller: { select: { id: true, name: true } },
         option: true,
         payment: { select: { status: true } },
+        review: { select: { rating: true, text: true } },
       },
       // listingTitle / durationMinutes / schoolName snapshots come through by default.
       orderBy: { scheduledDate: 'desc' },
@@ -384,11 +389,23 @@ export async function getBooking(id: string, userId: string) {
 
 // ─── Seller actions ───────────────────────────────────────────────────────────
 
-export async function acceptBooking(id: string, sellerId: string) {
+export async function acceptBooking(id: string, sellerId: string, videoLink?: string) {
   const booking = await prisma.booking.findUnique({ where: { id } });
   if (!booking) throw new HttpError(404, 'not_found', 'Booking not found');
   if (booking.sellerId !== sellerId) throw new HttpError(403, 'forbidden', 'Not your booking');
   if (booking.status !== 'PENDING') throw new HttpError(409, 'invalid_state', `Cannot accept booking in state ${booking.status}`);
+
+  // Video chat & consultancy happen online — the guide must attach a meeting link
+  // (Google Meet / Zoom) when confirming. Campus tours are in-person, so no link.
+  const needsLink = booking.serviceType === 'VIDEO_CONSULTATION' || booking.serviceType === 'CONSULTATION';
+  const link = (videoLink ?? '').trim();
+  if (needsLink && !/^https?:\/\/.+/i.test(link)) {
+    throw new HttpError(
+      400,
+      'meeting_link_required',
+      'A valid meeting link (Google Meet or Zoom) is required to confirm an online booking.',
+    );
+  }
 
   const commissionCents = Math.round((booking.grossCents * (booking.commissionPctSnapshot ?? 25)) / 100);
 
@@ -407,7 +424,10 @@ export async function acceptBooking(id: string, sellerId: string) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.booking.update({ where: { id }, data: { status: 'CONFIRMED', confirmedAt: new Date() } });
+    await tx.booking.update({
+      where: { id },
+      data: { status: 'CONFIRMED', confirmedAt: new Date(), ...(needsLink ? { videoLink: link } : {}) },
+    });
     await tx.bookingEvent.create({ data: { bookingId: id, fromState: 'PENDING', toState: 'CONFIRMED', actor: sellerId } });
     await tx.ledgerEntry.create({
       data: {
@@ -527,7 +547,9 @@ export async function submitReview(bookingId: string, buyerId: string, data: { r
       data: { bookingId, buyerId, sellerId: booking.sellerId, rating: data.rating, text: data.text },
     });
     const agg = await tx.review.aggregate({ where: { sellerId: booking.sellerId, hidden: false }, _avg: { rating: true }, _count: true });
-    await tx.sellerProfile.update({
+    // Website "become a guide" guides have no SellerProfile row — updateMany is a
+    // no-op there (their rating is aggregated straight from Review rows instead).
+    await tx.sellerProfile.updateMany({
       where: { userId: booking.sellerId },
       data: { ratingAvg: agg._avg.rating ?? 0, ratingCount: agg._count },
     });

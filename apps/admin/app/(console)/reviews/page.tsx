@@ -49,7 +49,8 @@ export default function ReviewsPage() {
       return (
         r.text.toLowerCase().includes(q) ||
         r.buyer.toLowerCase().includes(q) ||
-        r.guide.toLowerCase().includes(q)
+        r.guide.toLowerCase().includes(q) ||
+        (r.bookingNo != null && `b-${r.bookingNo}`.includes(q))
       );
     });
   }, [rows, query, tab]);
@@ -105,7 +106,7 @@ export default function ReviewsPage() {
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Tabs tabs={TABS.map((t) => ({ ...t, count: counts[t.value as keyof typeof counts] }))} value={tab} onChange={setTab} />
-          <SearchInput value={query} onChange={setQuery} placeholder="Search text, buyer, guide…" className="lg:w-72" />
+          <SearchInput value={query} onChange={setQuery} placeholder="Search text, guest, guide, B-3…" className="lg:w-72" />
         </div>
 
         {!loading && rows.length > 0 && (
@@ -183,11 +184,20 @@ function ReviewCard({
 
       <p className="flex-1 text-sm leading-relaxed text-ink-700">“{r.text}”</p>
 
-      <div className="mt-4 space-y-1 border-t border-ink-200/60 pt-3 text-xs text-ink-500">
+      <div className="mt-4 space-y-1.5 border-t border-ink-200/60 pt-3 text-xs text-ink-500">
+        {r.bookingNo != null && (
+          <p>
+            <span className="text-ink-400">Booking ID: </span>
+            <span className="font-mono font-semibold text-maroon-800">B-{r.bookingNo}</span>
+          </p>
+        )}
         <p>
-          <span className="font-semibold text-ink-700">{r.buyer}</span>
-          <span className="text-ink-400"> → </span>
-          <span className="font-semibold text-ink-700">{r.guide}</span>
+          <span className="text-ink-400">Guest: </span>
+          <span className="font-semibold text-ink-800">{r.buyer}</span>
+        </p>
+        <p>
+          <span className="text-ink-400">Guide: </span>
+          <span className="font-semibold text-ink-800">{r.guide}</span>
         </p>
         <p className="flex items-center justify-between">
           <span>{r.school}</span>

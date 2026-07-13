@@ -42,11 +42,12 @@ const envSchema = z.object({
   PASSWORD_RESET_SECRET: z.string().default('change-me-password-reset'),
   PASSWORD_RESET_TTL: z.string().default('1h'),
 
-  // Outbound email (Resend over SMTP). If neither MAIL_PASSWORD nor RESEND_API_KEY
-  // is set, the mailer no-ops and just logs the verification link (safe for dev).
-  MAIL_HOST: z.string().default('smtp.resend.com'),
+  // Outbound email over SMTP (Google Workspace: smtp.gmail.com). If neither
+  // MAIL_PASSWORD nor RESEND_API_KEY is set, the mailer no-ops and just logs the
+  // verification link (safe for dev).
+  MAIL_HOST: z.string().default('smtp.gmail.com'),
   MAIL_PORT: z.coerce.number().default(465),
-  MAIL_USERNAME: z.string().default('resend'),
+  MAIL_USERNAME: z.string().default(''),
   MAIL_PASSWORD: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   MAIL_FROM_ADDRESS: z.string().default('no-reply@ahmadnaeem.com'),

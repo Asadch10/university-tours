@@ -3,6 +3,7 @@
 // Wire to the real API later — the UI only depends on the exported types.
 
 import { universities } from '@/lib/data';
+import { parseAvailability, type Availability } from '@/lib/availability';
 
 export type GuideService = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULTATION';
 
@@ -118,6 +119,8 @@ export interface GuideProfile extends Guide {
   careerGoals: string[];
   reviewList: GuideReview[];
   hostedBy: string;
+  /** Per-tour-type dates + times the guide offers. Empty = open scheduling. */
+  availability: Availability;
 }
 
 const HOMETOWNS = [
@@ -217,6 +220,8 @@ function buildProfile(g: Guide, i: number, uni: (typeof universities)[number]): 
       },
     ],
     hostedBy: `I joined University Campus Private Tours to show prospective students and parents the real, honest truth about ${g.university}. I hate white lies and I hate sugarcoating, especially when it comes to life-changing decisions like college. I’m always honest, down-to-earth, while always being open to meet new people.`,
+    // Sample guides have no fixed availability — the booking widget stays open.
+    availability: {},
   };
 }
 
@@ -237,12 +242,20 @@ export function getGuideProfile(id: string): GuideProfile | undefined {
    the same Guide / GuideProfile shapes the UI already renders, so approved
    guides appear alongside the sample guides with no special-casing. */
 
+export interface CommunityGuideReviewDto {
+  name: string;
+  rating: number;
+  text: string | null;
+  date: string; // ISO createdAt
+}
+
 export interface CommunityGuideDto {
   id: string;
   name: string;
   rating: number | null;
   reviews: number;
   listing: Record<string, unknown>;
+  reviewList?: CommunityGuideReviewDto[];
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -330,9 +343,15 @@ export function communityGuideToProfile(dto: CommunityGuideDto): GuideProfile {
     tip: str(gl.tip),
     favoriteClass: str(gl.favoriteClass) ? [str(gl.favoriteClass)] : [],
     careerGoals: str(gl.careerGoals) ? [str(gl.careerGoals)] : [],
-    reviewList: [],
+    reviewList: (dto.reviewList ?? []).map((r) => ({
+      name: r.name,
+      rating: r.rating,
+      text: r.text ?? '',
+      date: new Date(r.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    })),
     hostedBy:
       str(gl.intro) ||
       `I joined University Campus Private Tours to share an honest, student's-eye view of ${base.university || 'my campus'}.`,
+    availability: parseAvailability(gl.availability),
   };
 }

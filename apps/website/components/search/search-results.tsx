@@ -7,7 +7,6 @@ import { GuideSearchBar } from '@/components/search/guide-search-bar';
 import { Pagination } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 import {
-  guides as GUIDES,
   GENDERS,
   YEARS,
   ADMISSIONS,
@@ -148,8 +147,8 @@ export function SearchResults({
   const liveIds = useMemo(() => new Set(liveGuides.map((g) => g.id)), [liveGuides]);
 
   const results = useMemo(() => {
-    // Approved guides first, then the sample guides.
-    let list = [...liveGuides, ...GUIDES].filter((g) => {
+    // Only real, admin-approved guides are shown (no sample/dummy data).
+    let list = [...liveGuides].filter((g) => {
       const q = query.toLowerCase();
       const matchesQuery =
         !query ||

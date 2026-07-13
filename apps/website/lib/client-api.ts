@@ -273,6 +273,7 @@ export type BookingServiceType = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULT
 
 export interface BookingDto {
   id: string;
+  bookingNo: number; // human-friendly sequential reference, shown as "B-{n}"
   status: BookingStatus;
   serviceType: BookingServiceType;
   scheduledDate: string;
@@ -288,6 +289,10 @@ export interface BookingDto {
   // Stripe payment status (null = no payment record). `requires_capture` = guest paid,
   // funds held; `succeeded` = captured.
   payment: { status: string } | null;
+  // Google Meet / Zoom link for online bookings, set by the guide on confirm.
+  videoLink: string | null;
+  // The guest's review of the guide, once left (COMPLETED bookings only).
+  review: { rating: number; text: string | null } | null;
 }
 
 interface Paged<T> {
@@ -328,9 +333,14 @@ export const bookingsApi = {
   confirmPayment: (id: string) =>
     request<{ ok: true; status: BookingStatus }>('POST', `/bookings/${id}/confirm-payment`),
   // Guide-only status actions (backend enforces seller ownership + role).
-  accept: (id: string) => request<{ ok: true }>('POST', `/bookings/${id}/accept`),
+  // videoLink is required for online bookings (video chat / consultancy).
+  accept: (id: string, videoLink?: string) =>
+    request<{ ok: true }>('POST', `/bookings/${id}/accept`, videoLink ? { videoLink } : undefined),
   decline: (id: string, reason?: string) => request<{ ok: true }>('POST', `/bookings/${id}/decline`, { reason }),
   complete: (id: string) => request<{ ok: true }>('POST', `/bookings/${id}/complete`),
+  // Guest leaves a review for a completed booking (1–5 stars + optional comment).
+  review: (id: string, rating: number, text?: string) =>
+    request<{ id: string }>('POST', `/bookings/${id}/review`, { rating, text }),
 };
 
 // ─── Reviews ──────────────────────────────────────────────────────────────────

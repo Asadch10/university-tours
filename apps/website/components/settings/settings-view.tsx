@@ -32,6 +32,14 @@ export function SettingsView() {
   const [profile, setProfile] = useState<MyProfileDto | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Deep-link support: /settings?section=college opens that tab (e.g. from the
+  // "switch to guest to review" toast). Read client-side to avoid useSearchParams'
+  // build-time Suspense requirement.
+  useEffect(() => {
+    const section = new URLSearchParams(window.location.search).get('section');
+    if (section && SECTIONS.some((s) => s.key === section)) setActive(section);
+  }, []);
+
   // Load the account once when Settings opens.
   useEffect(() => {
     if (!tokenStore.user) {

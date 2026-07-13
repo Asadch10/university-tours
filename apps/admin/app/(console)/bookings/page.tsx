@@ -59,6 +59,7 @@ export default function BookingsPage() {
       if (status !== 'ALL' && b.status !== status) return false;
       if (!q) return true;
       return (
+        `b-${b.bookingNo}`.includes(q) ||
         b.id.toLowerCase().includes(q) ||
         b.buyer.toLowerCase().includes(q) ||
         b.guide.toLowerCase().includes(q) ||
@@ -75,7 +76,7 @@ export default function BookingsPage() {
       header: 'Booking',
       cell: (b) => (
         <div className="min-w-0">
-          <span className="font-mono text-xs font-semibold text-ink-900">{b.id}</span>
+          <span className="font-mono text-sm font-semibold text-ink-900">B-{b.bookingNo}</span>
           <p className="text-2xs text-ink-400">created {timeAgo(b.createdAt)}</p>
         </div>
       ),

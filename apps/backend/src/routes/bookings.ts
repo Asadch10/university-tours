@@ -1,12 +1,15 @@
 // 7.5 Bookings & lifecycle  +  review create (7.7)
 import { Router } from 'express';
 import { asyncHandler, HttpError } from '../lib/http.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 import * as svc from '../services/booking.service.js';
 
 export const bookingsRouter = Router();
 
-bookingsRouter.post('/', requireAuth, requireRole('BUYER'), asyncHandler(async (req, res) => {
+// Any signed-in user can book as a guest — a user is a guest AND a guide at the
+// same time (My tours has an "As guest / As guide" view switch), so we never gate
+// guest actions on role. The buyer is whoever is logged in.
+bookingsRouter.post('/', requireAuth, asyncHandler(async (req, res) => {
   const body = req.body as { listingId: string; optionId: string; scheduledDate: string; scheduledTime?: string; guestCount?: number; noteForGuide?: string };
   if (!body.listingId || !body.optionId || !body.scheduledDate) {
     throw new HttpError(400, 'validation_error', 'listingId, optionId, scheduledDate required');
@@ -56,11 +59,16 @@ bookingsRouter.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   res.json(await svc.getBooking(req.params['id'] as string, req.user!.id));
 }));
 
-bookingsRouter.post('/:id/accept', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
-  res.json(await svc.acceptBooking(req.params['id'] as string, req.user!.id));
+// Guide actions: authorized by booking ownership (service checks sellerId === userId),
+// NOT by the role enum — a user is a guest and a guide at once, and a user's role can
+// even flip back to BUYER (e.g. after deleting their listing) while they still own
+// past bookings as the seller.
+bookingsRouter.post('/:id/accept', requireAuth, asyncHandler(async (req, res) => {
+  const { videoLink } = req.body as { videoLink?: string };
+  res.json(await svc.acceptBooking(req.params['id'] as string, req.user!.id, videoLink));
 }));
 
-bookingsRouter.post('/:id/decline', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
+bookingsRouter.post('/:id/decline', requireAuth, asyncHandler(async (req, res) => {
   const { reason } = req.body as { reason?: string };
   res.json(await svc.declineBooking(req.params['id'] as string, req.user!.id, reason));
 }));
@@ -70,7 +78,7 @@ bookingsRouter.post('/:id/cancel', requireAuth, asyncHandler(async (req, res) =>
   res.json(await svc.cancelBooking(req.params['id'] as string, req.user!.id, reason));
 }));
 
-bookingsRouter.post('/:id/complete', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
+bookingsRouter.post('/:id/complete', requireAuth, asyncHandler(async (req, res) => {
   res.json(await svc.completeBooking(req.params['id'] as string, req.user!.id));
 }));
 
@@ -78,7 +86,10 @@ bookingsRouter.get('/:id/events', requireAuth, asyncHandler(async (req, res) => 
   res.json(await svc.getBookingEvents(req.params['id'] as string, req.user!.id));
 }));
 
-bookingsRouter.post('/:id/review', requireAuth, requireRole('BUYER'), asyncHandler(async (req, res) => {
+// Any authenticated user can review — a guide (role SELLER) can also book as a
+// guest, so we don't gate on BUYER. submitReview enforces buyer ownership of the
+// booking (booking.buyerId === userId), which is the real authorization check.
+bookingsRouter.post('/:id/review', requireAuth, asyncHandler(async (req, res) => {
   const { rating, text } = req.body as { rating?: number; text?: string };
   if (!rating || rating < 1 || rating > 5) throw new HttpError(400, 'validation_error', 'rating must be 1–5');
   res.status(201).json(await svc.submitReview(req.params['id'] as string, req.user!.id, { rating, text }));

@@ -1,8 +1,9 @@
 'use client';
 
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, AlertTriangle, ArrowRight } from 'lucide-react';
 import { cn } from './utils';
 
 export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
@@ -12,6 +13,8 @@ interface Toast {
   variant: ToastVariant;
   title: string;
   description?: string;
+  // Optional call-to-action link rendered inside the toast (e.g. "Go to settings →").
+  action?: { label: string; href: string };
 }
 
 interface ToastContextValue {
@@ -44,7 +47,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const toast = useCallback<ToastContextValue['toast']>((t) => {
     const id = ++idRef.current;
     setToasts((ts) => [...ts, { ...t, id }]);
-    setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== id)), 4200);
+    // Give actionable toasts longer to read + click.
+    setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== id)), t.action ? 9000 : 4200);
   }, []);
 
   const helpers: ToastContextValue = {
@@ -81,6 +85,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-ink-900">{t.title}</p>
                   {t.description && <p className="mt-0.5 text-sm text-ink-600">{t.description}</p>}
+                  {t.action && (
+                    <Link
+                      href={t.action.href}
+                      onClick={() => remove(t.id)}
+                      className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-maroon-800 hover:underline"
+                    >
+                      {t.action.label} <ArrowRight size={14} />
+                    </Link>
+                  )}
                 </div>
                 <button
                   type="button"

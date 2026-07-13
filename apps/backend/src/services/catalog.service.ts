@@ -163,47 +163,63 @@ export async function getPriceBounds() {
 // from the seeded Listing catalog above. Only `status: 'published'` ones are
 // public — this is what powers the approved guides shown on Browse guides.
 
+interface CommunityGuideReview {
+  name: string;
+  rating: number;
+  text: string | null;
+  date: string; // ISO createdAt
+}
+
 interface CommunityGuideRow {
   id: string;
   name: string;
   rating: number | null;
   reviews: number;
   listing: Record<string, unknown>;
+  reviewList: CommunityGuideReview[];
 }
 
-function toCommunityGuide(u: {
-  id: string;
-  name: string;
-  profileJson: unknown;
-  sellerProfile: { ratingAvg: number | null; ratingCount: number } | null;
-}): CommunityGuideRow | null {
-  const gl = ((u.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as
+function publishedListing(profileJson: unknown): Record<string, unknown> | null {
+  const gl = ((profileJson as Record<string, unknown> | null)?.guideListing ?? null) as
     | Record<string, unknown>
     | null;
-  if (!gl || gl.status !== 'published') return null;
-  return {
-    id: u.id,
-    name: u.name,
-    rating: u.sellerProfile?.ratingAvg ?? null,
-    reviews: u.sellerProfile?.ratingCount ?? 0,
-    listing: gl,
-  };
+  return gl && gl.status === 'published' ? gl : null;
 }
 
-/** All published website guides, newest first. */
+/** All published website guides, newest first — with per-guide rating aggregates. */
 export async function listPublishedGuides(): Promise<{ data: CommunityGuideRow[] }> {
   const users = await prisma.user.findMany({
     where: { role: { not: 'ADMIN' } },
-    select: {
-      id: true,
-      name: true,
-      profileJson: true,
-      createdAt: true,
-      sellerProfile: { select: { ratingAvg: true, ratingCount: true } },
-    },
+    select: { id: true, name: true, profileJson: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
   });
-  const data = users.map(toCommunityGuide).filter((g): g is CommunityGuideRow => g !== null);
+  const published = users
+    .map((u) => ({ u, gl: publishedListing(u.profileJson) }))
+    .filter((x): x is { u: (typeof users)[number]; gl: Record<string, unknown> } => x.gl !== null);
+
+  // One grouped query gives the rating average + count for every guide at once.
+  const ids = published.map((x) => x.u.id);
+  const agg = ids.length
+    ? await prisma.review.groupBy({
+        by: ['sellerId'],
+        where: { sellerId: { in: ids }, hidden: false },
+        _avg: { rating: true },
+        _count: true,
+      })
+    : [];
+  const bySeller = new Map(agg.map((a) => [a.sellerId, a]));
+
+  const data = published.map(({ u, gl }) => {
+    const a = bySeller.get(u.id);
+    return {
+      id: u.id,
+      name: u.name,
+      rating: a?._avg.rating ?? null,
+      reviews: a?._count ?? 0,
+      listing: gl,
+      reviewList: [],
+    };
+  });
   return { data };
 }
 
@@ -211,14 +227,26 @@ export async function listPublishedGuides(): Promise<{ data: CommunityGuideRow[]
 export async function getPublishedGuide(id: string): Promise<CommunityGuideRow> {
   const u = await prisma.user.findUnique({
     where: { id },
-    select: {
-      id: true,
-      name: true,
-      profileJson: true,
-      sellerProfile: { select: { ratingAvg: true, ratingCount: true } },
-    },
+    select: { id: true, name: true, profileJson: true },
   });
-  const guide = u ? toCommunityGuide(u) : null;
-  if (!guide) throw new HttpError(404, 'not_found', 'Guide not found');
-  return guide;
+  const gl = u ? publishedListing(u.profileJson) : null;
+  if (!u || !gl) throw new HttpError(404, 'not_found', 'Guide not found');
+
+  const reviews = await prisma.review.findMany({
+    where: { sellerId: id, hidden: false },
+    include: { buyer: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+  const reviewList: CommunityGuideReview[] = reviews.map((r) => ({
+    name: r.buyer.name,
+    rating: r.rating,
+    text: r.text,
+    date: r.createdAt.toISOString(),
+  }));
+  const rating = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : null;
+
+  return { id: u.id, name: u.name, rating, reviews: reviews.length, listing: gl, reviewList };
 }

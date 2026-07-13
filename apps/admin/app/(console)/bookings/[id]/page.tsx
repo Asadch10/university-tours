@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, CreditCard, Receipt, ExternalLink, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, CreditCard, Receipt, ExternalLink, FileText, CheckCircle2, XCircle, Star } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { BookingStatus } from '@/lib/data';
 import { useBookings, useInvoice } from '@/lib/queries';
-import { formatPrice, formatDateTime, humanize, paymentStatusMeta, guestHasPaid, paymentCaptured } from '@/lib/utils';
+import { formatPrice, formatDate, formatDateTime, humanize, paymentStatusMeta, guestHasPaid, paymentCaptured, cn } from '@/lib/utils';
 
 // One-line explanation of what a payment status means in the authorize-then-capture flow.
 const PAYMENT_HINT: Record<string, string> = {
@@ -71,7 +71,7 @@ export default function BookingDetailPage() {
           <p className="text-2xs font-semibold uppercase tracking-wider text-ink-400">Booking reference</p>
           <h1 className="mt-1 flex items-center gap-2 font-display text-2xl font-bold text-ink-900">
             {b.service === 'CAMPUS_TOUR' ? 'Campus tour' : humanize(b.service)}
-            <span className="rounded-md bg-ink-100 px-2 py-0.5 font-mono text-xs font-medium text-ink-500">{b.id}</span>
+            <span className="rounded-md bg-maroon-50 px-2 py-0.5 font-mono text-sm font-semibold text-maroon-800">B-{b.bookingNo}</span>
           </h1>
         </div>
 
@@ -218,10 +218,42 @@ export default function BookingDetailPage() {
               </div>
 
             </section>
+
+            {/* Review — the guest's review of the guide for this booking */}
+            <section className="mt-6 rounded-2xl border border-ink-200/70 bg-white p-6">
+              <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Review</h2>
+              {b.review ? (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2">
+                    <ReviewStars rating={b.review.rating} />
+                    {b.review.hidden && <Badge variant="danger">Hidden</Badge>}
+                  </div>
+                  {b.review.text && (
+                    <p className="mt-3 text-sm italic leading-relaxed text-ink-700">“{b.review.text}”</p>
+                  )}
+                  <p className="mt-3 text-2xs text-ink-400">
+                    <span className="font-semibold text-ink-600">{b.buyer}</span> reviewed{' '}
+                    <span className="font-semibold text-ink-600">{b.guide}</span> · {formatDate(b.review.createdAt)}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-ink-500">No review yet.</p>
+              )}
+            </section>
           </aside>
         </div>
       </div>
     </RequirePermission>
+  );
+}
+
+function ReviewStars({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star key={i} size={16} className={cn(i < rating ? 'fill-gold-500 text-gold-500' : 'text-ink-200')} />
+      ))}
+    </div>
   );
 }
 

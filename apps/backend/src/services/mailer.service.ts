@@ -1,9 +1,10 @@
-// Outbound email via Resend's SMTP endpoint (nodemailer).
+// Outbound email over SMTP (nodemailer). Provider-agnostic — configured via
+// MAIL_HOST/PORT/USERNAME/PASSWORD (currently Google Workspace: smtp.gmail.com).
 //
-// The transport is created lazily on first send. If no SMTP password /
-// RESEND_API_KEY is configured, the mailer degrades gracefully: it logs the
-// message (including the verification link) instead of throwing, so local dev
-// and CI keep working without real credentials.
+// The transport is created lazily on first send. If no SMTP password is
+// configured, the mailer degrades gracefully: it logs the message (including the
+// verification link) instead of throwing, so local dev and CI keep working
+// without real credentials.
 import nodemailer, { type Transporter } from 'nodemailer';
 import { prisma } from '@ucpt/db';
 import { config } from '../config.js';
@@ -27,9 +28,9 @@ async function emailsEnabled(): Promise<boolean> {
 
 let cachedTransport: Transporter | null | undefined;
 
-/** Resolve the SMTP password (Resend accepts the API key as the password). */
+/** Resolve the SMTP password. Falls back to RESEND_API_KEY for legacy setups. */
 function smtpPassword(): string | undefined {
-  return config.MAIL_PASSWORD ?? config.RESEND_API_KEY;
+  return config.MAIL_PASSWORD || config.RESEND_API_KEY;
 }
 
 function getTransport(): Transporter | null {
@@ -225,6 +226,7 @@ export async function sendPasswordResetEmail(opts: {
 // ─── Booking emails ───────────────────────────────────────────────────────────
 
 export interface BookingEmailSummary {
+  ref?: string | null; // human-friendly booking reference, e.g. "B-1"
   service: string; // "Campus tour" | "Video chat" | "Consultancy"
   whenText: string; // "Aug 15, 2026 · 10:00 AM (ET)"
   durationText?: string | null;
@@ -232,6 +234,7 @@ export interface BookingEmailSummary {
   amountCents: number;
   title?: string | null;
   school?: string | null;
+  meetingLink?: string | null; // Google Meet / Zoom link (online bookings, once confirmed)
 }
 
 function usd(cents: number): string {
@@ -240,12 +243,15 @@ function usd(cents: number): string {
 
 /** Ordered rows shown in every booking email. */
 function summaryRows(s: BookingEmailSummary): [string, string][] {
-  const rows: [string, string][] = [['Service', s.service]];
+  const rows: [string, string][] = [];
+  if (s.ref) rows.push(['Booking', s.ref]);
+  rows.push(['Service', s.service]);
   if (s.school) rows.push(['School', s.school]);
   rows.push(['When', s.whenText]);
   if (s.durationText) rows.push(['Duration', s.durationText]);
   rows.push(['Guests', String(s.guests)]);
   rows.push(['Amount', usd(s.amountCents)]);
+  if (s.meetingLink) rows.push(['Meeting link', s.meetingLink]);
   return rows;
 }
 
@@ -352,17 +358,20 @@ export async function sendBookingStatusEmails(opts: {
   const m = map[opts.status];
   if (!m) return; // PENDING / EXPIRED → no notification
 
+  // Only surface the meeting link in the confirmation email (once the booking is live).
+  const summary = opts.status === 'CONFIRMED' ? opts.summary : { ...opts.summary, meetingLink: null };
+
   await send({
     to: opts.guest.email,
     subject: `${m.subject} · ${brand}`,
-    text: `Hi ${guestFirst},\n\n${m.guest.replace(/<[^>]+>/g, '')}\n\n${summaryText(opts.summary)}\n\n${dash}`,
-    html: bookingEmailHtml({ brand, heading: m.subject, intro: `Hi ${guestFirst}, ${m.guest}`, pill: m.pill, summary: opts.summary, cta: { label: 'View in My tours', url: dash } }),
+    text: `Hi ${guestFirst},\n\n${m.guest.replace(/<[^>]+>/g, '')}\n\n${summaryText(summary)}\n\n${dash}`,
+    html: bookingEmailHtml({ brand, heading: m.subject, intro: `Hi ${guestFirst}, ${m.guest}`, pill: m.pill, summary, cta: { label: 'View in My tours', url: dash } }),
   });
   await send({
     to: opts.guide.email,
     subject: `${m.subject} · ${brand}`,
-    text: `Hi ${guideFirst},\n\n${m.guide.replace(/<[^>]+>/g, '')}\n\n${summaryText(opts.summary)}\n\n${dash}`,
-    html: bookingEmailHtml({ brand, heading: m.subject, intro: `Hi ${guideFirst}, ${m.guide}`, pill: m.pill, summary: opts.summary, cta: { label: 'View in My tours', url: dash } }),
+    text: `Hi ${guideFirst},\n\n${m.guide.replace(/<[^>]+>/g, '')}\n\n${summaryText(summary)}\n\n${dash}`,
+    html: bookingEmailHtml({ brand, heading: m.subject, intro: `Hi ${guideFirst}, ${m.guide}`, pill: m.pill, summary, cta: { label: 'View in My tours', url: dash } }),
   });
 }
 
@@ -616,13 +625,16 @@ function bookingEmailHtml(opts: {
 }): string {
   const maroon = '#7A1B2E';
   const rows = summaryRows(opts.summary)
-    .map(
-      ([k, v]) =>
-        `<tr>
-          <td style="padding:8px 0;font-size:13px;color:#6b7280;">${k}</td>
-          <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;text-align:right;">${v}</td>
-        </tr>`,
-    )
+    .map(([k, v]) => {
+      // Render URL values (e.g. the meeting link) as a clickable, wrapping anchor.
+      const cell = /^https?:\/\//i.test(v)
+        ? `<a href="${v}" style="color:${maroon};font-weight:600;word-break:break-all;">${v}</a>`
+        : v;
+      return `<tr>
+          <td style="padding:8px 12px 8px 0;font-size:13px;color:#6b7280;vertical-align:top;">${k}</td>
+          <td style="padding:8px 0;font-size:14px;font-weight:600;color:#111827;text-align:right;word-break:break-word;">${cell}</td>
+        </tr>`;
+    })
     .join('');
 
   return `<!doctype html>

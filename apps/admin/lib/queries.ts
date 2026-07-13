@@ -315,6 +315,7 @@ export function useBookings() {
           : null;
         return {
           id: b.id,
+          bookingNo: b.bookingNo,
           buyer: b.buyer.name,
           guide: b.seller.name,
           school: b.listing?.school?.name ?? b.schoolName ?? '—',
@@ -332,6 +333,7 @@ export function useBookings() {
           paymentStatus: pay?.status ?? null,
           paymentCard: card,
           amountRefundedCents: pay?.amountRefundedCents ?? 0,
+          review: b.review ?? null,
         };
       });
     },
@@ -478,9 +480,10 @@ export function useReviews() {
       return res.data.map((r) => ({
         id: r.id,
         bookingId: r.booking?.id ?? '—',
+        bookingNo: r.booking?.bookingNo ?? null,
         buyer: r.buyer.name,
         guide: r.seller.name,
-        school: '—',
+        school: r.booking?.listing?.school?.name ?? r.booking?.schoolName ?? '—',
         rating: r.rating,
         text: r.text ?? '',
         hidden: r.hidden,

@@ -384,6 +384,7 @@ export interface ListingDetailDto extends Omit<ListingDto, 'seller'> {
 
 export interface BookingDto {
   id: string;
+  bookingNo: number;
   status: string;
   serviceType: string;
   scheduledDate: string;
@@ -406,6 +407,7 @@ export interface BookingDto {
     cardBrand: string | null;
     cardLast4: string | null;
   } | null;
+  review?: { rating: number; text: string | null; hidden: boolean; createdAt: string } | null;
 }
 
 export interface ReviewDto {
@@ -416,7 +418,13 @@ export interface ReviewDto {
   createdAt: string;
   buyer: { id: string; name: string };
   seller: { id: string; name: string };
-  booking?: { id: string; serviceType: string } | null;
+  booking?: {
+    id: string;
+    bookingNo: number;
+    serviceType: string;
+    schoolName: string | null;
+    listing?: { school?: { name: string } | null } | null;
+  } | null;
 }
 
 export interface LedgerDto {

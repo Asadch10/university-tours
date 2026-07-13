@@ -10,6 +10,18 @@ import { universities } from '@/lib/data';
 import { accountApi, friendlyError } from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
+import { AvailabilityPicker } from '@/components/guide/availability-picker';
+import {
+  parseAvailability,
+  cleanAvailability,
+  missingAvailability,
+  labelToService,
+  TOUR_TYPE_LABELS,
+  type Availability,
+  type ServiceType,
+} from '@/lib/availability';
+
+const TOUR_TYPE_OPTIONS = ['Campus tour', 'Video chat', 'Consultancy'];
 
 type Step = 'details' | 'paid' | 'photos';
 
@@ -88,6 +100,9 @@ export function GuideApplication() {
   const [savingStep, setSavingStep] = useState(false);
   const [schoolNotListed, setSchoolNotListed] = useState(false);
   const [agree, setAgree] = useState(false);
+  // Tour type + availability are controlled (they drive per-type availability UI).
+  const [tourTypes, setTourTypes] = useState<string[]>([]);
+  const [availability, setAvailability] = useState<Availability>({});
   const [idPhoto, setIdPhoto] = useState<string | null>(null);
   const [uploadingId, setUploadingId] = useState(false);
   const idInput = useRef<HTMLInputElement>(null);
@@ -119,6 +134,10 @@ export function GuideApplication() {
           }
           const school = typeof draft.school === 'string' ? draft.school : '';
           if (school && !universities.some((u) => u.name === school)) setSchoolNotListed(true);
+          if (Array.isArray(draft.tourTypes)) {
+            setTourTypes(draft.tourTypes.filter((t): t is string => typeof t === 'string'));
+          }
+          setAvailability(parseAvailability(draft.availability));
           // Restore previously-uploaded photos (ignore legacy in-session blob URLs).
           if (Array.isArray(draft.photos)) {
             setPhotos(draft.photos.filter((p): p is string => typeof p === 'string' && /^https?:\/\//.test(p)));
@@ -185,7 +204,6 @@ export function GuideApplication() {
     setVal('previousCollege', draft.previousCollege);
     setVal('groupTours', draft.groupTours);
     setVal('referral', draft.referral);
-    checkGroup('tourType', draft.tourTypes);
     checkGroup('extracurriculars', draft.extracurriculars);
     checkGroup('housing', draft.housing);
   }, [loading, schoolNotListed]);
@@ -194,11 +212,12 @@ export function GuideApplication() {
   function collectDetails() {
     const fd = detailsFormRef.current ? new FormData(detailsFormRef.current) : new FormData();
     const g = (k: string) => ((fd.get(k) as string | null) ?? '').toString().trim();
+    const services = tourTypes.map(labelToService).filter((s): s is ServiceType => s !== null);
     return {
       listingTitle: g('listingTitle'),
       intro: g('intro'),
       school: schoolNotListed ? g('schoolCustom') : g('school'),
-      tourTypes: fd.getAll('tourType').map(String),
+      tourTypes,
       gender: g('gender'),
       academicYear: g('academicYear'),
       age: g('age'),
@@ -221,6 +240,7 @@ export function GuideApplication() {
       previousCollege: g('previousCollege'),
       groupTours: g('groupTours'),
       referral: g('referral'),
+      availability: cleanAvailability(availability, services),
       agreedContract: agree,
     };
   }
@@ -235,6 +255,19 @@ export function GuideApplication() {
     }
     if (!details.tourTypes.length) {
       toast.error('Tour type required', 'Please select at least one tour type before continuing.');
+      return;
+    }
+    // Every selected tour type needs at least one date and one time — that's what
+    // guests can book for that type.
+    const services = details.tourTypes
+      .map(labelToService)
+      .filter((s): s is ServiceType => s !== null);
+    const missing = missingAvailability(availability, services);
+    if (missing.length) {
+      toast.error(
+        'Availability required',
+        `Add at least one date and time for: ${missing.map((s) => TOUR_TYPE_LABELS[s]).join(', ')}.`,
+      );
       return;
     }
     if (!idPhoto) {
@@ -353,7 +386,35 @@ export function GuideApplication() {
               </Field>
 
               <Field label="Tour type" desc="Select which tours you can host. Campus tours are held in-person on campus, while video chats take place virtually. Hint: select both to increase your likelihood of getting bookings.">
-                <CheckboxList name="tourType" options={['Campus tour', 'Video chat', 'Consultancy']} />
+                <div className="space-y-1">
+                  {TOUR_TYPE_OPTIONS.map((o) => (
+                    <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
+                      <input
+                        type="checkbox"
+                        checked={tourTypes.includes(o)}
+                        onChange={(e) =>
+                          setTourTypes((prev) =>
+                            e.target.checked ? [...prev, o] : prev.filter((t) => t !== o),
+                          )
+                        }
+                        className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+                      />
+                      {o}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+
+              <Field
+                label="Your availability"
+                desc="For each tour type you selected, choose the dates you can host and the times you're free. The times you pick apply to every date for that tour type. Guests can only book what you set here."
+                required
+              >
+                <AvailabilityPicker
+                  types={tourTypes.map(labelToService).filter((s): s is ServiceType => s !== null)}
+                  value={availability}
+                  onChange={setAvailability}
+                />
               </Field>
 
               <Field label="Gender"><Select name="gender" options={GENDERS} /></Field>
