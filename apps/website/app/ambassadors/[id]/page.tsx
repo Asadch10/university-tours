@@ -30,6 +30,13 @@ export function generateStaticParams() {
   return [...ambassadors.map((a) => ({ id: a.id })), ...guides.map((g) => ({ id: g.id }))];
 }
 
+// Real, admin-approved guides are looked up at request time via a `no-store`
+// fetch (see fetchLiveGuide). Without this, Next treats the route as static
+// (because generateStaticParams exists) and the uncached fetch triggers a
+// production-only "page changed from static to dynamic at runtime" 500 for any
+// id not returned by generateStaticParams. Force per-request rendering.
+export const dynamic = 'force-dynamic';
+
 /** Fetch an admin-approved website guide by owner id (rendered on demand). */
 async function fetchLiveGuide(id: string): Promise<GuideProfile | null> {
   const base =

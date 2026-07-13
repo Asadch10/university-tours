@@ -2,6 +2,20 @@
 // NOTE: .env is loaded by ./env.ts, imported first in the entry point.
 import { z } from 'zod';
 
+const DEFAULT_BRAND = 'University Campus Private Tours';
+
+// Guards the brand shown in outbound emails. Falls back to the default when the
+// value is blank or an un-substituted deploy placeholder (e.g. a live env var
+// left as the literal "${APP_NAME}"), so emails never leak a raw placeholder.
+const brandName = z
+  .string()
+  .default(DEFAULT_BRAND)
+  .transform((v) => {
+    const trimmed = v.trim();
+    if (!trimmed || /\$\{.*\}/.test(trimmed)) return DEFAULT_BRAND;
+    return trimmed;
+  });
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().default(4000),
@@ -36,7 +50,7 @@ const envSchema = z.object({
   MAIL_PASSWORD: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   MAIL_FROM_ADDRESS: z.string().default('no-reply@ahmadnaeem.com'),
-  MAIL_FROM_NAME: z.string().default('University Campus Private Tours'),
+  MAIL_FROM_NAME: brandName,
 });
 
 export const config = envSchema.parse(process.env);
