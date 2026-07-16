@@ -258,6 +258,69 @@ export const accountApi = {
     request<{ id: string; role: Role; profileJson: Record<string, unknown> | null }>('DELETE', '/users/me/guide-listing'),
 };
 
+// ─── Stripe Connect (guide bank onboarding for payouts) ───────────────────────
+export interface ConnectBank {
+  bankName: string | null;
+  last4: string;
+  currency: string;
+  country: string;
+}
+
+export interface ConnectStatus {
+  connected: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  bank: ConnectBank | null;
+}
+
+export interface PayoutRow {
+  amountCents: number;
+  currency: string;
+  status: string;
+  arrivalDate: number; // unix seconds
+  last4: string | null;
+}
+
+export interface PayoutSummary {
+  currency: string;
+  availableCents: number;
+  pendingCents: number;
+  completeCents: number;
+  payouts: PayoutRow[];
+}
+
+export const connectApi = {
+  status: () => request<ConnectStatus>('GET', '/sellers/me/connect/status'),
+  // Returns a Stripe-hosted onboarding URL to redirect the guide to.
+  onboard: (country?: string) =>
+    request<{ url: string }>('POST', '/sellers/me/connect/onboard', country ? { country } : undefined),
+  // Login link to the guide's Stripe Express dashboard.
+  dashboard: () => request<{ url: string }>('POST', '/sellers/me/connect/dashboard'),
+  // Live balance + payout history.
+  payouts: () => request<PayoutSummary>('GET', '/sellers/me/connect/payouts'),
+  // Manually pay out the available balance now.
+  cashOut: () => request<{ ok: true; amountCents: number }>('POST', '/sellers/me/connect/cashout'),
+};
+
+// ─── Saved cards (Payments settings) ──────────────────────────────────────────
+export interface SavedCard {
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
+
+export const paymentMethodsApi = {
+  list: () => request<{ data: SavedCard[] }>('GET', '/users/me/payment-methods'),
+  // POST → returns a SetupIntent client secret to confirm the card with Stripe Elements.
+  setup: () =>
+    request<{ clientSecret: string | null; publishableKey: string | null }>('POST', '/users/me/payment-methods/setup'),
+  setDefault: (id: string) => request<{ ok: true }>('POST', `/users/me/payment-methods/${id}/default`),
+  remove: (id: string) => request<{ ok: true }>('DELETE', `/users/me/payment-methods/${id}`),
+};
+
 // ─── Bookings (My tours) ──────────────────────────────────────────────────────
 
 export type BookingStatus =

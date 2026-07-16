@@ -4,6 +4,8 @@ import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { imageUpload, uploadUrl } from '../lib/uploads.js';
 import * as svc from '../services/account.service.js';
+import * as connect from '../services/connect.service.js';
+import * as cards from '../services/payment-method.service.js';
 
 export const usersRouter = Router();
 
@@ -28,6 +30,24 @@ usersRouter.post('/me/guide-listing', requireAuth, asyncHandler(async (req, res)
 
 usersRouter.delete('/me/guide-listing', requireAuth, asyncHandler(async (req, res) => {
   res.json(await svc.deleteGuideListing(req.user!.id));
+}));
+
+// ─── Saved cards (Stripe Customer + SetupIntent) ──────────────────────────────
+usersRouter.get('/me/payment-methods', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await cards.listPaymentMethods(req.user!.id));
+}));
+
+// POST → start saving a card: returns a SetupIntent client secret for the Payment Element.
+usersRouter.post('/me/payment-methods/setup', requireAuth, asyncHandler(async (req, res) => {
+  res.status(201).json(await cards.createSetupIntent(req.user!.id));
+}));
+
+usersRouter.post('/me/payment-methods/:id/default', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await cards.setDefaultPaymentMethod(req.user!.id, req.params['id'] as string));
+}));
+
+usersRouter.delete('/me/payment-methods/:id', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await cards.deletePaymentMethod(req.user!.id, req.params['id'] as string));
 }));
 
 usersRouter.post('/me/contact', requireAuth, asyncHandler(async (req, res) => {
@@ -91,6 +111,29 @@ sellersRouter.get('/me/earnings', requireAuth, requireRole('SELLER'), asyncHandl
 sellersRouter.get('/me/payouts', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
   const { page, limit } = req.query as Record<string, string>;
   res.json(await svc.getMyPayouts(req.user!.id, page ? +page : 1, limit ? +limit : 20));
+}));
+
+// ─── Stripe Connect (guide bank onboarding). requireAuth only — a user is a
+// guest AND a guide; connecting a bank is authorized by being signed in. ───────
+sellersRouter.get('/me/connect/status', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await connect.getConnectStatus(req.user!.id));
+}));
+
+sellersRouter.post('/me/connect/onboard', requireAuth, asyncHandler(async (req, res) => {
+  const { country } = req.body as { country?: string };
+  res.json(await connect.startConnectOnboarding(req.user!.id, country));
+}));
+
+sellersRouter.post('/me/connect/dashboard', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await connect.getConnectDashboardLink(req.user!.id));
+}));
+
+sellersRouter.get('/me/connect/payouts', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await connect.getPayoutSummary(req.user!.id));
+}));
+
+sellersRouter.post('/me/connect/cashout', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await connect.cashOut(req.user!.id));
 }));
 
 export const applicationsRouter = Router();

@@ -7,6 +7,7 @@ import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
 import { stripe, isStripeEnabled } from '../lib/stripe.js';
 import { authorizeBookingPayment, expireUnpaidBooking } from '../services/booking.service.js';
+import { syncConnectAccount } from '../services/connect.service.js';
 
 export const webhooksRouter = Router();
 
@@ -47,6 +48,12 @@ webhooksRouter.post('/stripe', async (req: Request, res: Response) => {
         // Hold released / payment failed → expire the still-unpaid booking.
         const pi = event.data.object as Stripe.PaymentIntent;
         await expireUnpaidBooking(pi.id);
+        break;
+      }
+      case 'account.updated': {
+        // A guide's Connect onboarding progressed → cache whether they can be paid.
+        const acct = event.data.object as Stripe.Account;
+        await syncConnectAccount(acct.id, !!acct.payouts_enabled);
         break;
       }
       default:

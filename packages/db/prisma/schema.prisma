@@ -125,6 +125,11 @@ model User {
   emailVerifiedAt DateTime?      @map("email_verified_at")
   adminRoleName   AdminRoleName? @map("admin_role_name")
   profileJson     Json?          @map("profile_json") // website profile fields (all optional)
+  // Stripe Connect (Express) — a guide's connected account for receiving payouts.
+  stripeAccountId      String?  @map("stripe_account_id")
+  stripePayoutsEnabled Boolean  @default(false) @map("stripe_payouts_enabled")
+  // Stripe Customer — for saving the user's cards on file (guest payments).
+  stripeCustomerId     String?  @map("stripe_customer_id")
   createdAt       DateTime       @default(now()) @map("created_at")
 
   sellerProfile   SellerProfile?

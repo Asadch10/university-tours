@@ -127,7 +127,7 @@ export async function createBooking(buyerId: string, data: {
     void notifyNewBooking(booking.id);
     return { ...booking, clientSecret: null, publishableKey: null };
   }
-  const pay = await createPaymentIntentForBooking(booking.id, booking.grossCents, booking.serviceType);
+  const pay = await createPaymentIntentForBooking(booking.id, booking.grossCents, booking.serviceType, booking.sellerId, commissionPct);
   return { ...booking, ...pay };
 }
 
@@ -138,15 +138,35 @@ export async function createBooking(buyerId: string, data: {
  * only authorized (a hold); we capture later when the guide accepts. Returns the
  * client secret + publishable key the browser needs to render the Payment Element.
  */
-async function createPaymentIntentForBooking(bookingId: string, grossCents: number, serviceType: string) {
-  const intent = await stripe().paymentIntents.create({
+async function createPaymentIntentForBooking(
+  bookingId: string,
+  grossCents: number,
+  serviceType: string,
+  sellerId: string,
+  commissionPct: number,
+) {
+  const params: Stripe.PaymentIntentCreateParams = {
     amount: grossCents,
     currency,
     capture_method: 'manual',
     automatic_payment_methods: { enabled: true },
     description: `${serviceLabelFor(serviceType)} booking ${bookingId}`,
     metadata: { bookingId },
+  };
+
+  // Marketplace split (destination charge): if the guide has finished Stripe Connect
+  // onboarding, keep the commission as the application fee and route their share to
+  // their connected account. The split settles automatically when we capture on accept.
+  const seller = await prisma.user.findUnique({
+    where: { id: sellerId },
+    select: { stripeAccountId: true, stripePayoutsEnabled: true },
   });
+  if (seller?.stripeAccountId && seller.stripePayoutsEnabled) {
+    params.application_fee_amount = Math.round((grossCents * commissionPct) / 100);
+    params.transfer_data = { destination: seller.stripeAccountId };
+  }
+
+  const intent = await stripe().paymentIntents.create(params);
   await prisma.booking.update({ where: { id: bookingId }, data: { stripePaymentIntentId: intent.id } });
   return { clientSecret: intent.client_secret, publishableKey: publishableKey() };
 }
@@ -280,7 +300,7 @@ export async function createGuideBooking(buyerId: string, data: {
     return { ...booking, clientSecret: null, publishableKey: null };
   }
   // Emails are sent once the card is authorized (see authorizeBookingPayment).
-  const pay = await createPaymentIntentForBooking(booking.id, booking.grossCents, booking.serviceType);
+  const pay = await createPaymentIntentForBooking(booking.id, booking.grossCents, booking.serviceType, booking.sellerId, commissionPct);
   return { ...booking, ...pay };
 }
 
