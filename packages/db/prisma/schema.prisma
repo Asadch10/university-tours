@@ -445,6 +445,9 @@ model QuestionnaireQuestion {
   required        Boolean       @default(false)
   order           Int
   optionsJson     Json?         @map("options_json")
+  // Stable storage key so answers save under the same listing field the guide
+  // profile / search read (e.g. "gender", "hometown"). Null = store under id.
+  fieldKey        String?       @map("field_key")
 
   @@index([questionnaireId])
   @@map("questionnaire_questions")
@@ -583,6 +586,8 @@ model Settings {
   refundWindowsJson Json    @map("refund_windows_json")
   requestExpiryHours Int    @map("request_expiry_hours")
   maskingEnabled    Boolean @default(true) @map("masking_enabled")
+  // How many profile photos a guide must upload in become-a-guide (admin-set).
+  requiredPhotos    Int     @default(3) @map("required_photos")
 
   @@map("settings")
 }

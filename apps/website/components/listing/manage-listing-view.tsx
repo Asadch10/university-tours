@@ -72,6 +72,8 @@ interface GuideListing {
   referral?: string;
   // Per-tour-type dates + times the guide offers (drives the guest booking widget).
   availability?: Availability;
+  // Answers to the admin-managed questionnaire questions.
+  answers?: { questionId: string; key?: string | null; label: string; type: string; value: string | string[] }[];
   // ── Agreements captured in steps 1 & 2 ──
   agreedContract?: boolean;
   agreedGuidelines?: boolean;
@@ -667,6 +669,24 @@ function DetailsModal({ listing, name, onClose }: { listing: GuideListing; name:
                   <div key={label}>
                     <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{label}</dt>
                     <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
+          {/* Custom (keyless) questionnaire answers — keyed ones show above via
+              the fixed "Application answers" list. */}
+          {!!listing.answers?.filter((a) => !a.key).length && (
+            <section className="border-t border-ink-100 pt-6">
+              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">More questions</p>
+              <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                {listing.answers.filter((a) => !a.key).map((a) => (
+                  <div key={a.questionId}>
+                    <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{a.label}</dt>
+                    <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">
+                      {Array.isArray(a.value) ? a.value.join(', ') : a.value}
+                    </dd>
                   </div>
                 ))}
               </dl>

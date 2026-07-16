@@ -69,3 +69,8 @@ export const configRouter = Router();
 configRouter.get('/price-bounds', asyncHandler(async (_req, res) => {
   res.json(await svc.getPriceBounds());
 }));
+
+// Public: the active become-a-guide questionnaire + required photo count.
+configRouter.get('/questionnaire', asyncHandler(async (_req, res) => {
+  res.json(await svc.getPublicQuestionnaire());
+}));

@@ -182,6 +182,7 @@ export function useQuestionnaire() {
       return {
         id: q.id,
         updatedAt: nowIso(),
+        requiredPhotos: q.requiredPhotos ?? 3,
         questions: (q.questions ?? []).map((qq) => ({
           id: qq.id,
           type: qType(qq.type),
@@ -215,6 +216,10 @@ export function useQuestionnaireActions() {
     reorderQuestions: useMutation({
       mutationFn: ({ id, orderedIds }: { id: string; orderedIds: string[] }) =>
         adminApi.questionnaireReorderQuestions(id, orderedIds),
+      onSuccess: inv,
+    }),
+    setPhotos: useMutation({
+      mutationFn: (requiredPhotos: number) => adminApi.questionnaireSetPhotos(requiredPhotos),
       onSuccess: inv,
     }),
   };
@@ -749,5 +754,14 @@ export function useAuditLogs() {
         createdAt: a.createdAt,
       }));
     },
+  });
+}
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: ['notifications'],
+    // Poll so the bell stays fresh without a manual refresh.
+    refetchInterval: 30_000,
+    queryFn: async () => (await adminApi.notifications()).data,
   });
 }

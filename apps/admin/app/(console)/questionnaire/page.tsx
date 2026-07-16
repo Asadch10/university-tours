@@ -23,7 +23,7 @@ import { EmptyState } from '@/components/ui/states';
 import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
-import { humanize } from '@/lib/utils';
+import { cn, humanize } from '@/lib/utils';
 import { type Question, type QuestionType } from '@/lib/data';
 import { useQuestionnaire, useQuestionnaireActions } from '@/lib/queries';
 
@@ -50,13 +50,25 @@ const typeToApi = (t: QuestionType): 'TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'M
 
 export default function QuestionnairePage() {
   const { data: questionnaire, isLoading } = useQuestionnaire();
-  const { addQuestion, updateQuestion, deleteQuestion, reorderQuestions } = useQuestionnaireActions();
+  const { addQuestion, updateQuestion, deleteQuestion, reorderQuestions, setPhotos } = useQuestionnaireActions();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
 
   const { success, error } = useToast();
   const confirm = useConfirm();
+
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  async function persistOrder(next: { id: string }[]) {
+    if (!questionnaire) return;
+    try {
+      await reorderQuestions.mutateAsync({ id: questionnaire.id, orderedIds: next.map((q) => q.id) });
+    } catch (e) {
+      error('Reorder failed', e instanceof Error ? e.message : undefined);
+    }
+  }
 
   async function move(index: number, dir: -1 | 1) {
     if (!questionnaire) return;
@@ -65,11 +77,19 @@ export default function QuestionnairePage() {
     if (target < 0 || target >= questions.length) return;
     const next = [...questions];
     [next[index], next[target]] = [next[target]!, next[index]!];
-    try {
-      await reorderQuestions.mutateAsync({ id: questionnaire.id, orderedIds: next.map((q) => q.id) });
-    } catch (e) {
-      error('Reorder failed', e instanceof Error ? e.message : undefined);
-    }
+    await persistOrder(next);
+  }
+
+  // Drag-and-drop reorder: move the dragged question to the drop position.
+  async function dropAt(to: number) {
+    const from = dragIndex;
+    setDragIndex(null);
+    setOverIndex(null);
+    if (!questionnaire || from === null || from === to) return;
+    const next = [...questionnaire.questions];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved!);
+    await persistOrder(next);
   }
 
   async function removeQuestion(q: Question) {
@@ -141,6 +161,19 @@ export default function QuestionnairePage() {
         {isLoading ? (
           <TableSkeleton />
         ) : (
+          <>
+          <PhotoCountCard
+            value={questionnaire?.requiredPhotos ?? 3}
+            saving={setPhotos.isPending}
+            onSave={async (n) => {
+              try {
+                await setPhotos.mutateAsync(n);
+                success('Photo requirement updated', `Guides must upload ${n} photo${n > 1 ? 's' : ''}.`);
+              } catch (e) {
+                error('Could not update', e instanceof Error ? e.message : undefined);
+              }
+            }}
+          />
           <Card>
             <div className="border-b border-ink-200/60 px-5 py-4">
               <h3 className="font-display text-base font-semibold text-ink-900">Application questions</h3>
@@ -160,9 +193,23 @@ export default function QuestionnairePage() {
                 questions.map((q, i) => (
                   <div
                     key={q.id}
-                    className="flex items-center gap-3 rounded-xl border border-ink-200/70 bg-white p-3 shadow-soft"
+                    draggable={!reorderQuestions.isPending}
+                    onDragStart={() => setDragIndex(i)}
+                    onDragEnter={() => setOverIndex(i)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => void dropAt(i)}
+                    onDragEnd={() => {
+                      setDragIndex(null);
+                      setOverIndex(null);
+                    }}
+                    className={cn(
+                      'flex items-center gap-3 rounded-xl border bg-white p-3 shadow-soft transition-colors',
+                      'cursor-grab active:cursor-grabbing',
+                      dragIndex === i ? 'opacity-50' : 'border-ink-200/70',
+                      overIndex === i && dragIndex !== null && dragIndex !== i && 'border-brand-500 ring-2 ring-brand-500/20',
+                    )}
                   >
-                    <GripVertical size={16} className="shrink-0 text-ink-300" />
+                    <GripVertical size={16} className="shrink-0 text-ink-400" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-ink-900">{q.label}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -221,6 +268,7 @@ export default function QuestionnairePage() {
               )}
             </CardBody>
           </Card>
+          </>
         )}
 
         <QuestionEditor
@@ -234,6 +282,41 @@ export default function QuestionnairePage() {
         />
       </div>
     </RequirePermission>
+  );
+}
+
+function PhotoCountCard({ value, onSave, saving }: { value: number; onSave: (n: number) => void; saving: boolean }) {
+  const [n, setN] = useState(value);
+  return (
+    <Card>
+      <CardBody className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h3 className="font-display text-base font-semibold text-ink-900">Profile photos</h3>
+          <p className="mt-0.5 text-sm text-ink-500">
+            How many photos a guide must upload on the “Become a guide” Photos step.
+          </p>
+        </div>
+        <div className="flex items-end gap-3">
+          <div>
+            <label htmlFor="req-photos" className="mb-1 block text-xs font-semibold text-ink-600">
+              Required photos
+            </label>
+            <input
+              id="req-photos"
+              type="number"
+              min={1}
+              max={10}
+              value={n}
+              onChange={(e) => setN(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+              className="w-24 rounded-lg border border-ink-200 px-3 py-2 text-sm focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/15"
+            />
+          </div>
+          <Button variant="primary" size="sm" disabled={saving || n === value} onClick={() => onSave(n)}>
+            Save
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 

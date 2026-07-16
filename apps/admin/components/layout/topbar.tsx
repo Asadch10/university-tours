@@ -1,13 +1,12 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, PanelLeftClose, PanelLeft, Bell, LogOut, ChevronRight } from 'lucide-react';
+import { Menu, PanelLeftClose, PanelLeft, LogOut, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { navItemForPath, sectionForPath } from '@/lib/nav';
 import { Avatar } from '@/components/ui/avatar';
 import { Dropdown } from '@/components/ui/dropdown';
-import { timeAgo } from '@/lib/utils';
-import { useAuditLogs } from '@/lib/queries';
+import { NotificationsMenu } from '@/components/layout/notifications-menu';
 
 export function Topbar({
   collapsed,
@@ -21,7 +20,6 @@ export function Topbar({
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { data: auditLogs = [] } = useAuditLogs();
   const current = navItemForPath(pathname);
   const section = sectionForPath(pathname);
 
@@ -65,25 +63,7 @@ export function Topbar({
       </nav>
 
       {/* Notifications */}
-      <Dropdown
-        align="right"
-        trigger={
-          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-100">
-            <Bell size={17} />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger ring-2 ring-white" />
-          </span>
-        }
-        items={[
-          ...(auditLogs.length
-            ? auditLogs.slice(0, 4).map((log) => ({
-                label: `${log.action} · ${timeAgo(log.createdAt)}`,
-                onClick: () => router.push('/roles'),
-              }))
-            : [{ label: 'No recent activity', onClick: () => router.push('/roles') }]),
-          'separator' as const,
-          { label: 'View all activity', onClick: () => router.push('/roles') },
-        ]}
-      />
+      <NotificationsMenu />
 
       {/* Profile */}
       <Dropdown

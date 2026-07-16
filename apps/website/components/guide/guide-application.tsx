@@ -7,7 +7,12 @@ import { ImagePlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { universities } from '@/lib/data';
-import { accountApi, friendlyError } from '@/lib/client-api';
+import {
+  accountApi,
+  friendlyError,
+  questionnaireApi,
+  type QuestionnaireQuestion,
+} from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { AvailabilityPicker } from '@/components/guide/availability-picker';
@@ -92,6 +97,67 @@ function Select({ name, options, placeholder = 'Select…' }: { name: string; op
   );
 }
 
+/** Renders one admin-managed question by its type. */
+function QuestionInput({
+  q,
+  value,
+  onChange,
+}: {
+  q: QuestionnaireQuestion;
+  value: string | string[] | undefined;
+  onChange: (v: string | string[]) => void;
+}) {
+  if (q.type === 'LONG_TEXT') {
+    return (
+      <textarea
+        className={area}
+        value={(value as string) ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Write your answer here…"
+      />
+    );
+  }
+  if (q.type === 'SINGLE_CHOICE') {
+    return (
+      <select className={sel} value={(value as string) ?? ''} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Select…</option>
+        {q.options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  if (q.type === 'MULTI_CHOICE') {
+    const arr = Array.isArray(value) ? value : [];
+    return (
+      <div className="space-y-1">
+        {q.options.map((o) => (
+          <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
+            <input
+              type="checkbox"
+              checked={arr.includes(o)}
+              onChange={(e) => onChange(e.target.checked ? [...arr, o] : arr.filter((x) => x !== o))}
+              className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+            />
+            {o}
+          </label>
+        ))}
+      </div>
+    );
+  }
+  // TEXT (and FILE fallback) → single-line input.
+  return (
+    <input
+      className={inp}
+      value={(value as string) ?? ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Write your answer here…"
+    />
+  );
+}
+
 export function GuideApplication() {
   const router = useRouter();
   const toast = useToast();
@@ -103,6 +169,10 @@ export function GuideApplication() {
   // Tour type + availability are controlled (they drive per-type availability UI).
   const [tourTypes, setTourTypes] = useState<string[]>([]);
   const [availability, setAvailability] = useState<Availability>({});
+  // Admin-managed extra questions + answers (keyed by question id).
+  const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
+  const [requiredPhotos, setRequiredPhotos] = useState(3);
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [idPhoto, setIdPhoto] = useState<string | null>(null);
   const [uploadingId, setUploadingId] = useState(false);
   const idInput = useRef<HTMLInputElement>(null);
@@ -138,6 +208,7 @@ export function GuideApplication() {
             setTourTypes(draft.tourTypes.filter((t): t is string => typeof t === 'string'));
           }
           setAvailability(parseAvailability(draft.availability));
+          // (Questionnaire answers are restored by key once questions load — see effect below.)
           // Restore previously-uploaded photos (ignore legacy in-session blob URLs).
           if (Array.isArray(draft.photos)) {
             setPhotos(draft.photos.filter((p): p is string => typeof p === 'string' && /^https?:\/\//.test(p)));
@@ -154,6 +225,17 @@ export function GuideApplication() {
       .finally(() => {
         if (active) setLoading(false);
       });
+
+    // Admin-managed extra questions + required photo count.
+    questionnaireApi
+      .active()
+      .then((q) => {
+        if (!active) return;
+        setQuestions(q.questions);
+        setRequiredPhotos(q.requiredPhotos > 0 ? q.requiredPhotos : 3);
+      })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
@@ -208,39 +290,51 @@ export function GuideApplication() {
     checkGroup('housing', draft.housing);
   }, [loading, schoolNotListed]);
 
+  // Restore questionnaire answers once the questions load: read each from the
+  // draft under its stable key (e.g. draft.gender) so a half-finished (or legacy)
+  // application repopulates correctly.
+  useEffect(() => {
+    const draft = draftRef.current;
+    if (!draft || questions.length === 0) return;
+    setAnswers((prev) => {
+      const next = { ...prev };
+      for (const q of questions) {
+        if (next[q.id] !== undefined) continue;
+        const raw = draft[q.key ?? q.id];
+        if (raw === undefined || raw === null) continue;
+        next[q.id] = Array.isArray(raw)
+          ? raw.filter((x): x is string => typeof x === 'string')
+          : String(raw);
+      }
+      return next;
+    });
+  }, [questions]);
+
   /** Read the current details form into the listing shape shared by draft saves and publish. */
   function collectDetails() {
     const fd = detailsFormRef.current ? new FormData(detailsFormRef.current) : new FormData();
     const g = (k: string) => ((fd.get(k) as string | null) ?? '').toString().trim();
     const services = tourTypes.map(labelToService).filter((s): s is ServiceType => s !== null);
+
+    // Each questionnaire answer is written under its stable key (e.g. "gender",
+    // "hometown") so the guide profile / search read it exactly as before. A
+    // label/type snapshot is also kept for display of custom (keyless) questions.
+    const byKey: Record<string, string | string[]> = {};
+    const snapshot: { questionId: string; key: string | null; label: string; type: string; value: string | string[] }[] = [];
+    for (const q of questions) {
+      const value = answers[q.id] ?? (q.type === 'MULTI_CHOICE' ? [] : '');
+      byKey[q.key || q.id] = value;
+      snapshot.push({ questionId: q.id, key: q.key, label: q.label, type: q.type, value });
+    }
+
     return {
       listingTitle: g('listingTitle'),
       intro: g('intro'),
       school: schoolNotListed ? g('schoolCustom') : g('school'),
       tourTypes,
-      gender: g('gender'),
-      academicYear: g('academicYear'),
-      age: g('age'),
-      admissionType: g('admissionType'),
-      hometown: g('hometown'),
-      academicFocus: g('academicFocus'),
-      majors: g('majors'),
-      minors: g('minors'),
-      extracurriculars: fd.getAll('extracurriculars').map(String),
-      clubs: g('clubs'),
-      housing: fd.getAll('housing').map(String),
-      personality: g('personality'),
-      experienceRating: g('experienceRating'),
-      describeExperience: g('describeExperience'),
-      tip: g('tip'),
-      favoriteClass: g('favoriteClass'),
-      careerGoals: g('careerGoals'),
-      freeNight: g('freeNight'),
-      highSchool: g('highSchool'),
-      previousCollege: g('previousCollege'),
-      groupTours: g('groupTours'),
-      referral: g('referral'),
+      ...byKey,
       availability: cleanAvailability(availability, services),
+      answers: snapshot.filter((a) => (Array.isArray(a.value) ? a.value.length > 0 : String(a.value).trim() !== '')),
       agreedContract: agree,
     };
   }
@@ -268,6 +362,16 @@ export function GuideApplication() {
         'Availability required',
         `Add at least one date and time for: ${missing.map((s) => TOUR_TYPE_LABELS[s]).join(', ')}.`,
       );
+      return;
+    }
+    // Admin-managed required questions must be answered.
+    const missingQ = questions.find((q) => {
+      if (!q.required) return false;
+      const v = answers[q.id];
+      return Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim();
+    });
+    if (missingQ) {
+      toast.error('Answer required', `Please answer: “${missingQ.label}”.`);
       return;
     }
     if (!idPhoto) {
@@ -417,43 +521,16 @@ export function GuideApplication() {
                 />
               </Field>
 
-              <Field label="Gender"><Select name="gender" options={GENDERS} /></Field>
-              <Field label="Current academic year" desc="Select your current academic grade level"><Select name="academicYear" options={ACADEMIC_YEARS} /></Field>
-              <Field label="Age"><input name="age" type="number" min={0} className={inp} placeholder="Enter your age" /></Field>
-              <Field label="Admission type"><Select name="admissionType" options={ADMISSION_TYPES} /></Field>
-              <Field label="Hometown" desc="Include the city and state/country"><textarea name="hometown" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Academic focus" desc="Select the best option"><Select name="academicFocus" options={ACADEMIC_FOCUS} /></Field>
-              <Field label="Major(s)" desc="Separate multiple majors with a comma, or list the major(s) you are considering"><textarea name="majors" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Minor(s)" desc="Separate multiple minors with a comma, or list the minor(s) you are considering"><textarea name="minors" className={area} placeholder="Write your answer here…" /></Field>
-
-              <Field label="Extracurricular activities" desc="Select all the activities you have participated in during college">
-                <CheckboxList name="extracurriculars" options={EXTRACURRICULARS} />
-              </Field>
-
-              <Field label="Clubs, organizations & involvement" desc="List the organizations you have been involved in and include any leadership positions you've held"><textarea name="clubs" className={area} placeholder="Write your answer here…" /></Field>
-
-              <Field label="Housing experience" desc="Select the places you have lived during college">
-                <CheckboxList name="housing" options={HOUSING} />
-              </Field>
-
-              <Field label="Personality type" desc="Choose the option you feel best describes you"><Select name="personality" options={PERSONALITY_TYPES} /></Field>
-              <Field label="College experience rating" desc="Rate your college experience so far"><Select name="experienceRating" options={EXPERIENCE_RATINGS} /></Field>
-              <Field label="Describe your college experience" desc="Briefly discuss your transition to college and your experience so far"><textarea name="describeExperience" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Tip for future students" desc="Briefly share any tips for future students, or things you wish you'd known before starting school here"><textarea name="tip" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Favorite class" desc="What has been your favorite class and why?"><textarea name="favoriteClass" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Career goals" desc="What do you hope to do after college?"><textarea name="careerGoals" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Ideal way to spend a free night" desc="Briefly describe your ideal way to spend a free night"><textarea name="freeNight" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="High school or secondary school" desc="List the high school(s) or secondary school(s) you attended, including the school name, city, and state/country"><textarea name="highSchool" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Previous college" desc="If applicable, list the school(s) you transferred from and briefly describe your transfer experience"><textarea name="previousCollege" className={area} placeholder="Write your answer here…" /></Field>
-              <Field label="Would you like to host group tours?" desc="In addition to private tours, you may also opt in to host group tours (5+ guests). Group tours offer higher pay and may require additional training."><Select name="groupTours" options={YES_NO} /></Field>
-
-              <Field label="Were you referred by someone?">
-                <p className="-mt-1 mb-2 text-sm text-ink-500">
-                  If yes, type their name so they receive their referral bonus. Otherwise, please leave blank.{' '}
-                  <Link href="/refer" className="font-medium text-maroon-800 hover:underline">Learn more</Link>
-                </p>
-                <textarea name="referral" className={area} placeholder="Write your answer here…" />
-              </Field>
+              {/* About-you questions — admin-managed via the questionnaire */}
+              {questions.map((q) => (
+                <Field key={q.id} label={q.label} required={q.required}>
+                  <QuestionInput
+                    q={q}
+                    value={answers[q.id]}
+                    onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}
+                  />
+                </Field>
+              ))}
 
               <Field label="Upload your student ID to confirm your eligibility" desc="Please upload a photo of your school-issued student ID that clearly shows your face and name. Your ID is confidential and will never be shared publicly.">
                 <button
@@ -584,7 +661,7 @@ export function GuideApplication() {
           {step === 'photos' && (
             <div className="max-w-3xl">
               <h1 className="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">
-                Add at least 3 photos of yourself
+                Add at least {requiredPhotos} photo{requiredPhotos > 1 ? 's' : ''} of yourself
               </h1>
 
               <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -650,7 +727,7 @@ export function GuideApplication() {
               </p>
 
               <div className="mt-8">
-                <Button type="button" variant="primary" size="lg" disabled={photos.length < 3 || publishing || uploadingPhotos} onClick={publish} className="w-full sm:w-auto">
+                <Button type="button" variant="primary" size="lg" disabled={photos.length < requiredPhotos || publishing || uploadingPhotos} onClick={publish} className="w-full sm:w-auto">
                   {publishing ? (
                     <>
                       <Loader2 size={18} className="animate-spin" /> Publishing…

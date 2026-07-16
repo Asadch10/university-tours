@@ -1,6 +1,8 @@
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import adminLogo from '@/public/admin-logo.png';
 
-/** Collegiate crest mark + wordmark. `light` variant for dark (brand) surfaces. */
+/** University crest mark + wordmark. `light` variant for dark (brand) surfaces. */
 export function Logo({
   variant = 'default',
   showWordmark = true,
@@ -15,18 +17,18 @@ export function Logo({
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <span
         className={cn(
-          'relative inline-flex h-9 w-9 items-center justify-center rounded-xl',
-          light ? 'bg-white/10 ring-1 ring-inset ring-white/20' : 'bg-brand-gradient',
+          'relative inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-inset',
+          light ? 'ring-white/25' : 'ring-ink-200/70',
         )}
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-          <path
-            d="M12 2.5 4 5.5v6c0 4.5 3.4 8.3 8 9.9 4.6-1.6 8-5.4 8-9.9v-6L12 2.5Z"
-            className={light ? 'fill-ivory/95' : 'fill-gold-300'}
-          />
-          <path d="M12 6.5 8 8v3.2c0 2.3 1.7 4.3 4 5.1 2.3-.8 4-2.8 4-5.1V8l-4-1.5Z" className="fill-brand-900" />
-          <path d="M9.5 10.5h5M12 8.7v6" stroke="#eccb72" strokeWidth="1.1" strokeLinecap="round" />
-        </svg>
+        <Image
+          src={adminLogo}
+          alt="University Campus Private Tours"
+          fill
+          sizes="36px"
+          className="object-contain p-0.5"
+          priority
+        />
       </span>
       {showWordmark && (
         <span className="flex flex-col leading-none">

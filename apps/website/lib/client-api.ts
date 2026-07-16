@@ -302,6 +302,27 @@ export const connectApi = {
   cashOut: () => request<{ ok: true; amountCents: number }>('POST', '/sellers/me/connect/cashout'),
 };
 
+// ─── Become-a-guide questionnaire (admin-managed extra questions) ─────────────
+export type QuestionType = 'TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'FILE';
+
+export interface QuestionnaireQuestion {
+  id: string;
+  key: string | null; // stable storage key (e.g. "gender"); null → store under id
+  type: QuestionType;
+  label: string;
+  required: boolean;
+  options: string[];
+}
+
+export interface PublicQuestionnaire {
+  questions: QuestionnaireQuestion[];
+  requiredPhotos: number;
+}
+
+export const questionnaireApi = {
+  active: () => request<PublicQuestionnaire>('GET', '/config/questionnaire'),
+};
+
 // ─── Saved cards (Payments settings) ──────────────────────────────────────────
 export interface SavedCard {
   id: string;

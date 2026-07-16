@@ -87,6 +87,7 @@ export interface Questionnaire {
   id: string;
   updatedAt: string;
   questions: Question[];
+  requiredPhotos: number; // how many profile photos a guide must upload
 }
 
 // ─────────────────────────────────────────────────────────── Listings

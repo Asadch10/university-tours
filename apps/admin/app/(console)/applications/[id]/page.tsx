@@ -104,6 +104,14 @@ export default function ApplicationDetailPage() {
   }
 
   const rowsInfo = DETAIL_FIELDS.map(([k, label]) => [label, asText(app.details[k])] as const).filter(([, v]) => v);
+  const answers = (
+    (Array.isArray(app.details.answers) ? app.details.answers : []) as {
+      questionId: string;
+      key?: string | null;
+      label: string;
+      value: string | string[];
+    }[]
+  ).filter((a) => !a.key); // keyed answers already show in "Application answers"
   const photos = app.photos.filter(httpPhoto);
   const idPhoto = httpPhoto(app.details.idPhoto) ? app.details.idPhoto : null;
   const title = asText(app.details.listingTitle) || 'Guide application';
@@ -234,6 +242,23 @@ export default function ApplicationDetailPage() {
                 <div key={label}>
                   <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-400">{label}</dt>
                   <dd className="mt-0.5 whitespace-pre-line text-sm text-ink-800">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
+        {/* Custom (keyless) questionnaire answers */}
+        {answers.length > 0 && (
+          <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <p className="mb-4 text-2xs font-semibold uppercase tracking-wider text-ink-500">More questions</p>
+            <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+              {answers.map((a) => (
+                <div key={a.questionId}>
+                  <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-400">{a.label}</dt>
+                  <dd className="mt-0.5 whitespace-pre-line text-sm text-ink-800">
+                    {Array.isArray(a.value) ? a.value.join(', ') : a.value}
+                  </dd>
                 </div>
               ))}
             </dl>

@@ -7,6 +7,16 @@ import * as svc from '../../services/admin.service.js';
 
 export const questionnaireApiRouter = Router({ mergeParams: true });
 
+// PUT /photos — set how many profile photos a guide must upload (global setting).
+questionnaireApiRouter.put(
+  '/photos',
+  requirePermission('questionnaires.manage'),
+  asyncHandler(async (req, res) => {
+    const { requiredPhotos } = req.body as { requiredPhotos?: number };
+    res.json(await svc.setRequiredPhotos(Number(requiredPhotos), req.user!.id));
+  }),
+);
+
 // PUT /:id/questions/reorder — MUST be before /:id/questions/:qid so "reorder"
 // is not matched as a :qid param.
 questionnaireApiRouter.put(

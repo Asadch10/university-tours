@@ -222,6 +222,8 @@ export const adminApi = {
     request<{ ok: true }>('DELETE', `/admin/questionnaires/${id}/questions/${qid}`),
   questionnaireReorderQuestions: (id: string, orderedIds: string[]) =>
     request<{ ok: true }>('PUT', `/admin/questionnaires/${id}/questions/reorder`, { orderedIds }),
+  questionnaireSetPhotos: (requiredPhotos: number) =>
+    request<{ requiredPhotos: number }>('PUT', '/admin/questionnaires/photos', { requiredPhotos }),
 
   users: (p: { q?: string; role?: string; status?: string; page?: number } = {}) =>
     request<Paged<UserDto>>('GET', `/admin/users${qs({ ...p, limit: 100 })}`),
@@ -293,7 +295,17 @@ export const adminApi = {
 
   auditLogs: (p: { q?: string; page?: number } = {}) =>
     request<Paged<AuditDto>>('GET', `/admin/audit-logs${qs({ ...p, limit: 100 })}`),
+  notifications: () => request<{ data: NotificationDto[] }>('GET', '/admin/notifications'),
 };
+
+export interface NotificationDto {
+  id: string;
+  type: 'signup' | 'booking' | 'payment' | 'review';
+  title: string;
+  detail: string;
+  href: string;
+  createdAt: string;
+}
 
 // ─── Raw backend DTO types ──────────────────────────────────────────────────
 
@@ -324,6 +336,7 @@ export interface QuestionnaireDto {
   version: number;
   status: string;
   questions: { id: string; type: string; label: string; required: boolean; order: number; optionsJson: string[] | null }[];
+  requiredPhotos?: number;
   _count?: { applications: number };
 }
 

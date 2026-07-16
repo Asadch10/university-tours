@@ -62,7 +62,7 @@ export function Dropdown({
                 <div key={`sep-${i}`} className="my-1 h-px bg-ink-200/60" />
               ) : (
                 <button
-                  key={item.label}
+                  key={i}
                   type="button"
                   role="menuitem"
                   disabled={item.disabled}

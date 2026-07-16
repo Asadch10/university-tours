@@ -144,12 +144,33 @@ export async function decideApplication(id: string, decision: 'APPROVED' | 'REJE
 // There is exactly one questionnaire. This function returns it, creating an
 // empty one on first call if the table is empty.
 
-export async function getOrCreateQuestionnaire() {
-  const existing = await prisma.questionnaire.findFirst({
-    include: { questions: { orderBy: { order: 'asc' } } },
-    orderBy: { version: 'asc' },
+export async function getRequiredPhotos(): Promise<number> {
+  const s = await prisma.settings.findUnique({ where: { id: 'singleton' } });
+  return s?.requiredPhotos ?? 3;
+}
+
+export async function setRequiredPhotos(n: number, adminId: string) {
+  const v = Math.max(1, Math.min(10, Math.round(Number(n) || 3)));
+  await prisma.settings.update({ where: { id: 'singleton' }, data: { requiredPhotos: v } });
+  await prisma.auditLog.create({
+    data: { adminId, action: `settings.required_photos → ${v}`, entity: 'settings', ip: '127.0.0.1' },
   });
-  if (existing) return existing;
+  return { requiredPhotos: v };
+}
+
+export async function getOrCreateQuestionnaire() {
+  // Manage the SAME questionnaire the website's become-a-guide form uses: the
+  // ACTIVE one. Fall back to the latest version, then create one if none exist.
+  const active = await prisma.questionnaire.findFirst({
+    where: { status: 'ACTIVE' },
+    include: { questions: { orderBy: { order: 'asc' } } },
+  });
+  if (active) return active;
+  const latest = await prisma.questionnaire.findFirst({
+    include: { questions: { orderBy: { order: 'asc' } } },
+    orderBy: { version: 'desc' },
+  });
+  if (latest) return latest;
   return prisma.questionnaire.create({
     data: { version: 1, status: 'ACTIVE', questions: {} },
     include: { questions: { orderBy: { order: 'asc' } } },
@@ -590,6 +611,84 @@ export async function moderateReview(id: string, data: { hidden: boolean }, admi
   const updated = await prisma.review.update({ where: { id }, data: { hidden: data.hidden } });
   if (adminId) await prisma.auditLog.create({ data: { adminId, action: `review.${data.hidden ? 'hide' : 'unhide'}`, entity: `reviews/${id}`, ip: '127.0.0.1' } });
   return updated;
+}
+
+// ─── Notifications (recent activity feed for the topbar) ──────────────────────
+
+export interface AdminNotification {
+  id: string;
+  type: 'signup' | 'booking' | 'payment' | 'review';
+  title: string;
+  detail: string;
+  href: string; // where clicking navigates in the admin
+  createdAt: string;
+}
+
+/** Merge the latest signups, bookings, payments and reviews into one feed. */
+export async function listNotifications(limit = 15): Promise<{ data: AdminNotification[] }> {
+  const each = 8;
+  const [users, bookings, payments, reviews] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: { in: ['BUYER', 'SELLER'] } },
+      orderBy: { createdAt: 'desc' },
+      take: each,
+      select: { id: true, name: true, role: true, createdAt: true },
+    }),
+    prisma.booking.findMany({
+      where: { status: { not: 'PENDING_PAYMENT' } },
+      orderBy: { requestedAt: 'desc' },
+      take: each,
+      select: { id: true, bookingNo: true, requestedAt: true, buyer: { select: { name: true } }, seller: { select: { name: true } } },
+    }),
+    prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: each,
+      select: { bookingId: true, status: true, amountCents: true, createdAt: true },
+    }),
+    prisma.review.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: each,
+      select: { id: true, rating: true, createdAt: true, buyer: { select: { name: true } }, seller: { select: { name: true } }, booking: { select: { id: true } } },
+    }),
+  ]);
+
+  const usd = (c: number) => `$${((c ?? 0) / 100).toFixed(2)}`;
+  const items: AdminNotification[] = [
+    ...users.map((u) => ({
+      id: `user:${u.id}`,
+      type: 'signup' as const,
+      title: `New ${u.role === 'SELLER' ? 'guide' : 'guest'} signed up`,
+      detail: u.name || u.id,
+      href: '/users',
+      createdAt: u.createdAt.toISOString(),
+    })),
+    ...bookings.map((b) => ({
+      id: `booking:${b.id}`,
+      type: 'booking' as const,
+      title: `New booking B-${b.bookingNo}`,
+      detail: `${b.buyer.name} → ${b.seller.name}`,
+      href: `/bookings/${b.id}`,
+      createdAt: b.requestedAt.toISOString(),
+    })),
+    ...payments.map((p) => ({
+      id: `payment:${p.bookingId}`,
+      type: 'payment' as const,
+      title: `Payment ${p.status.replace(/_/g, ' ')}`,
+      detail: usd(p.amountCents),
+      href: `/transactions/${p.bookingId}`,
+      createdAt: p.createdAt.toISOString(),
+    })),
+    ...reviews.map((r) => ({
+      id: `review:${r.id}`,
+      type: 'review' as const,
+      title: `New review · ${r.rating}★`,
+      detail: `${r.buyer.name} → ${r.seller.name}`,
+      href: r.booking ? `/bookings/${r.booking.id}` : '/reviews',
+      createdAt: r.createdAt.toISOString(),
+    })),
+  ];
+  items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return { data: items.slice(0, limit) };
 }
 
 // ─── Transactions / Ledger ────────────────────────────────────────────────────

@@ -158,6 +158,29 @@ export async function getPriceBounds() {
   return prisma.servicePriceBound.findMany();
 }
 
+// ─── Public questionnaire (become-a-guide extra questions, admin-managed) ──────
+
+export async function getPublicQuestionnaire() {
+  const [q, settings] = await Promise.all([
+    prisma.questionnaire.findFirst({
+      where: { status: 'ACTIVE' },
+      include: { questions: { orderBy: { order: 'asc' } } },
+    }),
+    prisma.settings.findUnique({ where: { id: 'singleton' } }),
+  ]);
+  const questions = (q?.questions ?? []).map((x) => ({
+    id: x.id,
+    key: x.fieldKey ?? null,
+    type: x.type,
+    label: x.label,
+    required: x.required,
+    options: Array.isArray(x.optionsJson)
+      ? (x.optionsJson as unknown[]).filter((o): o is string => typeof o === 'string')
+      : [],
+  }));
+  return { questions, requiredPhotos: settings?.requiredPhotos ?? 3 };
+}
+
 // ─── Community guides (website become-a-guide listings that admins published) ──
 // These live on the owner's user record (`profileJson.guideListing`), separate
 // from the seeded Listing catalog above. Only `status: 'published'` ones are

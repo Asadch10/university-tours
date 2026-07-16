@@ -52,7 +52,8 @@ adminRouter.post('/applications/:id/request-changes', requirePermission('applica
 // ─── Questionnaire (singleton) ────────────────────────────────────────────────
 
 adminRouter.get('/questionnaires', requirePermission('questionnaires.manage'), asyncHandler(async (_req, res) => {
-  res.json(await svc.getOrCreateQuestionnaire());
+  const [q, requiredPhotos] = await Promise.all([svc.getOrCreateQuestionnaire(), svc.getRequiredPhotos()]);
+  res.json({ ...q, requiredPhotos });
 }));
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -298,5 +299,10 @@ adminRouter.patch('/admins/:id', requirePermission('admins.manage'), asyncHandle
 adminRouter.get('/audit-logs', requirePermission('audit.view'), asyncHandler(async (req, res) => {
   const { q, page, limit } = req.query as Record<string, string>;
   res.json(await svc.listAuditLogs({ q, page: page ? +page : 1, limit: limit ? +limit : 50 }));
+}));
+
+// Recent-activity feed for the topbar bell (signups, bookings, payments, reviews).
+adminRouter.get('/notifications', requirePermission('dashboard.view'), asyncHandler(async (_req, res) => {
+  res.json(await svc.listNotifications());
 }));
 
