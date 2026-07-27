@@ -133,7 +133,7 @@ export default function TransactionsPage() {
       cell: (r) => {
         const meta = r.status ? paymentStatusMeta(r.status) : { label: humanize(r.type), variant: ledgerTypeVariant[r.type] };
         return (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col items-start gap-1">
             <span className="font-mono text-xs font-semibold text-brand-900">{r.invoiceNo}</span>
             <Badge variant={meta.variant} size="sm">{meta.label}</Badge>
           </div>

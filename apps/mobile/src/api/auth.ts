@@ -1,0 +1,78 @@
+// Mobile auth/session — mirrors the website's authApi (apps/website/lib/client-api.ts)
+// but persists the access/refresh JWTs and the current user in SecureStore instead of
+// localStorage. Built on the shared SDK `request` so the backend contract matches the web.
+import * as SecureStore from 'expo-secure-store';
+import { api, ApiClientError } from './client';
+
+const ACCESS_KEY = 'accessToken';
+const REFRESH_KEY = 'refreshToken';
+const USER_KEY = 'user';
+
+export type Role = 'BUYER' | 'SELLER';
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: Role | null; // null until onboarding decides it
+  emailVerified?: boolean;
+  hasListing?: boolean;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: SessionUser;
+}
+
+async function persist(res: AuthResponse) {
+  await SecureStore.setItemAsync(ACCESS_KEY, res.accessToken);
+  await SecureStore.setItemAsync(REFRESH_KEY, res.refreshToken);
+  await SecureStore.setItemAsync(USER_KEY, JSON.stringify(res.user));
+}
+
+export const session = {
+  // Role is omitted — the backend defaults new sign-ups to null until onboarding.
+  async register(email: string, password: string, name?: string) {
+    const res = await api.request<AuthResponse>('POST', '/auth/register', { email, password, name });
+    await persist(res);
+    return res;
+  },
+  async login(email: string, password: string) {
+    const res = await api.request<AuthResponse>('POST', '/auth/login', { email, password });
+    await persist(res);
+    return res;
+  },
+  // Save phone/contact details after sign-up (register itself takes no phone).
+  updateContact(body: { email?: string; phone?: string; promo?: boolean }) {
+    return api.request('POST', '/users/me/contact', body);
+  },
+  async currentUser(): Promise<SessionUser | null> {
+    const raw = await SecureStore.getItemAsync(USER_KEY);
+    return raw ? (JSON.parse(raw) as SessionUser) : null;
+  },
+  async isSignedIn() {
+    return Boolean(await SecureStore.getItemAsync(ACCESS_KEY));
+  },
+  async clear() {
+    await Promise.all([
+      SecureStore.deleteItemAsync(ACCESS_KEY),
+      SecureStore.deleteItemAsync(REFRESH_KEY),
+      SecureStore.deleteItemAsync(USER_KEY),
+    ]);
+  },
+};
+
+/** Turn any thrown error into a friendly, user-facing message. */
+export function friendlyError(e: unknown): string {
+  if (e instanceof ApiClientError) {
+    if (e.status === 401) return 'Wrong email or password. Please try again.';
+    if (e.status === 403) return "You don't have permission to do that.";
+    if (e.status === 409) return 'That email is already registered. Try signing in.';
+    if (e.status === 429) return 'Too many attempts. Please wait a moment and try again.';
+    if (e.status >= 500) return 'Something went wrong on our end. Please try again shortly.';
+    return e.payload?.error || 'That didn’t work. Please try again.';
+  }
+  if (e instanceof TypeError) return 'Can’t reach the server. Please check your connection.';
+  return 'Something went wrong. Please try again.';
+}

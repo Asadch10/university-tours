@@ -23,17 +23,28 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { accountApi, friendlyError, tokenStore } from '@/lib/client-api';
+import {
+  accountApi,
+  friendlyError,
+  tokenStore,
+  questionnaireApi,
+  type QuestionnaireQuestion,
+} from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { ListingProgress, reviewStepsFor } from '@/components/listing/listing-progress';
+import { AvailabilityPicker } from '@/components/guide/availability-picker';
 import {
   parseAvailability,
+  cleanAvailability,
+  missingAvailability,
   labelForDate,
+  labelToService,
   SERVICE_TYPES,
   TOUR_TYPE_LABELS,
   type Availability,
+  type ServiceType,
 } from '@/lib/availability';
 
 interface GuideListing {
@@ -90,6 +101,7 @@ export function ManageListingView() {
   const [listing, setListing] = useState<GuideListing | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!tokenStore.user) {
@@ -154,12 +166,13 @@ export function ManageListingView() {
 
           {submitted && (
             <div className="flex shrink-0 gap-2.5">
-              <Link
-                href="/become-a-guide"
-                className="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-900 shadow-soft transition-colors hover:bg-ink-50"
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-900 shadow-soft transition-colors hover:bg-ink-50"
               >
                 <Pencil size={15} /> Edit
-              </Link>
+              </button>
               <button
                 type="button"
                 onClick={() => setConfirmOpen(true)}
@@ -178,6 +191,18 @@ export function ManageListingView() {
           {submitted && <SubmittedState listing={listing!} name={name} />}
         </div>
       </div>
+
+      {/* ── Edit listing ────────────────────────────────────────────────── */}
+      {editing && listing && (
+        <EditListingModal
+          listing={listing}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => {
+            setListing(updated);
+            setEditing(false);
+          }}
+        />
+      )}
 
       {/* ── Delete confirmation ─────────────────────────────────────────── */}
       {confirmOpen && (
@@ -483,6 +508,295 @@ function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; st
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/* ═══ Edit modal — inline editing of any listing field ═════════════════ */
+
+const EDIT_INP =
+  'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+const EDIT_SEL = `${EDIT_INP} cursor-pointer`;
+const EDIT_AREA = `${EDIT_INP} min-h-[100px] resize-y leading-relaxed`;
+const TOUR_TYPE_OPTIONS = ['Campus tour', 'Video chat', 'Consultancy'];
+
+function EditField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-semibold text-ink-900">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+/** One admin-managed question rendered by its type (mirrors the become-a-guide form). */
+function EditQuestionInput({
+  q,
+  value,
+  onChange,
+}: {
+  q: QuestionnaireQuestion;
+  value: string | string[] | undefined;
+  onChange: (v: string | string[]) => void;
+}) {
+  if (q.type === 'LONG_TEXT') {
+    return <textarea className={EDIT_AREA} value={(value as string) ?? ''} onChange={(e) => onChange(e.target.value)} />;
+  }
+  if (q.type === 'SINGLE_CHOICE') {
+    return (
+      <select className={EDIT_SEL} value={(value as string) ?? ''} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Select…</option>
+        {q.options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  if (q.type === 'MULTI_CHOICE') {
+    const arr = Array.isArray(value) ? value : [];
+    return (
+      <div className="space-y-1">
+        {q.options.map((o) => (
+          <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
+            <input
+              type="checkbox"
+              checked={arr.includes(o)}
+              onChange={(e) => onChange(e.target.checked ? [...arr, o] : arr.filter((x) => x !== o))}
+              className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+            />
+            {o}
+          </label>
+        ))}
+      </div>
+    );
+  }
+  // TEXT (and FILE fallback) → single-line input.
+  return <input className={EDIT_INP} value={(value as string) ?? ''} onChange={(e) => onChange(e.target.value)} />;
+}
+
+function EditListingModal({
+  listing,
+  onClose,
+  onSaved,
+}: {
+  listing: GuideListing;
+  onClose: () => void;
+  onSaved: (updated: GuideListing) => void;
+}) {
+  const toast = useToast();
+  const [questions, setQuestions] = useState<QuestionnaireQuestion[]>([]);
+  const [loadingQ, setLoadingQ] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [listingTitle, setListingTitle] = useState(listing.listingTitle ?? '');
+  const [intro, setIntro] = useState(listing.intro ?? '');
+  const [school, setSchool] = useState(listing.school ?? '');
+  const [tourTypes, setTourTypes] = useState<string[]>(listing.tourTypes ?? []);
+  const [availability, setAvailability] = useState<Availability>(parseAvailability(listing.availability));
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+
+  // Load the admin questionnaire and seed each answer from the listing's stored key.
+  useEffect(() => {
+    let active = true;
+    questionnaireApi
+      .active()
+      .then((q) => {
+        if (!active) return;
+        setQuestions(q.questions);
+        setAnswers((prev) => {
+          const next = { ...prev };
+          const src = listing as Record<string, unknown>;
+          for (const question of q.questions) {
+            if (next[question.id] !== undefined) continue;
+            const raw = src[question.key ?? question.id];
+            if (raw === undefined || raw === null) continue;
+            next[question.id] = Array.isArray(raw)
+              ? raw.filter((x): x is string => typeof x === 'string')
+              : String(raw);
+          }
+          return next;
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoadingQ(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [listing]);
+
+  const services = tourTypes.map(labelToService).filter((s): s is ServiceType => s !== null);
+
+  async function save() {
+    if (!listingTitle.trim()) {
+      toast.error('Title required', 'Give your listing a title guests will see.');
+      return;
+    }
+    if (!school.trim()) {
+      toast.error('School required', 'Add the school you can show guests around.');
+      return;
+    }
+    if (!tourTypes.length) {
+      toast.error('Tour type required', 'Select at least one way you can host.');
+      return;
+    }
+    const missing = missingAvailability(availability, services);
+    if (missing.length) {
+      toast.error(
+        'Availability required',
+        `Add at least one date and time for: ${missing.map((s) => TOUR_TYPE_LABELS[s]).join(', ')}.`,
+      );
+      return;
+    }
+    const missingQ = questions.find((q) => {
+      if (!q.required) return false;
+      const v = answers[q.id];
+      return Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim();
+    });
+    if (missingQ) {
+      toast.error('Answer required', `Please answer: “${missingQ.label}”.`);
+      return;
+    }
+
+    // Each answer is stored under its stable key (e.g. "gender") so the guide
+    // profile reads it exactly as before; a label/type snapshot drives display.
+    const byKey: Record<string, string | string[]> = {};
+    const snapshot: { questionId: string; key: string | null; label: string; type: string; value: string | string[] }[] = [];
+    for (const q of questions) {
+      const value = answers[q.id] ?? (q.type === 'MULTI_CHOICE' ? [] : '');
+      byKey[q.key || q.id] = value;
+      snapshot.push({ questionId: q.id, key: q.key, label: q.label, type: q.type, value });
+    }
+
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = {
+        listingTitle: listingTitle.trim(),
+        intro: intro.trim(),
+        school: school.trim(),
+        tourTypes,
+        ...byKey,
+        availability: cleanAvailability(availability, services),
+        answers: snapshot.filter((a) => (Array.isArray(a.value) ? a.value.length > 0 : String(a.value).trim() !== '')),
+        // Editing an approved listing re-submits it for admin review.
+        status: 'under_review',
+      };
+      const res = await accountApi.saveGuideListing(payload);
+      const updated =
+        ((res.profileJson?.['guideListing'] as GuideListing | undefined) ?? ({ ...listing, ...payload } as GuideListing));
+      toast.success('Changes saved', 'Your updated listing was sent for review.');
+      onSaved(updated);
+    } catch (e) {
+      toast.error('Could not save changes', friendlyError(e));
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 px-4 py-6 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Edit listing"
+      onClick={() => !saving && onClose()}
+    >
+      <div
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 bg-white px-6 py-4 sm:px-7">
+          <div>
+            <h2 className="font-display text-lg font-semibold text-ink-900">Edit listing</h2>
+            <p className="mt-0.5 text-sm text-ink-500">Saving sends your listing back for review.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => !saving && onClose()}
+            aria-label="Close"
+            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6 sm:px-7">
+          <EditField label="Listing title">
+            <input className={EDIT_INP} value={listingTitle} onChange={(e) => setListingTitle(e.target.value)} />
+          </EditField>
+
+          <EditField label="About you (intro)">
+            <textarea className={EDIT_AREA} value={intro} onChange={(e) => setIntro(e.target.value)} />
+          </EditField>
+
+          <EditField label="School">
+            <input className={EDIT_INP} value={school} onChange={(e) => setSchool(e.target.value)} />
+          </EditField>
+
+          <EditField label="Tour type">
+            <div className="space-y-1">
+              {TOUR_TYPE_OPTIONS.map((o) => (
+                <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
+                  <input
+                    type="checkbox"
+                    checked={tourTypes.includes(o)}
+                    onChange={(e) =>
+                      setTourTypes((prev) => (e.target.checked ? [...prev, o] : prev.filter((t) => t !== o)))
+                    }
+                    className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+                  />
+                  {o}
+                </label>
+              ))}
+            </div>
+          </EditField>
+
+          <EditField label="Your availability">
+            <AvailabilityPicker types={services} value={availability} onChange={setAvailability} />
+          </EditField>
+
+          {/* Admin-managed questions */}
+          {!loadingQ &&
+            questions.map((q) => (
+              <EditField key={q.id} label={q.label}>
+                <EditQuestionInput q={q} value={answers[q.id]} onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))} />
+              </EditField>
+            ))}
+        </div>
+
+        {/* Footer */}
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-ink-100 bg-white px-6 py-4 sm:px-7">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onClose}
+            className="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:bg-ink-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={save}
+            className={cn(
+              'inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-colors',
+              saving ? 'cursor-not-allowed bg-maroon-400' : 'bg-maroon-900 hover:bg-maroon-800',
+            )}
+          >
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Saving…
+              </>
+            ) : (
+              'Save changes'
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

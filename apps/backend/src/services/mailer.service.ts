@@ -143,6 +143,37 @@ export async function sendProfileUnderReviewEmail(opts: {
 }
 
 /**
+ * Notify the admin team that a guide listing entered review — either a brand-new
+ * submission or an edit to an already-live listing that needs re-checking.
+ */
+export async function sendListingReviewAdminEmail(opts: {
+  to: string; // one or more admin addresses (comma-separated)
+  guideName: string;
+  guideEmail: string;
+  reviewUrl: string;
+  isEdit: boolean;
+}): Promise<void> {
+  const brand = config.MAIL_FROM_NAME;
+  const who = opts.guideName?.trim() || opts.guideEmail;
+  const action = opts.isEdit ? 'updated their guide listing' : 'submitted a new guide listing';
+  const subject = opts.isEdit
+    ? `Listing edited — ${who} needs re-review · ${brand}`
+    : `New guide listing to review — ${who} · ${brand}`;
+
+  const text =
+    `${who} (${opts.guideEmail}) just ${action}, so it's back in the review queue.\n\n` +
+    `Please open the admin, check the changes, and set the status (publish / suspend):\n${opts.reviewUrl}\n\n` +
+    `— ${brand}`;
+
+  await send({
+    to: opts.to,
+    subject,
+    text,
+    html: adminListingReviewHtml({ brand, who, guideEmail: opts.guideEmail, reviewUrl: opts.reviewUrl, isEdit: opts.isEdit }),
+  });
+}
+
+/**
  * Send the "your guide profile has been approved" email once an admin publishes
  * the listing.
  */
@@ -462,6 +493,65 @@ function underReviewEmailHtml(opts: { first: string; brand: string }): string {
             <tr>
               <td style="padding:24px 40px 40px 40px;font-size:12px;line-height:1.6;color:#9ca3af;border-top:1px solid #f3f4f6;">
                 Thanks for your patience — we're excited to have you on board.<br />— The ${brand} team
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+/** Admin-facing "a listing entered review" email. */
+function adminListingReviewHtml(opts: {
+  brand: string;
+  who: string;
+  guideEmail: string;
+  reviewUrl: string;
+  isEdit: boolean;
+}): string {
+  const { brand, who, guideEmail, reviewUrl, isEdit } = opts;
+  const maroon = '#7A1B2E';
+  const heading = isEdit ? 'A listing was edited' : 'New listing to review';
+  const pill = isEdit
+    ? '<div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;">✏️ Edited · needs re-review</div>'
+    : '<div style="display:inline-block;background:#e0e7ff;color:#3730a3;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;">🆕 New submission</div>';
+  const line = isEdit
+    ? `<strong>${who}</strong> (${guideEmail}) updated their guide listing, so it's back in the review queue.`
+    : `<strong>${who}</strong> (${guideEmail}) submitted a new guide listing for review.`;
+  return `<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="background:${maroon};height:6px;line-height:6px;font-size:6px;">&nbsp;</td>
+            </tr>
+            <tr>
+              <td style="padding:40px 40px 8px 40px;">
+                <div style="font-size:14px;font-weight:700;letter-spacing:.02em;color:${maroon};text-transform:uppercase;">${brand} · Admin</div>
+                <h1 style="margin:20px 0 0 0;font-size:24px;line-height:1.3;font-weight:800;color:#111827;">${heading}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 40px 8px 40px;">${pill}</td>
+            </tr>
+            <tr>
+              <td style="padding:16px 40px 8px 40px;font-size:15px;line-height:1.6;color:#374151;">
+                ${line} Please review the changes and set its status.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 40px 8px 40px;">
+                <a href="${reviewUrl}" style="display:inline-block;background:${maroon};color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 28px;border-radius:12px;">Open listing in admin</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 40px 40px 40px;font-size:12px;line-height:1.6;color:#9ca3af;border-top:1px solid #f3f4f6;">
+                You're receiving this because you're an admin on ${brand}.
               </td>
             </tr>
           </table>

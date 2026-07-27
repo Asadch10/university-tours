@@ -34,6 +34,10 @@ const envSchema = z.object({
   // Public URL of the website — used to build the email-verification link.
   APP_WEB_URL: z.string().default('http://localhost:3000'),
 
+  // Base URL of the admin app (includes its /admin basePath) — used to deep-link
+  // admins to a listing in review-notification emails.
+  APP_ADMIN_URL: z.string().default('http://localhost:3001/admin'),
+
   // Email verification token (stateless JWT, separate secret from auth tokens).
   EMAIL_VERIFY_SECRET: z.string().default('change-me-email-verify'),
   EMAIL_VERIFY_TTL: z.string().default('24h'),

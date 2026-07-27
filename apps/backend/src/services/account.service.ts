@@ -2,7 +2,8 @@ import * as argon2 from 'argon2';
 import { prisma, Prisma } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
-import { sendProfileUnderReviewEmail } from './mailer.service.js';
+import { sendProfileUnderReviewEmail, sendListingReviewAdminEmail } from './mailer.service.js';
+import { config } from '../config.js';
 
 // ─── User profile ─────────────────────────────────────────────────────────────
 
@@ -118,9 +119,40 @@ export async function saveGuideListing(userId: string, listing: Record<string, u
     sendProfileUnderReviewEmail({ to: user.email, name: user.name }).catch((err) => {
       logger.error({ err, userId }, 'Under-review email dispatch failed');
     });
+
+    // Notify the admin team so they know to re-check the listing and set its status.
+    // An edit to an already-live listing is flagged separately from a first submission.
+    const isEdit = prevListing.status === 'published' || prevListing.status === 'suspended';
+    notifyAdminsListingInReview({ userId, guideName: user.name, guideEmail: user.email, isEdit }).catch((err) => {
+      logger.error({ err, userId }, 'Admin listing-review email dispatch failed');
+    });
   }
 
   return updated;
+}
+
+/** Email every admin that a listing entered review, linking straight to it in the admin. */
+async function notifyAdminsListingInReview(opts: {
+  userId: string;
+  guideName: string;
+  guideEmail: string;
+  isEdit: boolean;
+}): Promise<void> {
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN' },
+    select: { email: true },
+  });
+  const to = admins.map((a) => a.email).filter(Boolean).join(', ');
+  if (!to) return;
+
+  const base = config.APP_ADMIN_URL.replace(/\/+$/, '');
+  await sendListingReviewAdminEmail({
+    to,
+    guideName: opts.guideName,
+    guideEmail: opts.guideEmail,
+    reviewUrl: `${base}/listings/${opts.userId}`,
+    isEdit: opts.isEdit,
+  });
 }
 
 /**
