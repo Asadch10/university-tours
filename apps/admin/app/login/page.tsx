@@ -15,7 +15,7 @@ import {
   Users,
   Receipt,
 } from 'lucide-react';
-import { useAuth, DEMO_CREDENTIALS } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 import { Logo } from '@/components/brand/logo';
 import { Badge } from '@/components/ui/badge';
 
@@ -50,12 +50,6 @@ export default function LoginPage() {
       setError(res.error ?? 'Sign in failed.');
       setStatus('idle');
     }
-  }
-
-  function fillDemo() {
-    setEmail(DEMO_CREDENTIALS.email);
-    setPassword(DEMO_CREDENTIALS.password);
-    setError('');
   }
 
   return (
@@ -174,16 +168,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            {/* Demo credentials */}
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="mt-6 w-full rounded-xl border border-dashed border-ink-300 bg-cream/50 px-4 py-3 text-left transition-colors hover:border-brand-800/40 hover:bg-cream"
-            >
-              <p className="text-2xs font-semibold uppercase tracking-wider text-brand-800">Demo credentials — click to fill</p>
-              <p className="mt-1 font-mono text-sm text-ink-700">{DEMO_CREDENTIALS.email} · {DEMO_CREDENTIALS.password}</p>
-            </button>
           </div>
         </main>
       </div>
