@@ -60,13 +60,35 @@ const GUIDELINES = [
   { key: 'prepared', title: 'Be prepared', img: universities[2]?.image, body: '', link: true },
 ];
 
-function Field({ label, desc, required, children }: { label: string; desc?: string; required?: boolean; children: ReactNode }) {
+function Field({
+  id,
+  label,
+  desc,
+  required,
+  error,
+  children,
+}: {
+  id?: string;
+  label: string;
+  desc?: string;
+  required?: boolean;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
-    <div>
-      <p className="text-base font-bold text-ink-900">{label}</p>
+    <div id={id} className="scroll-mt-28">
+      <p className="text-base font-bold text-ink-900">
+        {label}
+        {required && (
+          <span className="text-red-600" aria-hidden>
+            {' '}
+            *
+          </span>
+        )}
+      </p>
       {desc && <p className="mt-0.5 text-sm text-ink-500">{desc}</p>}
       <div className="mt-2">{children}</div>
-      {required && <p className="mt-1.5 text-sm font-semibold text-red-600">Required</p>}
+      {error && <p className="mt-1.5 text-sm font-semibold text-red-600">{error}</p>}
     </div>
   );
 }
@@ -84,9 +106,19 @@ function CheckboxList({ name, options }: { name: string; options: string[] }) {
   );
 }
 
-function Select({ name, options, placeholder = 'Select…' }: { name: string; options: string[]; placeholder?: string }) {
+function Select({
+  name,
+  options,
+  placeholder = 'Select…',
+  onChange,
+}: {
+  name: string;
+  options: string[];
+  placeholder?: string;
+  onChange?: () => void;
+}) {
   return (
-    <select name={name} className={sel} defaultValue="">
+    <select name={name} className={sel} defaultValue="" onChange={onChange}>
       <option value="">{placeholder}</option>
       {options.map((o) => (
         <option key={o} value={o}>
@@ -166,6 +198,10 @@ export function GuideApplication() {
   const [savingStep, setSavingStep] = useState(false);
   const [schoolNotListed, setSchoolNotListed] = useState(false);
   const [agree, setAgree] = useState(false);
+  // Per-field validation messages shown inline when a required field is missing.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const clearErr = (key: string) =>
+    setFieldErrors((e) => (e[key] ? { ...e, [key]: '' } : e));
   // Tour type + availability are controlled (they drive per-type availability UI).
   const [tourTypes, setTourTypes] = useState<string[]>([]);
   const [availability, setAvailability] = useState<Availability>({});
@@ -310,6 +346,13 @@ export function GuideApplication() {
     });
   }, [questions]);
 
+  // Advancing a step swaps the content in place (no route change), so start each
+  // step at the top — otherwise "Getting paid" and "Photos" open scrolled down to
+  // wherever the previous step's Next button was.
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  }, [step]);
+
   /** Read the current details form into the listing shape shared by draft saves and publish. */
   function collectDetails() {
     const fd = detailsFormRef.current ? new FormData(detailsFormRef.current) : new FormData();
@@ -339,45 +382,60 @@ export function GuideApplication() {
     };
   }
 
-  // Step 1 → save the details as a draft, then advance to "Getting paid".
+  // Step 1 → validate, then save the details as a draft and advance to "Getting paid".
   async function saveDetails() {
     const details = collectDetails();
-    // School and tour type drive what guests and admins see, so require them here.
-    if (!details.school.trim()) {
-      toast.error('School required', 'Please select or enter your school before continuing.');
-      return;
-    }
-    if (!details.tourTypes.length) {
-      toast.error('Tour type required', 'Please select at least one tour type before continuing.');
-      return;
-    }
-    // Every selected tour type needs at least one date and one time — that's what
-    // guests can book for that type.
     const services = details.tourTypes
       .map(labelToService)
       .filter((s): s is ServiceType => s !== null);
-    const missing = missingAvailability(availability, services);
-    if (missing.length) {
-      toast.error(
-        'Availability required',
-        `Add at least one date and time for: ${missing.map((s) => TOUR_TYPE_LABELS[s]).join(', ')}.`,
-      );
-      return;
-    }
+    const missingAvail = missingAvailability(availability, services);
+
+    // Collect every missing required field in DOM order so we can highlight them
+    // all inline and scroll to the first one.
+    const errs: Record<string, string> = {};
+    const order: string[] = [];
+    const mark = (key: string, bad: boolean, msg: string) => {
+      if (bad) {
+        errs[key] = msg;
+        order.push(key);
+      }
+    };
+
+    mark('listingTitle', !details.listingTitle.trim(), 'Please fill in this field.');
+    mark('school', !details.school.trim(), 'Please select or enter your school.');
+    mark('tourType', !details.tourTypes.length, 'Please select at least one tour type.');
+    mark(
+      'availability',
+      missingAvail.length > 0,
+      services.length
+        ? `Add at least one date and time for: ${missingAvail.map((s) => TOUR_TYPE_LABELS[s]).join(', ')}.`
+        : 'Please add your availability.',
+    );
     // Admin-managed required questions must be answered.
-    const missingQ = questions.find((q) => {
-      if (!q.required) return false;
+    for (const q of questions) {
+      if (!q.required) continue;
       const v = answers[q.id];
-      return Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim();
-    });
-    if (missingQ) {
-      toast.error('Answer required', `Please answer: “${missingQ.label}”.`);
+      const empty = Array.isArray(v) ? v.length === 0 : !String(v ?? '').trim();
+      mark(`q-${q.id}`, empty, 'Please answer this question.');
+    }
+    mark('idPhoto', !idPhoto, 'Please upload a photo of your student ID.');
+    mark('agree', !agree, 'Please agree to the Independent Contractor Agreement to continue.');
+
+    if (order.length) {
+      setFieldErrors(errs);
+      toast.error(
+        'Please complete the required fields',
+        'We’ve highlighted what still needs your attention.',
+      );
+      // Bring the first missing field into view.
+      const first = order[0];
+      requestAnimationFrame(() => {
+        document.getElementById(`f-${first}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
-    if (!idPhoto) {
-      toast.error('Student ID required', 'Please upload a photo of your student ID — admins verify it to approve you.');
-      return;
-    }
+
+    setFieldErrors({});
     setSavingStep(true);
     try {
       // idPhoto is the proof-of-identity the admin reviews to approve the application.
@@ -469,19 +527,19 @@ export function GuideApplication() {
             <p className="mt-2 text-ink-600">You must currently be enrolled in college to be a University Campus Private Tours guide.</p>
 
             <div className="mt-8 space-y-8">
-              <Field label="Listing title" desc="Briefly describe yourself to guests" required>
-                <input name="listingTitle" className={inp} placeholder="e.g. Friendly CS junior who loves showing off campus" />
+              <Field id="f-listingTitle" label="Listing title" desc="Briefly describe yourself to guests" required error={fieldErrors.listingTitle}>
+                <input name="listingTitle" className={inp} placeholder="e.g. Friendly CS junior who loves showing off campus" onChange={() => clearErr('listingTitle')} />
               </Field>
 
               <Field label="Help guests get to know you" desc="Introduce yourself in a few sentences">
                 <textarea name="intro" className={area} placeholder="Write your answer here…" />
               </Field>
 
-              <Field label="School" desc="Don't see yours listed here? Click the check box below.">
+              <Field id="f-school" label="School" desc="Don't see yours listed here? Click the check box below." required error={fieldErrors.school}>
                 {schoolNotListed ? (
-                  <input name="schoolCustom" className={inp} placeholder="Type your school name" />
+                  <input name="schoolCustom" className={inp} placeholder="Type your school name" onChange={() => clearErr('school')} />
                 ) : (
-                  <Select name="school" options={universities.map((u) => u.name)} />
+                  <Select name="school" options={universities.map((u) => u.name)} onChange={() => clearErr('school')} />
                 )}
                 <label className="mt-2 flex cursor-pointer select-none items-center gap-2.5 text-sm text-ink-800">
                   <input type="checkbox" checked={schoolNotListed} onChange={(e) => setSchoolNotListed(e.target.checked)} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
@@ -489,18 +547,19 @@ export function GuideApplication() {
                 </label>
               </Field>
 
-              <Field label="Tour type" desc="Select which tours you can host. Campus tours are held in-person on campus, while video chats take place virtually. Hint: select both to increase your likelihood of getting bookings.">
+              <Field id="f-tourType" label="Tour type" desc="Select which tours you can host. Campus tours are held in-person on campus, while video chats take place virtually. Hint: select both to increase your likelihood of getting bookings." required error={fieldErrors.tourType}>
                 <div className="space-y-1">
                   {TOUR_TYPE_OPTIONS.map((o) => (
                     <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
                       <input
                         type="checkbox"
                         checked={tourTypes.includes(o)}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          clearErr('tourType');
                           setTourTypes((prev) =>
                             e.target.checked ? [...prev, o] : prev.filter((t) => t !== o),
-                          )
-                        }
+                          );
+                        }}
                         className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
                       />
                       {o}
@@ -510,29 +569,37 @@ export function GuideApplication() {
               </Field>
 
               <Field
+                id="f-availability"
                 label="Your availability"
                 desc="For each tour type you selected, choose the dates you can host and the times you're free. The times you pick apply to every date for that tour type. Guests can only book what you set here."
                 required
+                error={fieldErrors.availability}
               >
                 <AvailabilityPicker
                   types={tourTypes.map(labelToService).filter((s): s is ServiceType => s !== null)}
                   value={availability}
-                  onChange={setAvailability}
+                  onChange={(v) => {
+                    clearErr('availability');
+                    setAvailability(v);
+                  }}
                 />
               </Field>
 
               {/* About-you questions — admin-managed via the questionnaire */}
               {questions.map((q) => (
-                <Field key={q.id} label={q.label} required={q.required}>
+                <Field key={q.id} id={`f-q-${q.id}`} label={q.label} required={q.required} error={fieldErrors[`q-${q.id}`]}>
                   <QuestionInput
                     q={q}
                     value={answers[q.id]}
-                    onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}
+                    onChange={(v) => {
+                      clearErr(`q-${q.id}`);
+                      setAnswers((a) => ({ ...a, [q.id]: v }));
+                    }}
                   />
                 </Field>
               ))}
 
-              <Field label="Upload your student ID to confirm your eligibility" desc="Please upload a photo of your school-issued student ID that clearly shows your face and name. Your ID is confidential and will never be shared publicly.">
+              <Field id="f-idPhoto" label="Upload your student ID to confirm your eligibility" desc="Please upload a photo of your school-issued student ID that clearly shows your face and name. Your ID is confidential and will never be shared publicly." required error={fieldErrors.idPhoto}>
                 <button
                   type="button"
                   onClick={() => idInput.current?.click()}
@@ -569,6 +636,7 @@ export function GuideApplication() {
                       // Upload so the ID persists and reaches the admin for verification.
                       const url = await accountApi.uploadPhoto(f);
                       setIdPhoto(url);
+                      clearErr('idPhoto');
                     } catch (err) {
                       toast.error('Couldn’t upload your ID', friendlyError(err));
                     } finally {
@@ -578,14 +646,17 @@ export function GuideApplication() {
                 />
               </Field>
 
-              <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-ink-800">
-                <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
-                By checking the box I agree to the{' '}
-                <Link href="/terms" className="font-medium text-maroon-800 hover:underline">Independent Contractor Agreement</Link>
-              </label>
+              <div id="f-agree" className="scroll-mt-28">
+                <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-ink-800">
+                  <input type="checkbox" checked={agree} onChange={(e) => { setAgree(e.target.checked); clearErr('agree'); }} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
+                  By checking the box I agree to the{' '}
+                  <Link href="/terms" className="font-medium text-maroon-800 hover:underline">Independent Contractor Agreement</Link>
+                </label>
+                {fieldErrors.agree && <p className="mt-1.5 text-sm font-semibold text-red-600">{fieldErrors.agree}</p>}
+              </div>
 
               <div className="pt-2">
-                <Button type="button" variant="primary" size="lg" disabled={!agree || savingStep} onClick={saveDetails} className="w-full sm:w-auto">
+                <Button type="button" variant="primary" size="lg" disabled={savingStep} onClick={saveDetails} className="w-full sm:w-auto">
                   {savingStep ? (
                     <>
                       <Loader2 size={18} className="animate-spin" /> Saving…

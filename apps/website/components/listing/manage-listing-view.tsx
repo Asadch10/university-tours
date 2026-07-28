@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -18,10 +18,10 @@ import {
   Ban,
   Sparkles,
   X,
-  Eye,
   MessageSquare,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
 } from 'lucide-react';
 import {
   accountApi,
@@ -150,7 +150,7 @@ export function ManageListingView() {
 
   return (
     <main className="min-h-dvh bg-ivory/60 pb-24 pt-[calc(var(--header-h)+2.5rem)]">
-      <div className="mx-auto w-full max-w-5xl px-6 sm:px-10">
+      <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
         {/* ── Page header ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -397,59 +397,22 @@ function DraftState({ listing, onDelete }: { listing: GuideListing; onDelete: ()
   );
 }
 
-/* ═══ Submitted — photo slider + progress ══════════════════════════════ */
+/* ═══ Submitted — progress + full CV/résumé of the whole listing ═══════ */
 
 function SubmittedState({ listing, name }: { listing: GuideListing; name: string }) {
   const status = listing.status ?? 'under_review';
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const photos = (listing.photos ?? []).map(usablePhoto).filter((p): p is string => !!p);
 
   return (
     <div className="space-y-6">
-      {/* ── Progress / status on top ── */}
-      <StatusPanel status={status} submittedAt={listing.submittedAt} publishedAt={listing.publishedAt} />
-
-      {/* ── Compact listing card with photo slider ── */}
-      <section className="max-w-sm overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
-        <PhotoSlider photos={photos} status={status} fallbackInitial={(name.trim()[0] ?? 'U').toUpperCase()} />
-        <div className="p-5 sm:p-6">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-            {name || 'Your name'}
-          </p>
-          <p className="mt-1.5 font-display text-xl font-semibold leading-snug text-ink-900">
-            {listing.listingTitle?.trim() || 'Untitled listing'}
-          </p>
-          {listing.school && (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink-500">
-              <GraduationCap size={14} className="shrink-0 text-ink-400" /> {listing.school}
-            </p>
-          )}
-          {!!listing.tourTypes?.length && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {listing.tourTypes.map((t) => (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
-                >
-                  {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setDetailsOpen(true)}
-            className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-maroon-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
-          >
-            <Eye size={15} /> View details
-          </button>
-        </div>
-      </section>
-
-      {detailsOpen && (
-        <DetailsModal listing={listing} name={name} onClose={() => setDetailsOpen(false)} />
+      {/* Progress/status only matters before approval: show the review timeline
+          while under review (and the alert if suspended), but hide it once the
+          listing is published/approved — the CV below is all that's left to show. */}
+      {status !== 'published' && (
+        <StatusPanel status={status} submittedAt={listing.submittedAt} publishedAt={listing.publishedAt} />
       )}
+
+      {/* ── Full listing, laid out like a CV ── */}
+      <ListingResume listing={listing} name={name} />
     </div>
   );
 }
@@ -462,10 +425,10 @@ function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; st
   const idx = count ? ((i % count) + count) % count : 0;
 
   return (
-    <div className="relative aspect-[16/10] overflow-hidden bg-ink-100">
+    <div className="relative aspect-[16/10] overflow-hidden bg-ink-50">
       {count ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photos[idx]} alt={`Listing photo ${idx + 1}`} className="h-full w-full object-cover" />
+        <img src={photos[idx]} alt={`Listing photo ${idx + 1}`} className="h-full w-full object-contain" />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-maroon-gradient font-display text-5xl font-bold text-ivory">
           {fallbackInitial}
@@ -597,6 +560,48 @@ function EditListingModal({
   const [availability, setAvailability] = useState<Availability>(parseAvailability(listing.availability));
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
 
+  // Profile photos + the student-ID (proof of identity) — editable here too.
+  const [photos, setPhotos] = useState<string[]>(
+    (listing.photos ?? []).filter((p): p is string => typeof p === 'string' && /^https?:\/\//.test(p)),
+  );
+  const [idPhoto, setIdPhoto] = useState<string | null>(
+    typeof listing.idPhoto === 'string' && /^https?:\/\//.test(listing.idPhoto) ? listing.idPhoto : null,
+  );
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadingId, setUploadingId] = useState(false);
+  const photosInput = useRef<HTMLInputElement>(null);
+  const idInput = useRef<HTMLInputElement>(null);
+
+  async function onAddPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (photosInput.current) photosInput.current.value = '';
+    if (!files.length) return;
+    setUploadingPhotos(true);
+    try {
+      const urls = await Promise.all(files.map((f) => accountApi.uploadPhoto(f)));
+      setPhotos((p) => [...p, ...urls]);
+    } catch (err) {
+      toast.error('Couldn’t upload photo', friendlyError(err));
+    } finally {
+      setUploadingPhotos(false);
+    }
+  }
+
+  async function onReplaceId(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (idInput.current) idInput.current.value = '';
+    if (!f) return;
+    setUploadingId(true);
+    try {
+      const url = await accountApi.uploadPhoto(f);
+      setIdPhoto(url);
+    } catch (err) {
+      toast.error('Couldn’t upload your ID', friendlyError(err));
+    } finally {
+      setUploadingId(false);
+    }
+  }
+
   // Load the admin questionnaire and seed each answer from the listing's stored key.
   useEffect(() => {
     let active = true;
@@ -681,6 +686,8 @@ function EditListingModal({
         ...byKey,
         availability: cleanAvailability(availability, services),
         answers: snapshot.filter((a) => (Array.isArray(a.value) ? a.value.length > 0 : String(a.value).trim() !== '')),
+        photos,
+        idPhoto,
         // Editing an approved listing re-submits it for admin review.
         status: 'under_review',
       };
@@ -766,6 +773,77 @@ function EditListingModal({
                 <EditQuestionInput q={q} value={answers[q.id]} onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))} />
               </EditField>
             ))}
+
+          {/* Profile photos — replace, remove, or add */}
+          <EditField label="Photos">
+            <div className="grid grid-cols-3 gap-3">
+              {photos.map((src, i) => (
+                <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border border-ink-200 bg-ink-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
+                    aria-label="Remove photo"
+                    className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-red-600 shadow-soft transition-opacity hover:bg-white"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => photosInput.current?.click()}
+                disabled={uploadingPhotos}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {uploadingPhotos ? (
+                  <Loader2 size={20} className="animate-spin text-maroon-800" />
+                ) : (
+                  <>
+                    <ImagePlus size={20} className="text-ink-400" />
+                    <span className="text-xs font-semibold text-ink-900">Add photo</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <input ref={photosInput} type="file" accept="image/*" multiple className="hidden" onChange={onAddPhotos} />
+          </EditField>
+
+          {/* Student ID — proof of identity; tap to replace */}
+          <EditField label="Student ID (proof of identity)">
+            <button
+              type="button"
+              onClick={() => idInput.current?.click()}
+              disabled={uploadingId}
+              className="flex aspect-[16/10] w-full max-w-xs flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-ink-300 bg-ink-50 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {uploadingId ? (
+                <>
+                  <Loader2 size={22} className="animate-spin text-maroon-800" />
+                  <span className="text-xs text-ink-400">Uploading…</span>
+                </>
+              ) : idPhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={idPhoto} alt="Student ID" className="h-full w-full object-contain" />
+              ) : (
+                <>
+                  <ImagePlus size={22} className="text-ink-400" />
+                  <span className="text-xs font-semibold text-ink-900">Add a photo…</span>
+                </>
+              )}
+            </button>
+            {idPhoto && (
+              <button
+                type="button"
+                onClick={() => idInput.current?.click()}
+                className="mt-2 text-sm font-semibold text-maroon-800 hover:underline"
+              >
+                Replace ID photo
+              </button>
+            )}
+            <input ref={idInput} type="file" accept="image/*" className="hidden" onChange={onReplaceId} />
+          </EditField>
         </div>
 
         {/* Footer */}
@@ -801,7 +879,7 @@ function EditListingModal({
   );
 }
 
-/* ═══ Full-detail modal — mirrors the admin application review ══════════ */
+/* ═══ Listing résumé — the whole listing laid out inline (was a modal) ══ */
 
 const ANSWER_ROWS: [keyof GuideListing, string][] = [
   ['gender', 'Gender'],
@@ -835,195 +913,158 @@ const asText = (v: unknown): string =>
       ? v.trim()
       : '';
 
-function statusPill(status: string) {
-  return status === 'published'
-    ? { label: 'Live', cls: 'bg-emerald-100 text-emerald-700' }
-    : status === 'suspended'
-      ? { label: 'Suspended', cls: 'bg-red-100 text-red-700' }
-      : { label: 'Under review', cls: 'bg-gold-100 text-gold-800' };
+/** A titled white card used for each résumé section. */
+function CvSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card sm:p-7">
+      <p className="mb-4 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{title}</p>
+      {children}
+    </section>
+  );
 }
 
-function DetailsModal({ listing, name, onClose }: { listing: GuideListing; name: string; onClose: () => void }) {
+function TourTypeChips({ types }: { types: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {types.map((t) => (
+        <span
+          key={t}
+          className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
+        >
+          {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The full listing shown inline as a CV — identity card with the photo slider on
+ * the left, and every detail (about, availability, answers, photos, ID) on the
+ * right. This replaces the old "View details" modal so a guide always sees their
+ * complete listing, especially once it's approved.
+ */
+function ListingResume({ listing, name }: { listing: GuideListing; name: string }) {
   const photos = (listing.photos ?? []).map(usablePhoto).filter((p): p is string => !!p);
   const idPhoto = usablePhoto(listing.idPhoto);
-  const st = statusPill(listing.status ?? 'under_review');
+  const status = listing.status ?? 'under_review';
   const rows = ANSWER_ROWS.map(([k, label]) => [label, asText(listing[k])] as const).filter(([, v]) => v);
+  const availability = parseAvailability(listing.availability);
+  const availServices = SERVICE_TYPES.filter((s) => availability[s]);
+  const customAnswers = (listing.answers ?? []).filter((a) => !a.key);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 px-4 py-6 backdrop-blur-[2px]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Guide listing details"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header — fixed; only the body below scrolls */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 bg-white px-6 py-4 sm:px-7">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="truncate font-display text-lg font-semibold text-ink-900">
-                {listing.listingTitle?.trim() || 'Your guide profile'}
-              </h2>
-              <span className={cn('inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', st.cls)}>
-                {st.label}
-              </span>
-            </div>
-            <p className="mt-0.5 truncate text-sm text-ink-500">
-              {name || 'Guide'}
-              {listing.school ? ` · ${listing.school}` : ''}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6 sm:px-7">
-          {/* Proof of identity */}
-          <section>
-            <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-              Proof of identity · student ID
-            </p>
-            {idPhoto ? (
-              <a
-                href={idPhoto}
-                target="_blank"
-                rel="noreferrer"
-                className="block max-w-xs overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 transition-opacity hover:opacity-90"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={idPhoto} alt="Student ID" className="w-full object-contain" />
-              </a>
-            ) : (
-              <p className="rounded-2xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-6 text-center text-sm text-ink-400">
-                No student ID on file yet.
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr] xl:grid-cols-[minmax(0,400px)_1fr]">
+      {/* ── Left: identity card (sticky on desktop) ── */}
+      <aside className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:self-start">
+        <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+          <PhotoSlider photos={photos} status={status} fallbackInitial={(name.trim()[0] ?? 'U').toUpperCase()} />
+          <div className="p-6">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{name || 'Your name'}</p>
+            <h2 className="mt-1.5 font-display text-2xl font-semibold leading-snug text-ink-900">
+              {listing.listingTitle?.trim() || 'Untitled listing'}
+            </h2>
+            {listing.school && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink-600">
+                <GraduationCap size={15} className="shrink-0 text-ink-400" /> {listing.school}
               </p>
             )}
-          </section>
-
-          {/* About + tour types */}
-          {(listing.intro?.trim() || listing.tourTypes?.length) && (
-            <section className="border-t border-ink-100 pt-6">
-              <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">About</p>
-              {listing.intro?.trim() && (
-                <p className="whitespace-pre-line text-sm leading-relaxed text-ink-700">{listing.intro}</p>
-              )}
-              {!!listing.tourTypes?.length && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {listing.tourTypes.map((t) => (
-                    <span
-                      key={t}
-                      className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
-                    >
-                      {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Availability (per tour type) */}
-          {(() => {
-            const availability = parseAvailability(listing.availability);
-            const services = SERVICE_TYPES.filter((s) => availability[s]);
-            if (!services.length) return null;
-            return (
-              <section className="border-t border-ink-100 pt-6">
-                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">Availability</p>
-                <div className="space-y-4">
-                  {services.map((s) => {
-                    const a = availability[s]!;
-                    return (
-                      <div key={s}>
-                        <p className="text-sm font-bold text-maroon-900">{TOUR_TYPE_LABELS[s]}</p>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {a.dates.map((d) => (
-                            <span
-                              key={d}
-                              className="inline-flex rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
-                            >
-                              {labelForDate(d)}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {a.times.map((t) => (
-                            <span
-                              key={t}
-                              className="inline-flex rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium tabular-nums text-ink-700"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })()}
-
-          {/* Application answers */}
-          {rows.length > 0 && (
-            <section className="border-t border-ink-100 pt-6">
-              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">Application answers</p>
-              <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                {rows.map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{label}</dt>
-                    <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          )}
-
-          {/* Custom (keyless) questionnaire answers — keyed ones show above via
-              the fixed "Application answers" list. */}
-          {!!listing.answers?.filter((a) => !a.key).length && (
-            <section className="border-t border-ink-100 pt-6">
-              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">More questions</p>
-              <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                {listing.answers.filter((a) => !a.key).map((a) => (
-                  <div key={a.questionId}>
-                    <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{a.label}</dt>
-                    <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">
-                      {Array.isArray(a.value) ? a.value.join(', ') : a.value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          )}
-
-          {/* Photos */}
-          {photos.length > 0 && (
-            <section className="border-t border-ink-100 pt-6">
-              <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
-                Photos ({photos.length})
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {photos.map((src, i) => (
-                  <div key={i} className="aspect-square overflow-hidden rounded-2xl bg-ink-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`Guide photo ${i + 1}`} className="h-full w-full object-cover" />
-                  </div>
-                ))}
+            {!!listing.tourTypes?.length && (
+              <div className="mt-4">
+                <TourTypeChips types={listing.tourTypes} />
               </div>
-            </section>
+            )}
+          </div>
+        </section>
+      </aside>
+
+      {/* ── Right: full details ── */}
+      <div className="space-y-6">
+        {/* About */}
+        {listing.intro?.trim() && (
+          <CvSection title="About">
+            <p className="whitespace-pre-line text-[0.95rem] leading-relaxed text-ink-700">{listing.intro}</p>
+          </CvSection>
+        )}
+
+        {/* Availability (per tour type) */}
+        {availServices.length > 0 && (
+          <CvSection title="Availability">
+            <div className="grid gap-5 sm:grid-cols-2">
+              {availServices.map((s) => {
+                const a = availability[s]!;
+                return (
+                  <div key={s}>
+                    <p className="text-sm font-bold text-maroon-900">{TOUR_TYPE_LABELS[s]}</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {a.dates.map((d) => (
+                        <span key={d} className="inline-flex rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900">
+                          {labelForDate(d)}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {a.times.map((t) => (
+                        <span key={t} className="inline-flex rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium tabular-nums text-ink-700">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CvSection>
+        )}
+
+        {/* Application answers */}
+        {rows.length > 0 && (
+          <CvSection title="Application details">
+            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {rows.map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{label}</dt>
+                  <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CvSection>
+        )}
+
+        {/* Custom (keyless) questionnaire answers */}
+        {customAnswers.length > 0 && (
+          <CvSection title="More questions">
+            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {customAnswers.map((a) => (
+                <div key={a.questionId}>
+                  <dt className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{a.label}</dt>
+                  <dd className="mt-1 whitespace-pre-line text-sm font-medium text-ink-800">
+                    {Array.isArray(a.value) ? a.value.join(', ') : a.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </CvSection>
+        )}
+
+        {/* Proof of identity */}
+        <CvSection title="Proof of identity · student ID">
+          {idPhoto ? (
+            <a
+              href={idPhoto}
+              target="_blank"
+              rel="noreferrer"
+              className="block max-w-xs overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 transition-opacity hover:opacity-90"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={idPhoto} alt="Student ID" className="w-full object-contain" />
+            </a>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-6 text-center text-sm text-ink-400">
+              No student ID on file yet.
+            </p>
           )}
-        </div>
+        </CvSection>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { inter, plexMono } from './fonts';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { ScrollToTop } from '@/components/layout/scroll-to-top';
+import { ChromeGate } from '@/components/layout/site-chrome';
 import { ToastProvider } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -51,9 +52,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to content
         </a>
         <ToastProvider>
-          <Navbar />
+          <ChromeGate>
+            <Navbar />
+          </ChromeGate>
           <main id="main">{children}</main>
-          <Footer />
+          <ChromeGate>
+            <Footer />
+          </ChromeGate>
         </ToastProvider>
       </body>
     </html>
