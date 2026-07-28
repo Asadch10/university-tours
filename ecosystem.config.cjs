@@ -14,10 +14,15 @@ const path = require('path');
 module.exports = {
   apps: [
     {
+      // Runs via tsx (package.json "start"), not plain node: the workspace
+      // packages (@ucpt/db/types/validation) ship raw .ts source, so plain
+      // node crashes with ERR_UNKNOWN_FILE_EXTENSION. Same pnpm-start pattern
+      // as the two Next apps below (PM2 can't exec the .bin/tsx symlink).
       name: 'ucpt-backend',
       cwd: path.join(__dirname, 'apps/backend'),
-      script: 'dist/index.js',
-      interpreter: 'node',
+      script: 'pnpm',
+      args: 'start',
+      interpreter: 'none',
       env: { NODE_ENV: 'production' },
     },
     {
