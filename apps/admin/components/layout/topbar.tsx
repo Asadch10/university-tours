@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu, PanelLeftClose, PanelLeft, LogOut, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { navItemForPath, sectionForPath } from '@/lib/nav';
+import { useBreadcrumb } from '@/components/layout/breadcrumb';
 import { Avatar } from '@/components/ui/avatar';
 import { Dropdown } from '@/components/ui/dropdown';
 import { NotificationsMenu } from '@/components/layout/notifications-menu';
@@ -22,6 +23,7 @@ export function Topbar({
   const { user, signOut } = useAuth();
   const current = navItemForPath(pathname);
   const section = sectionForPath(pathname);
+  const { crumb } = useBreadcrumb();
 
   if (!user) return null;
 
@@ -56,9 +58,28 @@ export function Topbar({
               </li>
             </>
           )}
-          <li className="min-w-0 truncate font-semibold text-ink-900">
-            {current?.label ?? 'Console'}
-          </li>
+          {crumb && current?.href ? (
+            // Detail page → the section name becomes a link back, and the crumb is current.
+            <>
+              <li className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => router.push(current.href)}
+                  className="truncate font-semibold text-ink-600 transition-colors hover:text-ink-900"
+                >
+                  {current.label}
+                </button>
+              </li>
+              <li className="shrink-0 text-ink-300" aria-hidden>
+                <ChevronRight size={14} />
+              </li>
+              <li className="min-w-0 truncate font-semibold text-ink-900">{crumb}</li>
+            </>
+          ) : (
+            <li className="min-w-0 truncate font-semibold text-ink-900">
+              {current?.label ?? 'Console'}
+            </li>
+          )}
         </ol>
       </nav>
 

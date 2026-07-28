@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Eye,
   KeyRound,
@@ -10,7 +11,6 @@ import {
   MoreHorizontal,
   AlertTriangle,
   CheckCircle2,
-  GraduationCap,
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable, type Column } from '@/components/ui/table';
@@ -22,7 +22,6 @@ import { Dropdown, type MenuAction } from '@/components/ui/dropdown';
 import { SearchInput } from '@/components/ui/search-input';
 import { Select } from '@/components/ui/input';
 import { Tabs } from '@/components/ui/tabs';
-import { Modal } from '@/components/ui/modal';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
@@ -37,12 +36,12 @@ const ROLE_TABS = [
 ];
 
 export default function UsersPage() {
+  const router = useRouter();
   const { data: rows = [], isLoading: loading } = useUsers();
   const { setStatus } = useUserActions();
   const [query, setQuery] = useState('');
   const [role, setRole] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | UserStatus>('ALL');
-  const [active, setActive] = useState<User | null>(null);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -69,7 +68,6 @@ export default function UsersPage() {
   async function applyStatus(u: User, status: UserStatus, label: string) {
     try {
       await setStatus.mutateAsync({ id: u.id, status });
-      setActive((prev) => (prev && prev.id === u.id ? { ...prev, status } : prev));
       toast.success(label, `${u.name} is now ${humanize(status).toLowerCase()}.`);
     } catch (e) {
       toast.error((e as Error).message);
@@ -133,6 +131,11 @@ export default function UsersPage() {
 
   const columns: Column<User>[] = [
     {
+      key: 'userNo',
+      header: 'ID',
+      cell: (u) => <span className="font-mono text-xs font-semibold text-brand-900">U-{u.userNo}</span>,
+    },
+    {
       key: 'user',
       header: 'User',
       cell: (u) => (
@@ -177,7 +180,7 @@ export default function UsersPage() {
               </span>
             }
             items={[
-              { label: 'View profile', icon: <Eye size={15} />, onClick: () => setActive(u) },
+              { label: 'View profile', icon: <Eye size={15} />, onClick: () => router.push(`/users/${u.id}`) },
               { label: 'Reset password', icon: <KeyRound size={15} />, onClick: () => resetPassword(u) },
               'separator',
               ...statusActions(u),
@@ -223,7 +226,7 @@ export default function UsersPage() {
           rows={filtered}
           rowKey={(u) => u.id}
           loading={loading}
-          onRowClick={(u) => setActive(u)}
+          onRowClick={(u) => router.push(`/users/${u.id}`)}
           empty={{
             title: 'No users found',
             description:
@@ -240,107 +243,7 @@ export default function UsersPage() {
           }
         />
       </div>
-
-      <UserDetail
-        user={active}
-        onClose={() => setActive(null)}
-        actions={active ? statusActions(active) : []}
-        onResetPassword={resetPassword}
-      />
     </RequirePermission>
   );
 }
 
-function UserDetail({
-  user,
-  onClose,
-  actions,
-  onResetPassword,
-}: {
-  user: User | null;
-  onClose: () => void;
-  actions: (MenuAction | 'separator')[];
-  onResetPassword: (u: User) => void;
-}) {
-  if (!user) return null;
-  const u = user;
-  const menuActions = actions.filter((a): a is MenuAction => a !== 'separator');
-
-  return (
-    <Modal
-      open={!!user}
-      onClose={onClose}
-      size="lg"
-      title="User profile"
-      footer={
-        <div className="flex w-full flex-wrap items-center justify-end gap-2.5">
-          <Button variant="outline" size="sm" onClick={() => onResetPassword(u)}>
-            <KeyRound size={15} /> Reset password
-          </Button>
-          {menuActions.map((a) => (
-            <Button
-              key={a.label}
-              variant={a.tone === 'danger' ? 'danger' : a.label === 'Reactivate' ? 'primary' : 'outline'}
-              size="sm"
-              onClick={a.onClick}
-            >
-              {a.icon}
-              {a.label}
-            </Button>
-          ))}
-        </div>
-      }
-    >
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Avatar name={u.name} src={u.avatar} size={64} />
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-display text-lg font-semibold text-ink-900">{u.name}</h3>
-              <StatusBadge status={u.status} />
-            </div>
-            <p className="truncate text-sm text-ink-500">{u.email}</p>
-          </div>
-        </div>
-
-        <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-          <Detail label="Role" value={<Badge variant={u.role === 'GUIDE' ? 'brand' : 'neutral'}>{humanize(u.role)}</Badge>} />
-          <Detail
-            label="School"
-            value={
-              <span className="inline-flex items-center gap-1.5 text-sm text-ink-700">
-                {u.school ? <GraduationCap size={15} className="text-ink-400" /> : null}
-                {u.school ?? '—'}
-              </span>
-            }
-          />
-          <Detail label="Joined" value={<span className="text-sm text-ink-700">{formatDate(u.joinedAt)}</span>} />
-          <Detail label="Bookings" value={<span className="text-sm font-semibold text-ink-900">{u.bookings}</span>} />
-          <Detail
-            label="Email verification"
-            value={
-              u.emailVerified ? (
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success">
-                  <CheckCircle2 size={15} /> Verified
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-warn">
-                  <AlertTriangle size={15} /> Unverified
-                </span>
-              )
-            }
-          />
-        </dl>
-      </div>
-    </Modal>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div>
-      <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-500">{label}</dt>
-      <dd className="mt-1">{value}</dd>
-    </div>
-  );
-}

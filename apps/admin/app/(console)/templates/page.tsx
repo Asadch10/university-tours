@@ -34,6 +34,11 @@ function parseVars(body: string): string[] {
   return [...out];
 }
 
+/** Interpolate {{var}} tokens with sample values for the live preview (falls back to the name). */
+function renderPreview(tpl: string, sampleVars: Record<string, string>): string {
+  return tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k: string) => sampleVars[k] ?? k);
+}
+
 function ChannelBadge({ channel }: { channel: Channel }) {
   return channel === 'EMAIL' ? (
     <Badge variant="info">
@@ -169,7 +174,7 @@ export default function TemplatesPage() {
       <Modal
         open={!!active}
         onClose={() => setActive(null)}
-        size="lg"
+        size="xl"
         title={
           active ? (
             <span className="flex items-center gap-2">
@@ -192,38 +197,67 @@ export default function TemplatesPage() {
         }
       >
         {active && (
-          <div className="space-y-4">
-            <Field label="Subject" htmlFor="tpl-subject" required>
-              <Input
-                id="tpl-subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Subject line"
-              />
-            </Field>
-            <Field label="Body" htmlFor="tpl-body" hint="Use {{variable}} tokens — they are replaced when the notification is sent." required>
-              <Textarea
-                id="tpl-body"
-                rows={6}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                className="font-mono text-xs leading-relaxed"
-                placeholder="Hi {{buyer}}, …"
-              />
-            </Field>
-            <div className="rounded-xl border border-ink-200 bg-ink-50/50 px-4 py-3">
-              <p className="text-xs font-semibold text-ink-700">
-                Variables detected ({detectedVars.length})
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {detectedVars.length === 0 ? (
-                  <span className="text-xs text-ink-500">No variables in this body.</span>
+          <div className="grid gap-5 lg:grid-cols-2">
+            {/* ── Editor ── */}
+            <div className="space-y-4">
+              <Field label="Subject" htmlFor="tpl-subject" required>
+                <Input id="tpl-subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject line" />
+              </Field>
+              <Field
+                label={active.channel === 'EMAIL' ? 'HTML body' : 'Body'}
+                htmlFor="tpl-body"
+                hint="Use {{variable}} tokens — replaced when the notification is sent."
+                required
+              >
+                <Textarea
+                  id="tpl-body"
+                  rows={18}
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  className="font-mono text-[11px] leading-relaxed"
+                  placeholder={active.channel === 'EMAIL' ? '<!doctype html> …' : 'Hi {{buyer}}, …'}
+                />
+              </Field>
+              <div className="rounded-xl border border-ink-200 bg-ink-50/50 px-4 py-3">
+                <p className="text-xs font-semibold text-ink-700">Variables detected ({detectedVars.length})</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {detectedVars.length === 0 ? (
+                    <span className="text-xs text-ink-500">No variables in this body.</span>
+                  ) : (
+                    detectedVars.map((v) => (
+                      <Badge key={v} variant="gold" className="font-mono">
+                        {`{{${v}}}`}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Live preview ── */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-ink-700">Live preview</p>
+                <span className="text-2xs text-ink-400">with sample data</span>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-ink-200 bg-white">
+                <div className="border-b border-ink-100 bg-ink-50/60 px-3 py-2 text-xs">
+                  <span className="text-ink-400">Subject:</span>{' '}
+                  <span className="font-medium text-ink-800">{renderPreview(subject, active.sampleVars) || '—'}</span>
+                </div>
+                {active.channel === 'EMAIL' ? (
+                  <iframe
+                    title="Email preview"
+                    sandbox=""
+                    srcDoc={renderPreview(body, active.sampleVars)}
+                    className="h-[28rem] w-full bg-white"
+                  />
                 ) : (
-                  detectedVars.map((v) => (
-                    <Badge key={v} variant="gold" className="font-mono">
-                      {`{{${v}}}`}
-                    </Badge>
-                  ))
+                  <div className="px-4 py-4">
+                    <p className="whitespace-pre-line rounded-lg bg-ink-50 px-3 py-2.5 text-sm leading-relaxed text-ink-800">
+                      {renderPreview(body, active.sampleVars) || '—'}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

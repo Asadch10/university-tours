@@ -86,6 +86,9 @@ const DETAIL_KEYS_SHOWN = new Set([
   ...DETAIL_SECTIONS.flatMap((s) => s.fields.map((f) => f.key)),
   'listingTitle', 'intro', 'school', 'tourTypes', 'photos',
   'status', 'submittedAt', 'publishedAt', 'completedStep',
+  // `answers` is the questionnaire snapshot (array of objects) — rendered separately
+  // below, not as a raw "[object Object]" string. `availability` is shown elsewhere.
+  'answers', 'availability', 'hostedBy',
 ]);
 
 function detailValue(v: unknown): string | null {
@@ -96,11 +99,21 @@ function detailValue(v: unknown): string | null {
   return null;
 }
 
+/** True for an uploaded image URL (e.g. the student ID photo) so we render it, not its text. */
+const isImageUrl = (v: string) =>
+  /^https?:\/\//i.test(v) && (/\.(jpe?g|png|webp|gif|avif|heic)(\?|$)/i.test(v) || /\/uploads\//i.test(v));
+
 const labelFromKey = (key: string) =>
   (key.charAt(0).toUpperCase() + key.slice(1)).replace(/([A-Z])/g, ' $1').trim();
 
 /** Every answer from the website's become-a-guide form, grouped into sections. */
-export function ListingDetails({ details }: { details: Record<string, unknown> }) {
+export function ListingDetails({
+  details,
+  onImageOpen,
+}: {
+  details: Record<string, unknown>;
+  onImageOpen?: (src: string) => void;
+}) {
   // Anything the website starts saving that this page doesn't know yet still shows up.
   const extraFields = Object.keys(details)
     .filter((k) => !DETAIL_KEYS_SHOWN.has(k) && detailValue(details[k]) !== null)
@@ -118,7 +131,18 @@ export function ListingDetails({ details }: { details: Record<string, unknown> }
     }))
     .filter((s) => s.fields.length > 0);
 
-  if (!sections.length) return null;
+  // Custom questionnaire answers (admin-added questions without a stable key).
+  // Keyed answers already surface via their top-level keys in the sections above.
+  const customAnswers = (Array.isArray(details['answers']) ? (details['answers'] as unknown[]) : [])
+    .map((a) => (a && typeof a === 'object' ? (a as { key?: unknown; label?: unknown; value?: unknown }) : null))
+    .filter((a): a is { key?: unknown; label?: unknown; value?: unknown } => !!a && !a.key)
+    .map((a) => ({
+      label: typeof a.label === 'string' && a.label.trim() ? a.label : 'Question',
+      value: Array.isArray(a.value) ? a.value.map(String).join(', ') : String(a.value ?? ''),
+    }))
+    .filter((a) => a.value.trim());
+
+  if (!sections.length && !customAnswers.length) return null;
 
   return (
     <div className="space-y-4">
@@ -127,15 +151,55 @@ export function ListingDetails({ details }: { details: Record<string, unknown> }
         <div key={s.title} className="rounded-xl border border-ink-200 p-4">
           <p className="text-sm font-semibold text-ink-900">{s.title}</p>
           <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            {s.fields.map((f) => (
-              <div key={f.key} className={f.value.length > 80 ? 'sm:col-span-2' : undefined}>
-                <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-500">{f.label}</dt>
-                <dd className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">{f.value}</dd>
+            {s.fields.map((f) => {
+              const image = isImageUrl(f.value);
+              return (
+                <div key={f.key} className={image || f.value.length > 80 ? 'sm:col-span-2' : undefined}>
+                  <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-500">{f.label}</dt>
+                  {image ? (
+                    onImageOpen ? (
+                      <button
+                        type="button"
+                        onClick={() => onImageOpen(f.value)}
+                        className="mt-1.5 block w-fit overflow-hidden rounded-lg border border-ink-200 bg-ink-100 transition hover:border-brand-300 hover:shadow-md"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={f.value} alt={f.label} className="h-28 w-auto max-w-full object-contain" />
+                      </button>
+                    ) : (
+                      <a
+                        href={f.value}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1.5 block w-fit overflow-hidden rounded-lg border border-ink-200 transition-opacity hover:opacity-90"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={f.value} alt={f.label} className="h-28 w-auto max-w-full object-contain" />
+                      </a>
+                    )
+                  ) : (
+                    <dd className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">{f.value}</dd>
+                  )}
+                </div>
+              );
+            })}
+          </dl>
+        </div>
+      ))}
+
+      {customAnswers.length > 0 && (
+        <div className="rounded-xl border border-ink-200 p-4">
+          <p className="text-sm font-semibold text-ink-900">More questions</p>
+          <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            {customAnswers.map((a, i) => (
+              <div key={i} className={a.value.length > 80 ? 'sm:col-span-2' : undefined}>
+                <dt className="text-2xs font-semibold uppercase tracking-wider text-ink-500">{a.label}</dt>
+                <dd className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">{a.value}</dd>
               </div>
             ))}
           </dl>
         </div>
-      ))}
+      )}
     </div>
   );
 }

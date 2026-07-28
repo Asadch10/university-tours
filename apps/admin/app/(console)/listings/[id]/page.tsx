@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   ArrowLeft,
   Ban,
@@ -22,10 +21,12 @@ import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { TourTypeBadges, ListingDetails } from '@/components/listings/listing-details';
+import { useLightbox, ImageThumb } from '@/components/ui/lightbox';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import type { ListingStatus } from '@/lib/data';
-import { useListingDetail, useListingActions } from '@/lib/queries';
+import { useListingDetail, useListingActions, useListings } from '@/lib/queries';
+import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 import { formatDate } from '@/lib/utils';
 
 export default function ListingDetailPage() {
@@ -33,12 +34,17 @@ export default function ListingDetailPage() {
   const router = useRouter();
   const { data: listing, isLoading: loading, error } = useListingDetail(id);
   const { moderate } = useListingActions();
+  // Sequential "L-<n>" from the listings list (same order as the table).
+  const { data: listings = [] } = useListings();
+  const listingNo = listings.find((l) => l.id === id)?.listingNo ?? null;
+  usePageBreadcrumb(listingNo ? `L-${listingNo}` : null);
 
   const toast = useToast();
   const confirm = useConfirm();
 
   const [editStatus, setEditStatus] = useState<ListingStatus>('UNDER_REVIEW');
   const [saving, setSaving] = useState(false);
+  const { open: openImage, node: lightbox } = useLightbox();
 
   useEffect(() => {
     if (listing) setEditStatus(listing.status as ListingStatus);
@@ -106,7 +112,6 @@ export default function ListingDetailPage() {
     return (
       <RequirePermission anyOf={['listings.moderate']}>
         <div className="space-y-6">
-          <BackLink />
           <div className="rounded-2xl border border-ink-200 bg-white p-10 text-center">
             <p className="font-display text-lg font-semibold text-ink-900">Listing not found</p>
             <p className="mt-1 text-sm text-ink-500">
@@ -127,8 +132,6 @@ export default function ListingDetailPage() {
   return (
     <RequirePermission anyOf={['listings.moderate']}>
       <div className="space-y-6">
-        <BackLink />
-
         <PageHeader
           title={l.title}
           description={`${l.school ?? '—'} · by ${l.user.name}`}
@@ -168,15 +171,9 @@ export default function ListingDetailPage() {
 
             {/* Photos */}
             {l.photos.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto">
+              <div className="flex flex-wrap gap-3">
                 {l.photos.map((src) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={src}
-                    src={src}
-                    alt=""
-                    className="h-44 w-44 shrink-0 rounded-xl border border-ink-200 object-cover"
-                  />
+                  <ImageThumb key={src} src={src} alt="Listing photo" onOpen={() => openImage(src)} className="h-28 w-28" />
                 ))}
               </div>
             )}
@@ -190,7 +187,7 @@ export default function ListingDetailPage() {
             )}
 
             {/* Full application answers from the website form */}
-            <ListingDetails details={l.details} />
+            <ListingDetails details={l.details} onImageOpen={openImage} />
           </div>
 
           {/* ── Right: moderation + account + guide profile ── */}
@@ -313,20 +310,11 @@ export default function ListingDetailPage() {
           </div>
         </div>
       </div>
+      {lightbox}
     </RequirePermission>
   );
 }
 
-function BackLink() {
-  return (
-    <Link
-      href="/listings"
-      className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-600 transition-colors hover:text-ink-900"
-    >
-      <ArrowLeft size={15} /> All listings
-    </Link>
-  );
-}
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (

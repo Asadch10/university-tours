@@ -51,7 +51,7 @@ export function formatDateTime(iso: string) {
 }
 
 /** Relative time, e.g. "3h ago". `now` is injected so it stays deterministic on the server. */
-export function timeAgo(iso: string, now: number = Date.parse('2026-06-15T15:00:00Z')) {
+export function timeAgo(iso: string, now: number = Date.now()) {
   const diff = now - Date.parse(iso);
   const mins = Math.round(diff / 60000);
   if (mins < 1) return 'just now';

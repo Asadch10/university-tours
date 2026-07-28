@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { AuthShell, authInputClasses } from '@/components/auth/auth-shell';
@@ -35,8 +34,8 @@ export default function LoginPage() {
       const res = await authApi.login(email.trim(), password);
       setSession(res);
       setStatus('success');
-      // No role yet → onboarding still pending; otherwise straight to the app.
-      setTimeout(() => router.push(res.user.role ? '/' : '/onboarding'), 500);
+      // Show the branded loader briefly, then go home (or to onboarding if no role yet).
+      setTimeout(() => router.push(res.user.role ? '/' : '/onboarding'), 900);
     } catch (err) {
       setErrorMsg(
         err instanceof ApiError && err.status === 401
@@ -49,21 +48,22 @@ export default function LoginPage() {
     }
   }
 
+  // After a successful sign-in, show a full-screen branded loader, then redirect.
+  if (status === 'success') {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="University Campus Private Tours" className="h-24 w-auto animate-pulse" />
+        <p className="flex items-center gap-2 text-sm font-medium text-ink-500">
+          <Loader2 size={16} className="animate-spin text-maroon-800" /> Signing you in…
+        </p>
+      </div>
+    );
+  }
+
   return (
     <AuthShell>
-      {status === 'success' ? (
-        <div
-          role="status"
-          className="flex items-start gap-3 rounded-2xl border border-verified/30 bg-verified/10 p-5 text-sm text-ink-800"
-        >
-          <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-verified" />
-          <div>
-            <p className="font-semibold text-ink-900">You’re logged in</p>
-            <p className="mt-1 text-ink-600">Redirecting you to your dashboard…</p>
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
           {status === 'error' && (
             <div
               role="alert"
@@ -148,7 +148,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-      )}
     </AuthShell>
   );
 }

@@ -7,25 +7,29 @@ export function Logo({
   variant = 'default',
   showWordmark = true,
   className,
+  size = 36,
 }: {
   variant?: 'default' | 'light';
   showWordmark?: boolean;
   className?: string;
+  /** Crest size in px (default 36). */
+  size?: number;
 }) {
   const light = variant === 'light';
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <span
         className={cn(
-          'relative inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-inset',
+          'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-inset',
           light ? 'ring-white/25' : 'ring-ink-200/70',
         )}
+        style={{ height: size, width: size }}
       >
         <Image
           src={adminLogo}
           alt="University Campus Private Tours"
           fill
-          sizes="36px"
+          sizes={`${size}px`}
           className="object-contain p-0.5"
           priority
         />

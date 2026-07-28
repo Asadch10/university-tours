@@ -30,7 +30,7 @@ export default function ApplicationsPage() {
   const [filter, setFilter] = useState<Filter>('ALL');
   const [query, setQuery] = useState('');
 
-  const open = (a: GuideApplication) => router.push(`/applications/${a.id}`);
+  const open = (a: GuideApplication) => router.push(`/applications/ID-${a.appNo}`);
 
   const counts = useMemo(
     () =>
@@ -58,6 +58,11 @@ export default function ApplicationsPage() {
   }, [rows, filter, query]);
 
   const columns: Column<GuideApplication>[] = [
+    {
+      key: 'appNo',
+      header: 'ID',
+      cell: (a) => <span className="font-mono text-xs font-semibold text-brand-900">ID-{a.appNo}</span>,
+    },
     {
       key: 'applicant',
       header: 'Applicant',

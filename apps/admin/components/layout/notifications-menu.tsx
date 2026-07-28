@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, UserPlus, CalendarCheck, CreditCard, Star, CheckCheck, type LucideIcon } from 'lucide-react';
+import { Bell, UserPlus, CalendarCheck, CreditCard, Star, CheckCheck, ClipboardCheck, type LucideIcon } from 'lucide-react';
 import { cn, timeAgo } from '@/lib/utils';
 import { useNotifications } from '@/lib/queries';
 import type { NotificationDto } from '@/lib/api';
@@ -13,6 +13,7 @@ const META: Record<NotificationDto['type'], { Icon: LucideIcon; cls: string }> =
   booking: { Icon: CalendarCheck, cls: 'bg-maroon-50 text-maroon-800' },
   payment: { Icon: CreditCard, cls: 'bg-emerald-50 text-emerald-600' },
   review: { Icon: Star, cls: 'bg-amber-50 text-amber-600' },
+  listing: { Icon: ClipboardCheck, cls: 'bg-gold-100 text-gold-800' },
 };
 
 // Read state is tracked as a "last read" timestamp — anything newer is unread.

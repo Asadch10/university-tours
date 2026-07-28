@@ -9,6 +9,11 @@ cmsRouter.get('/homepage', asyncHandler(async (_req, res) => {
   res.json(await svc.getHomepage());
 }));
 
+// A single published block by key (e.g. home.hero) — powers editable site sections.
+cmsRouter.get('/blocks/:key', asyncHandler(async (req, res) => {
+  res.json(await svc.getBlock(req.params['key'] as string));
+}));
+
 cmsRouter.get('/faqs', asyncHandler(async (_req, res) => {
   res.json(await svc.getFaqs());
 }));

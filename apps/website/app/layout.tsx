@@ -4,6 +4,7 @@ import './globals.css';
 import { inter, plexMono } from './fonts';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
+import { ScrollToTop } from '@/components/layout/scroll-to-top';
 import { ToastProvider } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={cn(inter.variable, plexMono.variable)}>
       <body className="min-h-dvh bg-ivory text-ink-900 antialiased" suppressHydrationWarning>
+        {/* Run before paint so the browser never restores a page to the footer on reload. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "if('scrollRestoration' in history){history.scrollRestoration='manual';}",
+          }}
+        />
+        <ScrollToTop />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-maroon-900 focus:px-5 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-ivory"

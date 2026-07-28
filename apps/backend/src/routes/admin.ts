@@ -63,8 +63,16 @@ adminRouter.get('/users', requirePermission('users.manage'), asyncHandler(async 
   res.json(await svc.listUsers({ q, role, status, page: page ? +page : 1, limit: limit ? +limit : 20 }));
 }));
 
+adminRouter.get('/users/:id', requirePermission('users.manage'), asyncHandler(async (req, res) => {
+  res.json(await svc.getUserDetail(req.params['id'] as string));
+}));
+
 adminRouter.patch('/users/:id', requirePermission('users.manage'), asyncHandler(async (req, res) => {
   res.json(await svc.updateUser(req.params['id'] as string, req.body as { status?: string }, req.user!.id));
+}));
+
+adminRouter.post('/users/:id/reset-password', requirePermission('users.manage'), asyncHandler(async (req, res) => {
+  res.json(await svc.adminResetPassword(req.params['id'] as string, req.user!.id));
 }));
 
 // ─── Listings ─────────────────────────────────────────────────────────────────

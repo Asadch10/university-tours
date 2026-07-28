@@ -228,7 +228,7 @@ async function main() {
 
   // --- CMS blocks ---
   const cmsData = [
-    { key: 'home.hero', type: 'HOMEPAGE_SECTION', contentJson: { title: 'See the real campus before you decide.', subtitle: 'Book a private tour with a verified student.' }, published: true },
+    { key: 'home.hero', type: 'HOMEPAGE_SECTION', contentJson: { title: 'Book private campus tours. Things just got personal.', body: 'Get the scoop and find the school that fits you best on a private campus tour tailored to you.' }, published: true },
     { key: 'faq.refunds', type: 'FAQ', contentJson: { question: 'When am I charged?', answer: 'Your card is authorized at request and only charged when a guide accepts.' }, published: true },
     { key: 'faq.safety', type: 'FAQ', contentJson: { question: 'Are guides verified?', answer: 'Every guide is identity- and enrollment-checked before they can host.' }, published: true },
     { key: 'page.trust-safety', type: 'PAGE', contentJson: { title: 'Trust & Safety', body: 'Our pillars: verification, secure payments, and masked contact details.' }, published: true },

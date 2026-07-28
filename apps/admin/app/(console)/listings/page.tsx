@@ -96,6 +96,11 @@ export default function ListingsPage() {
 
   const columns: Column<Listing>[] = [
     {
+      key: 'listingNo',
+      header: 'ID',
+      cell: (l) => <span className="font-mono text-xs font-semibold text-brand-900">L-{l.listingNo}</span>,
+    },
+    {
       key: 'title',
       header: 'Listing',
       cell: (l) => (

@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, CreditCard, Receipt, ExternalLink, FileText, CheckCircle2, XCircle, Star } from 'lucide-react';
+import { Loader2, CreditCard, Receipt, ExternalLink, FileText, CheckCircle2, XCircle, Star, ArrowRight, GraduationCap, CalendarDays, Users, Clock } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { BookingStatus } from '@/lib/data';
 import { useBookings, useInvoice } from '@/lib/queries';
+import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 import { formatPrice, formatDate, formatDateTime, humanize, paymentStatusMeta, guestHasPaid, paymentCaptured, cn } from '@/lib/utils';
 
 // One-line explanation of what a payment status means in the authorize-then-capture flow.
@@ -32,6 +34,8 @@ export default function BookingDetailPage() {
   const { data: invoice, isLoading: invoiceLoading } = useInvoice(id);
 
   const b = rows.find((r) => r.id === id);
+  // Show "B-<n>" as the trailing crumb in the topbar (with "Bookings" clickable).
+  usePageBreadcrumb(b ? `B-${b.bookingNo}` : null);
 
   if (isLoading) {
     return (
@@ -44,10 +48,12 @@ export default function BookingDetailPage() {
   if (!b) {
     return (
       <div className="space-y-4">
-        <BackLink onClick={() => router.push('/bookings')} />
         <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
           <p className="font-semibold text-ink-900">Booking not found</p>
           <p className="mt-1 text-sm text-ink-500">It may have been removed, or the link is invalid.</p>
+          <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/bookings')}>
+            Back to bookings
+          </Button>
         </div>
       </div>
     );
@@ -64,30 +70,63 @@ export default function BookingDetailPage() {
   return (
     <RequirePermission anyOf={['bookings.view']}>
       <div className="space-y-6">
-        <BackLink onClick={() => router.push('/bookings')} />
-
-        {/* Header — the raw booking id is shown as a subtle, labelled reference. */}
-        <div>
-          <p className="text-2xs font-semibold uppercase tracking-wider text-ink-400">Booking reference</p>
-          <h1 className="mt-1 flex items-center gap-2 font-display text-2xl font-bold text-ink-900">
-            {b.service === 'CAMPUS_TOUR' ? 'Campus tour' : humanize(b.service)}
-            <span className="rounded-md bg-maroon-50 px-2 py-0.5 font-mono text-sm font-semibold text-maroon-800">B-{b.bookingNo}</span>
-          </h1>
-        </div>
+        {/* Header — summary banner */}
+        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft">
+          <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="font-display text-2xl font-bold text-ink-900">
+                  {b.service === 'CAMPUS_TOUR' ? 'Campus tour' : humanize(b.service)}
+                </h1>
+                <StatusBadge status={b.status as BookingStatus} />
+              </div>
+              {/* Guest → Guide */}
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-ink-400">Guest</span>
+                  <span className="font-semibold text-ink-900">{b.buyer}</span>
+                </span>
+                <ArrowRight size={15} className="text-ink-300" />
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-ink-400">Guide</span>
+                  <span className="font-semibold text-ink-900">{b.guide}</span>
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 sm:text-right">
+              <p className="font-display text-2xl font-bold text-brand-900">{formatPrice(b.grossCents)}</p>
+              <div className="mt-1.5 sm:flex sm:justify-end">
+                <Badge variant={payMeta.variant}>{payMeta.label}</Badge>
+              </div>
+            </div>
+          </div>
+          {/* Meta strip */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-ink-100 bg-ink-50/40 px-6 py-3 text-sm text-ink-600">
+            <span className="inline-flex items-center gap-1.5">
+              <GraduationCap size={15} className="text-brand-800" /> {b.school}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays size={14} className="text-ink-400" />
+              {formatDateTime(b.scheduledAt)}{b.scheduledTime ? ` · ${b.scheduledTime}` : ''}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Users size={14} className="text-ink-400" /> {b.guestCount} guest{b.guestCount > 1 ? 's' : ''}
+            </span>
+            {fmtDuration(b.durationMinutes) && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock size={14} className="text-ink-400" /> {fmtDuration(b.durationMinutes)}
+              </span>
+            )}
+          </div>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
               <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Booking details</h2>
               <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                <Detail label="Guest" value={b.buyer} />
-                <Detail label="Guide" value={b.guide} />
-                <Detail label="School" value={b.school} />
                 <Detail label="Service" value={humanize(b.service)} />
                 {b.title && <Detail label="Listing" value={b.title} />}
-                <Detail label="Scheduled" value={`${formatDateTime(b.scheduledAt)}${b.scheduledTime ? ` · ${b.scheduledTime}` : ''}`} />
-                {fmtDuration(b.durationMinutes) && <Detail label="Duration" value={fmtDuration(b.durationMinutes)!} />}
-                <Detail label="Guests" value={`${b.guestCount} guest${b.guestCount > 1 ? 's' : ''}`} />
                 <Detail label="Requested" value={formatDateTime(b.createdAt)} />
               </dl>
             </section>
@@ -254,18 +293,6 @@ function ReviewStars({ rating }: { rating: number }) {
         <Star key={i} size={16} className={cn(i < rating ? 'fill-gold-500 text-gold-500' : 'text-ink-200')} />
       ))}
     </div>
-  );
-}
-
-function BackLink({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition-colors hover:text-ink-900"
-    >
-      <ArrowLeft size={16} /> Back to bookings
-    </button>
   );
 }
 

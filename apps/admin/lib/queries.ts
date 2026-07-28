@@ -113,6 +113,7 @@ export function useApplications() {
 
 export interface GuideApplication {
   id: string;
+  appNo: number; // sequential display id → "ID-1", "ID-2", … by submission order
   applicant: string;
   email: string;
   school: string;
@@ -145,7 +146,10 @@ export function useGuideApplications() {
           photos: l.photos ?? [],
           intro: l.intro,
           details: l.details ?? {},
-        }));
+        }))
+        // Stable sequential display id by submission order (oldest = ID-1).
+        .sort((a, b) => (a.submittedAt ?? '').localeCompare(b.submittedAt ?? ''))
+        .map((a, i) => ({ ...a, appNo: i + 1 }));
     },
   });
 }
@@ -242,11 +246,14 @@ export function useUsers() {
           email: u.email,
           role: (u.role === 'SELLER' ? 'GUIDE' : 'GUEST') as User['role'],
           status: u.status as User['status'],
-          school: u.sellerProfile?.school?.name,
+          school: u.guideSchool ?? u.sellerProfile?.school?.name,
           bookings: u._count?.buyerBookings ?? 0,
           joinedAt: u.createdAt,
           emailVerified: !!u.emailVerifiedAt,
-        }));
+        }))
+        // Stable sequential display id by join order (oldest signup = U-1).
+        .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt))
+        .map((u, i) => ({ ...u, userNo: i + 1 }));
     },
   });
 }
@@ -256,6 +263,7 @@ export function useUserActions() {
   const inv = () => qc.invalidateQueries({ queryKey: ['users'] });
   return {
     setStatus: useMutation({ mutationFn: (v: { id: string; status: string }) => adminApi.userUpdate(v.id, v.status), onSuccess: inv }),
+    resetPassword: useMutation({ mutationFn: (id: string) => adminApi.userResetPassword(id) }),
   };
 }
 
@@ -266,21 +274,25 @@ export function useListings() {
     queryKey: ['listings'],
     queryFn: async (): Promise<Listing[]> => {
       const res = await adminApi.listings();
-      return res.data.map((l) => ({
-        id: l.id,
-        guide: l.seller.name,
-        guideEmail: l.seller.email,
-        school: l.school ?? '—',
-        tourTypes: l.tourTypes,
-        photos: l.photos,
-        intro: l.intro ?? undefined,
-        title: l.title,
-        status: l.status as ListingStatus,
-        bookings: l.bookings,
-        submittedAt: l.submittedAt ?? undefined,
-        createdAt: l.createdAt,
-        details: l.details ?? {},
-      }));
+      return res.data
+        .map((l) => ({
+          id: l.id,
+          guide: l.seller.name,
+          guideEmail: l.seller.email,
+          school: l.school ?? '—',
+          tourTypes: l.tourTypes,
+          photos: l.photos,
+          intro: l.intro ?? undefined,
+          title: l.title,
+          status: l.status as ListingStatus,
+          bookings: l.bookings,
+          submittedAt: l.submittedAt ?? undefined,
+          createdAt: l.createdAt,
+          details: l.details ?? {},
+        }))
+        // Stable sequential display id by creation order (oldest = L-1).
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map((l, i) => ({ ...l, listingNo: i + 1 }));
     },
   });
 }
@@ -289,6 +301,14 @@ export function useListingDetail(id: string) {
   return useQuery({
     queryKey: ['listings', id],
     queryFn: () => adminApi.listingDetail(id),
+    enabled: !!id,
+  });
+}
+
+export function useUserDetail(id: string) {
+  return useQuery({
+    queryKey: ['users', id],
+    queryFn: () => adminApi.userDetail(id),
     enabled: !!id,
   });
 }
@@ -367,6 +387,13 @@ export function useTransactions() {
     queryKey: ['transactions'],
     queryFn: async (): Promise<LedgerEntry[]> => {
       const res = await adminApi.transactions();
+      // Sequential invoice numbers per unique booking (oldest first) → "INV-1", "INV-2", …
+      const invMap = new Map<string, string>();
+      let seq = 0;
+      for (const t of [...res.data].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
+        const bid = t.booking?.id;
+        if (bid && !invMap.has(bid)) invMap.set(bid, `INV-${++seq}`);
+      }
       return res.data.map((t) => {
         const pay = t.booking?.payment;
         const card = pay?.cardBrand && pay.cardLast4
@@ -376,7 +403,7 @@ export function useTransactions() {
         return {
           id: t.id,
           bookingId,
-          invoiceNo: t.booking ? invoiceNo(bookingId) : '—',
+          invoiceNo: (t.booking && invMap.get(bookingId)) || '—',
           type: t.type as LedgerEntry['type'],
           status: t.status ?? '',
           guide: t.booking?.seller?.name ?? '—',
@@ -628,6 +655,7 @@ export function useTemplates() {
         subject: t.subject ?? '',
         body: t.body,
         updatedAt: nowIso(),
+        sampleVars: t.sampleVars ?? {},
       }));
     },
   });

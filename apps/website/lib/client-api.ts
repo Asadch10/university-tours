@@ -192,6 +192,17 @@ async function uploadImage(path: string, file: File): Promise<string> {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
+/** Public CMS content (admin-editable site sections). */
+export const contentApi = {
+  block: (key: string) =>
+    rawRequest<{ key: string; type: string; contentJson: Record<string, unknown> } | null>(
+      'GET',
+      `/cms/blocks/${encodeURIComponent(key)}`,
+      undefined,
+      false,
+    ),
+};
+
 export const authApi = {
   // Role is omitted — the backend defaults new website accounts to BUYER.
   register: (email: string, password: string, name?: string) =>

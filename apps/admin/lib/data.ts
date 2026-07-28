@@ -43,6 +43,7 @@ export interface School {
 // ─────────────────────────────────────────────────────────── Users
 export interface User {
   id: string;
+  userNo: number; // sequential display id → "U-1", "U-2", … by join order
   name: string;
   email: string;
   role: UserRole;
@@ -95,6 +96,7 @@ export interface Questionnaire {
 // so `id` is the owner's user id.
 export interface Listing {
   id: string;
+  listingNo: number; // sequential display id → "L-1", "L-2", … by creation order
   guide: string;
   guideEmail: string;
   guideAvatar?: string;
@@ -216,6 +218,7 @@ export interface NotificationTemplate {
   subject: string;
   body: string;
   updatedAt: string;
+  sampleVars: Record<string, string>; // realistic values for the live preview
 }
 
 // ─────────────────────────────────────────────────────────── Push campaigns

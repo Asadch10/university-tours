@@ -227,7 +227,10 @@ export const adminApi = {
 
   users: (p: { q?: string; role?: string; status?: string; page?: number } = {}) =>
     request<Paged<UserDto>>('GET', `/admin/users${qs({ ...p, limit: 100 })}`),
+  userDetail: (id: string) => request<UserDetailDto>('GET', `/admin/users/${id}`),
   userUpdate: (id: string, status: string) => request('PATCH', `/admin/users/${id}`, { status }),
+  userResetPassword: (id: string) =>
+    request<{ ok: true; email: string; sent: boolean }>('POST', `/admin/users/${id}/reset-password`),
 
   listings: (p: { q?: string; status?: string; service?: string; page?: number } = {}) =>
     request<Paged<ListingDto>>('GET', `/admin/listings${qs({ ...p, limit: 100 })}`),
@@ -300,7 +303,7 @@ export const adminApi = {
 
 export interface NotificationDto {
   id: string;
-  type: 'signup' | 'booking' | 'payment' | 'review';
+  type: 'signup' | 'booking' | 'payment' | 'review' | 'listing';
   title: string;
   detail: string;
   href: string;
@@ -349,8 +352,58 @@ export interface UserDto {
   emailVerifiedAt: string | null;
   createdAt: string;
   adminRoleName: string | null;
+  guideSchool?: string | null; // school from the become-a-guide form (profileJson.guideListing.school)
   sellerProfile?: { school?: { name: string } | null; ratingAvg?: number; ratingCount?: number } | null;
   _count?: { buyerBookings: number };
+}
+
+export interface UserDetailBooking {
+  id: string;
+  bookingNo: number;
+  status: string;
+  serviceType: string;
+  scheduledDate: string;
+  grossCents: number;
+  listingTitle: string | null;
+  schoolName: string | null;
+  side: 'guest' | 'guide';
+  counterparty: string;
+}
+
+export interface UserDetailReview {
+  id: string;
+  rating: number;
+  text: string | null;
+  hidden: boolean;
+  createdAt: string;
+  side: 'received' | 'written';
+  counterparty: string;
+  bookingId: string | null;
+  bookingNo: number | null;
+}
+
+export interface UserDetailDto {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string | null;
+  status: string;
+  emailVerified: boolean;
+  isAdmin: boolean;
+  joinedAt: string;
+  counts: { asGuest: number; asGuide: number };
+  guideListing: { title: string; school: string | null; status: string; tourTypes: string[] } | null;
+  sellerProfile: {
+    school: string | null;
+    major: string | null;
+    gradYear: number | null;
+    applicationStatus: string | null;
+    ratingAvg: number | null;
+    ratingCount: number | null;
+  } | null;
+  bookings: UserDetailBooking[];
+  reviews: UserDetailReview[];
 }
 
 /** Guide listing surfaced from the owner's `profileJson.guideListing` (one per user; id = owner's user id). */
@@ -604,6 +657,7 @@ export interface TemplateDto {
   channel: string;
   subject: string | null;
   body: string;
+  sampleVars?: Record<string, string> | null; // realistic values for the live preview
 }
 
 export interface CampaignDto {

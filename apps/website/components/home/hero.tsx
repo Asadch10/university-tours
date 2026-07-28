@@ -4,12 +4,32 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, GraduationCap, Calendar, Compass } from 'lucide-react';
 import { universities } from '@/lib/data';
+import { contentApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
+
+// Fallback copy — shown instantly, then replaced by the admin-editable `home.hero`
+// CMS block if one is published (so the hero can be edited from the admin portal).
+const DEFAULT_HERO_TITLE = 'Book private campus tours. Things just got personal.';
+const DEFAULT_HERO_SUBTITLE =
+  'Get the scoop and find the school that fits you best on a private campus tour tailored to you.';
+
+/** Render the heading with the first sentence in ink and the rest in the brand accent. */
+function HeroHeading({ title }: { title: string }) {
+  const i = title.indexOf('. ');
+  if (i === -1) return <>{title}</>;
+  return (
+    <>
+      {title.slice(0, i + 1)} <span className="text-maroon-900">{title.slice(i + 2)}</span>
+    </>
+  );
+}
 
 /* ─── Shared search form rendered inside both mobile + desktop cards ─── */
 
 function SearchCard({
   idPrefix,
+  title,
+  subtitle,
   university,
   date,
   tourType,
@@ -19,6 +39,8 @@ function SearchCard({
   onSubmit,
 }: {
   idPrefix: string;
+  title: string;
+  subtitle: string;
   university: string;
   date: string;
   tourType: string;
@@ -46,14 +68,10 @@ function SearchCard({
   return (
     <>
       <h1 className="font-display text-2xl font-bold leading-snug text-ink-900 sm:text-[1.85rem] lg:text-[2.1rem]">
-        Book private campus tours.{' '}
-        <span className="text-maroon-900">Things just got personal.</span>
+        <HeroHeading title={title} />
       </h1>
 
-      <p className="mt-3 text-sm leading-relaxed text-ink-500 lg:text-[0.95rem]">
-        Get the scoop and find the school that fits you best on a private
-        campus tour tailored to you.
-      </p>
+      <p className="mt-3 text-sm leading-relaxed text-ink-500 lg:text-[0.95rem]">{subtitle}</p>
 
       <form onSubmit={onSubmit} className="mt-5 space-y-3">
         {/* School */}
@@ -189,6 +207,26 @@ export function Hero() {
   const [university, setUniversity] = useState('');
   const [date, setDate] = useState('');
   const [tourType, setTourType] = useState('');
+  const [title, setTitle] = useState(DEFAULT_HERO_TITLE);
+  const [subtitle, setSubtitle] = useState(DEFAULT_HERO_SUBTITLE);
+
+  // Pull the admin-editable hero copy from the CMS (falls back to the defaults above).
+  useEffect(() => {
+    let active = true;
+    contentApi
+      .block('home.hero')
+      .then((block) => {
+        if (!active || !block) return;
+        const c = block.contentJson as { title?: unknown; body?: unknown; subtitle?: unknown };
+        if (typeof c.title === 'string' && c.title.trim()) setTitle(c.title);
+        const sub = c.body ?? c.subtitle;
+        if (typeof sub === 'string' && sub.trim()) setSubtitle(sub);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -200,6 +238,8 @@ export function Hero() {
   }
 
   const sharedProps = {
+    title,
+    subtitle,
     university,
     date,
     tourType,

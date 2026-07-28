@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
+import { BreadcrumbProvider } from './breadcrumb';
 import { Logo } from '@/components/brand/logo';
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -27,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-white">
         <div className="animate-pulse">
-          <Logo />
+          <Logo size={112} showWordmark={false} />
         </div>
       </div>
     );
@@ -69,16 +70,18 @@ export function AppShell({ children }: { children: ReactNode }) {
       </AnimatePresence>
 
       {/* Main column */}
-      <div className={`flex min-h-dvh flex-col transition-[padding] duration-300 ease-premium ${collapsed ? 'lg:pl-[var(--sidebar-w-collapsed)]' : 'lg:pl-[var(--sidebar-w)]'}`}>
-        <Topbar
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((v) => !v)}
-          onOpenMobile={() => setMobileOpen(true)}
-        />
-        <main className="scroll-branded flex-1 px-4 py-5 sm:px-5 lg:px-7">
-          <div className="mx-auto w-full max-w-[1400px] animate-fade-in">{children}</div>
-        </main>
-      </div>
+      <BreadcrumbProvider>
+        <div className={`flex min-h-dvh flex-col transition-[padding] duration-300 ease-premium ${collapsed ? 'lg:pl-[var(--sidebar-w-collapsed)]' : 'lg:pl-[var(--sidebar-w)]'}`}>
+          <Topbar
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed((v) => !v)}
+            onOpenMobile={() => setMobileOpen(true)}
+          />
+          <main className="scroll-branded flex-1 px-4 py-5 sm:px-5 lg:px-7">
+            <div className="mx-auto w-full max-w-[1400px] animate-fade-in">{children}</div>
+          </main>
+        </div>
+      </BreadcrumbProvider>
     </div>
   );
 }

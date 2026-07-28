@@ -1,13 +1,15 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, CreditCard, ExternalLink, Receipt } from 'lucide-react';
+import { Loader2, CreditCard, ExternalLink, Receipt } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { RequirePermission } from '@/components/auth/permission-gate';
 import type { BookingStatus } from '@/lib/data';
-import { useInvoice, invoiceNo } from '@/lib/queries';
+import { useInvoice, invoiceNo, useTransactions } from '@/lib/queries';
+import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 import { formatPrice, formatDateTime, humanize, paymentStatusMeta } from '@/lib/utils';
 
 function fmtDuration(mins: number | null) {
@@ -19,6 +21,10 @@ export default function InvoiceDetailPage() {
   const router = useRouter();
   const { bookingId } = useParams<{ bookingId: string }>();
   const { data: inv, isLoading, isError } = useInvoice(bookingId);
+  // Sequential "INV-<n>" from the transactions list (same numbering as the table).
+  const { data: ledger = [] } = useTransactions();
+  const invNo = ledger.find((t) => t.bookingId === bookingId)?.invoiceNo ?? null;
+  usePageBreadcrumb(invNo && invNo !== '—' ? invNo : null);
 
   if (isLoading) {
     return (
@@ -31,10 +37,12 @@ export default function InvoiceDetailPage() {
   if (isError || !inv) {
     return (
       <div className="space-y-4">
-        <BackLink onClick={() => router.push('/transactions')} />
         <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
           <p className="font-semibold text-ink-900">Invoice not found</p>
           <p className="mt-1 text-sm text-ink-500">It may have been removed, or the link is invalid.</p>
+          <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/transactions')}>
+            Back to transactions
+          </Button>
         </div>
       </div>
     );
@@ -49,12 +57,10 @@ export default function InvoiceDetailPage() {
   return (
     <RequirePermission anyOf={['transactions.view']}>
       <div className="space-y-6">
-        <BackLink onClick={() => router.push('/transactions')} />
-
         {/* Header */}
         <div className="flex flex-wrap items-center gap-3">
           <Receipt size={22} className="text-brand-700" />
-          <h1 className="font-mono text-lg font-semibold text-ink-900">{invoiceNo(inv.id)}</h1>
+          <h1 className="font-mono text-lg font-semibold text-ink-900">{invNo ?? invoiceNo(inv.id)}</h1>
           <StatusBadge status={inv.status as BookingStatus} />
           {pay && (() => {
             const meta = paymentStatusMeta(pay.status);
@@ -206,17 +212,6 @@ export default function InvoiceDetailPage() {
   );
 }
 
-function BackLink({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition-colors hover:text-ink-900"
-    >
-      <ArrowLeft size={16} /> Back to transactions
-    </button>
-  );
-}
 
 function Party({ label, name, email }: { label: string; name: string; email: string }) {
   return (

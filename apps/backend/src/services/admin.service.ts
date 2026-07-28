@@ -4,7 +4,8 @@ import { logger } from '../lib/logger.js';
 import { config } from '../config.js';
 import { stripe, isStripeEnabled } from '../lib/stripe.js';
 import { syncPaymentRecord } from './booking.service.js';
-import { sendProfileApprovedEmail, sendProfileDeclinedEmail } from './mailer.service.js';
+import { sendProfileApprovedEmail, sendProfileDeclinedEmail, ensureEmailTemplates, emailTemplateSample } from './mailer.service.js';
+import { forgotPassword } from './auth.service.js';
 import * as argon2 from 'argon2';
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
@@ -252,14 +253,135 @@ export async function listUsers(opts: { q?: string; role?: string; status?: stri
   const [data, total] = await Promise.all([
     prisma.user.findMany({
       where,
-      select: { id: true, name: true, email: true, role: true, status: true, emailVerifiedAt: true, createdAt: true, adminRoleName: true, sellerProfile: { select: { school: true, applicationStatus: true, ratingAvg: true, ratingCount: true } }, _count: { select: { buyerBookings: true } } },
+      select: { id: true, name: true, email: true, role: true, status: true, emailVerifiedAt: true, createdAt: true, adminRoleName: true, profileJson: true, sellerProfile: { select: { school: true, applicationStatus: true, ratingAvg: true, ratingCount: true } }, _count: { select: { buyerBookings: true } } },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
     }),
     prisma.user.count({ where }),
   ]);
-  return { data, total, page, limit };
+  // Community guides enter their school in the become-a-guide form → it lives in
+  // profileJson.guideListing.school (not the sellerProfile relation). Surface it as
+  // `guideSchool` and drop the heavy profileJson from the response.
+  const mapped = data.map(({ profileJson, ...u }) => {
+    const gl = (profileJson as Record<string, unknown> | null)?.['guideListing'] as Record<string, unknown> | undefined;
+    const guideSchool = typeof gl?.['school'] === 'string' && gl['school'].trim() ? (gl['school'] as string) : null;
+    return { ...u, guideSchool };
+  });
+  return { data: mapped, total, page, limit };
+}
+
+/** Full detail for one user: profile + guide listing + their bookings and reviews. */
+export async function getUserDetail(id: string) {
+  const u = await prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true, name: true, email: true, role: true, status: true,
+      emailVerifiedAt: true, createdAt: true, adminRoleName: true, profileJson: true,
+      sellerProfile: {
+        select: {
+          school: { select: { name: true } }, major: true, gradYear: true,
+          applicationStatus: true, ratingAvg: true, ratingCount: true,
+        },
+      },
+      _count: { select: { buyerBookings: true, sellerBookings: true } },
+    },
+  });
+  if (!u) throw new HttpError(404, 'not_found', 'User not found');
+
+  const profile = (u.profileJson as Record<string, unknown> | null) ?? {};
+  const gl = (profile['guideListing'] ?? null) as Record<string, unknown> | null;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? (v as string) : null);
+
+  const [bookings, reviews] = await Promise.all([
+    prisma.booking.findMany({
+      where: { OR: [{ buyerId: id }, { sellerId: id }] },
+      select: {
+        id: true, bookingNo: true, status: true, serviceType: true, scheduledDate: true,
+        grossCents: true, listingTitle: true, schoolName: true, buyerId: true, sellerId: true,
+        buyer: { select: { name: true } }, seller: { select: { name: true } },
+      },
+      orderBy: { requestedAt: 'desc' },
+      take: 100,
+    }),
+    prisma.review.findMany({
+      where: { OR: [{ buyerId: id }, { sellerId: id }] },
+      select: {
+        id: true, rating: true, text: true, hidden: true, createdAt: true, buyerId: true, sellerId: true,
+        buyer: { select: { name: true } }, seller: { select: { name: true } },
+        booking: { select: { id: true, bookingNo: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }),
+  ]);
+
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: str(profile['phone']),
+    role: u.role,
+    status: u.status,
+    emailVerified: !!u.emailVerifiedAt,
+    isAdmin: u.role === 'ADMIN' || !!u.adminRoleName,
+    joinedAt: u.createdAt,
+    counts: { asGuest: u._count.buyerBookings, asGuide: u._count.sellerBookings },
+    guideListing: gl
+      ? {
+          title: str(gl['listingTitle']) ?? 'Untitled listing',
+          school: str(gl['school']),
+          status: guideListingStatus(gl['status']),
+          tourTypes: Array.isArray(gl['tourTypes']) ? (gl['tourTypes'] as unknown[]).filter((t): t is string => typeof t === 'string') : [],
+        }
+      : null,
+    sellerProfile: u.sellerProfile
+      ? {
+          school: u.sellerProfile.school?.name ?? null,
+          major: u.sellerProfile.major,
+          gradYear: u.sellerProfile.gradYear,
+          applicationStatus: u.sellerProfile.applicationStatus,
+          ratingAvg: u.sellerProfile.ratingAvg,
+          ratingCount: u.sellerProfile.ratingCount,
+        }
+      : null,
+    bookings: bookings.map((b) => ({
+      id: b.id,
+      bookingNo: b.bookingNo,
+      status: b.status,
+      serviceType: b.serviceType,
+      scheduledDate: b.scheduledDate,
+      grossCents: b.grossCents,
+      listingTitle: b.listingTitle,
+      schoolName: b.schoolName,
+      side: b.buyerId === id ? ('guest' as const) : ('guide' as const),
+      counterparty: b.buyerId === id ? b.seller.name : b.buyer.name,
+    })),
+    reviews: reviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      text: r.text,
+      hidden: r.hidden,
+      createdAt: r.createdAt,
+      side: r.sellerId === id ? ('received' as const) : ('written' as const),
+      counterparty: r.sellerId === id ? r.buyer.name : r.seller.name,
+      bookingId: r.booking?.id ?? null,
+      bookingNo: r.booking?.bookingNo ?? null,
+    })),
+  };
+}
+
+/** Admin-triggered password reset: emails the user a reset link (reuses the public flow). */
+export async function adminResetPassword(userId: string, adminId?: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, status: true } });
+  if (!user) throw new HttpError(404, 'not_found', 'User not found');
+  // forgotPassword only emails ACTIVE accounts (and never reveals status) — surface
+  // that back to the admin so the toast is honest.
+  await forgotPassword(user.email);
+  if (adminId) {
+    await prisma.auditLog.create({ data: { adminId, action: 'user.password_reset', entity: `users/${userId} (${user.name})`, ip: '127.0.0.1' } });
+  }
+  return { ok: true as const, email: user.email, sent: user.status === 'ACTIVE' };
 }
 
 export async function updateUser(id: string, data: { status?: string }, adminId?: string) {
@@ -617,17 +739,17 @@ export async function moderateReview(id: string, data: { hidden: boolean }, admi
 
 export interface AdminNotification {
   id: string;
-  type: 'signup' | 'booking' | 'payment' | 'review';
+  type: 'signup' | 'booking' | 'payment' | 'review' | 'listing';
   title: string;
   detail: string;
   href: string; // where clicking navigates in the admin
   createdAt: string;
 }
 
-/** Merge the latest signups, bookings, payments and reviews into one feed. */
+/** Merge the latest signups, bookings, payments, reviews and listings-in-review into one feed. */
 export async function listNotifications(limit = 15): Promise<{ data: AdminNotification[] }> {
   const each = 8;
-  const [users, bookings, payments, reviews] = await Promise.all([
+  const [users, bookings, payments, reviews, inReview] = await Promise.all([
     prisma.user.findMany({
       where: { role: { in: ['BUYER', 'SELLER'] } },
       orderBy: { createdAt: 'desc' },
@@ -649,6 +771,12 @@ export async function listNotifications(limit = 15): Promise<{ data: AdminNotifi
       orderBy: { createdAt: 'desc' },
       take: each,
       select: { id: true, rating: true, createdAt: true, buyer: { select: { name: true } }, seller: { select: { name: true } }, booking: { select: { id: true } } },
+    }),
+    // Guide listings currently awaiting review (a new submission or an edit on the website).
+    prisma.user.findMany({
+      where: { profileJson: { path: '$.guideListing.status', equals: 'under_review' } },
+      take: each,
+      select: { id: true, name: true, profileJson: true },
     }),
   ]);
 
@@ -686,6 +814,18 @@ export async function listNotifications(limit = 15): Promise<{ data: AdminNotifi
       href: r.booking ? `/bookings/${r.booking.id}` : '/reviews',
       createdAt: r.createdAt.toISOString(),
     })),
+    ...inReview.map((u) => {
+      const gl = (u.profileJson as Record<string, unknown> | null)?.['guideListing'] as Record<string, unknown> | undefined;
+      const submittedAt = typeof gl?.['submittedAt'] === 'string' ? (gl['submittedAt'] as string) : new Date(0).toISOString();
+      return {
+        id: `listing:${u.id}:${submittedAt}`,
+        type: 'listing' as const,
+        title: 'Listing under review',
+        detail: u.name || u.id,
+        href: `/listings/${u.id}`,
+        createdAt: submittedAt,
+      };
+    }),
   ];
   items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   return { data: items.slice(0, limit) };
@@ -1068,7 +1208,11 @@ export async function setAppConfig(data: { minSupportedVersion?: string; forceUp
 // ─── Notification templates ───────────────────────────────────────────────────
 
 export async function listTemplates() {
-  return prisma.notificationTemplate.findMany({ orderBy: { key: 'asc' } });
+  // Make sure the editable email templates exist so admins can see + customize them.
+  await ensureEmailTemplates();
+  const rows = await prisma.notificationTemplate.findMany({ orderBy: { key: 'asc' } });
+  // Attach realistic sample values so the portal can render a live preview.
+  return rows.map((t) => ({ ...t, sampleVars: t.channel === 'EMAIL' ? emailTemplateSample(t.key) : null }));
 }
 
 export async function updateTemplate(id: string, data: { subject?: string; body?: string }, adminId?: string) {

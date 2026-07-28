@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, GraduationCap, MapPin, Video, MessageSquare, Clock, ShieldCheck, ImageIcon } from 'lucide-react';
+import { Loader2, GraduationCap, MapPin, Video, MessageSquare, Clock, ShieldCheck, ImageIcon } from 'lucide-react';
+import { useLightbox, ImageThumb } from '@/components/ui/lightbox';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -10,6 +11,7 @@ import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { timeAgo } from '@/lib/utils';
 import { useGuideApplications, useGuideApplicationActions, type GuideApplication } from '@/lib/queries';
+import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 
 // Field key → label, in the order shown (empty values skipped).
 const DETAIL_FIELDS: [string, string][] = [
@@ -50,8 +52,14 @@ export default function ApplicationDetailPage() {
   const { approve, reject } = useGuideApplicationActions();
   const { success, error } = useToast();
   const confirm = useConfirm();
+  const { open: openImage, node: lightbox } = useLightbox();
 
-  const app = rows.find((r) => r.id === id);
+  // URLs are "ID-<n>" (sequential); still accept the raw id for older/direct links.
+  const app = rows.find(
+    (r) => `ID-${r.appNo}`.toLowerCase() === id.toLowerCase() || String(r.appNo) === id || r.id === id,
+  );
+  // Show "ID-N" as the trailing crumb in the topbar (with "Applications" clickable).
+  usePageBreadcrumb(app ? `ID-${app.appNo}` : null);
 
   async function onApprove() {
     if (!app) return;
@@ -94,10 +102,12 @@ export default function ApplicationDetailPage() {
   if (!app) {
     return (
       <div className="space-y-4">
-        <BackLink onClick={() => router.push('/applications')} />
         <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
           <p className="font-semibold text-ink-900">Application not found</p>
           <p className="mt-1 text-sm text-ink-500">It may have been removed, or the link is invalid.</p>
+          <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/applications')}>
+            Back to applications
+          </Button>
         </div>
       </div>
     );
@@ -138,83 +148,74 @@ export default function ApplicationDetailPage() {
   return (
     <RequirePermission anyOf={['applications.decide']}>
       <div className="space-y-6">
-        <BackLink onClick={() => router.push('/applications')} />
-
         {/* Header */}
-        <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-start gap-4">
-              <Avatar name={app.applicant} size={56} ring />
+        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft">
+          <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <Avatar name={app.applicant} size={60} ring />
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <h1 className="font-display text-xl font-semibold text-ink-900">{app.applicant}</h1>
                   <StatusBadge status={app.status} />
                 </div>
-                <p className="mt-0.5 text-sm text-ink-600">{app.email}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-500">
-                  <span className="inline-flex items-center gap-1.5">
-                    <GraduationCap size={15} className="text-brand-800" /> {app.school}
-                  </span>
-                  {app.submittedAt && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock size={14} /> Submitted {timeAgo(app.submittedAt)}
-                    </span>
-                  )}
-                </div>
+                <p className="mt-1 truncate text-sm text-ink-500">{app.email}</p>
               </div>
             </div>
             <div className="shrink-0">{actions}</div>
           </div>
+          {/* Meta strip */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-ink-100 bg-ink-50/40 px-6 py-3 text-sm text-ink-600">
+            <span className="inline-flex items-center gap-1.5">
+              <GraduationCap size={15} className="text-brand-800" /> {app.school}
+            </span>
+            {app.submittedAt && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock size={14} className="text-ink-400" /> Submitted {timeAgo(app.submittedAt)}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5">
+              <ImageIcon size={14} className="text-ink-400" /> {photos.length} photo{photos.length === 1 ? '' : 's'}
+            </span>
+          </div>
         </section>
 
-        {/* Photos & identity — right under the header */}
+        {/* Photos & identity */}
         <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
           <p className="inline-flex items-center gap-2 text-2xs font-semibold uppercase tracking-wider text-ink-500">
             <ImageIcon size={13} /> Photos &amp; identity
           </p>
 
-          {/* Row 1 — student ID (inline thumbnail) */}
-          <p className="mt-4 mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-ink-700">
-            <ShieldCheck size={14} className="text-brand-800" /> Proof of identity · student ID
-          </p>
-          {idPhoto ? (
-            <a
-              href={idPhoto}
-              target="_blank"
-              rel="noreferrer"
-              className="block w-fit overflow-hidden rounded-lg border border-ink-200/70 bg-ink-50 transition-opacity hover:opacity-90"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={idPhoto} alt="Student ID" className="h-32 w-auto object-cover" />
-            </a>
-          ) : (
-            <p className="rounded-lg border border-dashed border-ink-300 bg-ink-50/60 px-4 py-4 text-center text-sm text-ink-400">
-              No student ID was uploaded.
-            </p>
-          )}
-
-          {/* Row 2 — profile photos */}
-          <p className="mt-5 mb-2 text-xs font-semibold text-ink-700">Profile photos ({photos.length})</p>
-          {photos.length > 0 ? (
-            <div className="flex flex-wrap gap-3">
-              {photos.map((src, i) => (
-                <a
-                  key={i}
-                  href={src}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group h-28 w-28 shrink-0 overflow-hidden rounded-lg border border-ink-200/70 bg-ink-100"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
-                </a>
-              ))}
+          <div className="mt-4 space-y-6">
+            {/* Row 1 — Student ID */}
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-700">
+                <ShieldCheck size={14} className="text-brand-800" /> Proof of identity · student ID
+              </p>
+              {idPhoto ? (
+                <ImageThumb src={idPhoto} alt="Student ID" onOpen={() => openImage(idPhoto)} className="h-28 w-44" />
+              ) : (
+                <div className="flex h-28 w-44 items-center justify-center rounded-lg border border-dashed border-ink-300 bg-ink-50/60 text-xs text-ink-400">
+                  No student ID
+                </div>
+              )}
             </div>
-          ) : (
-            <p className="rounded-lg border border-dashed border-ink-300 bg-ink-50/60 px-4 py-4 text-center text-sm text-ink-400">
-              No profile photos were uploaded.
-            </p>
-          )}
+
+            {/* Row 2 — Profile photos */}
+            <div className="border-t border-ink-100 pt-5">
+              <p className="mb-2 text-xs font-semibold text-ink-700">Profile photos ({photos.length})</p>
+              {photos.length > 0 ? (
+                <div className="flex flex-wrap gap-2.5">
+                  {photos.map((src, i) => (
+                    <ImageThumb key={i} src={src} alt={`Photo ${i + 1}`} onOpen={() => openImage(src)} className="h-24 w-24" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-ink-300 bg-ink-50/60 px-8 text-xs text-ink-400">
+                  No profile photos
+                </div>
+              )}
+            </div>
+          </div>
         </section>
 
         {/* Listing */}
@@ -264,20 +265,11 @@ export default function ApplicationDetailPage() {
             </dl>
           </section>
         )}
-
       </div>
+
+      {lightbox}
     </RequirePermission>
   );
 }
 
-function BackLink({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 transition-colors hover:text-ink-900"
-    >
-      <ArrowLeft size={16} /> Back to applications
-    </button>
-  );
-}
+

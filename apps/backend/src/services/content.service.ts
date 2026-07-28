@@ -6,6 +6,12 @@ export async function getHomepage() {
   return blocks;
 }
 
+/** A single published CMS block by key (e.g. "home.hero"). null if missing/unpublished. */
+export async function getBlock(key: string) {
+  const block = await prisma.cmsBlock.findFirst({ where: { key, published: true } });
+  return block ? { key: block.key, type: block.type, contentJson: block.contentJson } : null;
+}
+
 export async function getFaqs() {
   return prisma.cmsBlock.findMany({ where: { type: 'FAQ', published: true }, orderBy: { key: 'asc' } });
 }
