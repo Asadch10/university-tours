@@ -739,7 +739,7 @@ export async function moderateReview(id: string, data: { hidden: boolean }, admi
 
 export interface AdminNotification {
   id: string;
-  type: 'signup' | 'booking' | 'payment' | 'review' | 'listing';
+  type: 'signup' | 'booking' | 'payment' | 'review' | 'listing' | 'contact';
   title: string;
   detail: string;
   href: string; // where clicking navigates in the admin
@@ -749,7 +749,7 @@ export interface AdminNotification {
 /** Merge the latest signups, bookings, payments, reviews and listings-in-review into one feed. */
 export async function listNotifications(limit = 15): Promise<{ data: AdminNotification[] }> {
   const each = 8;
-  const [users, bookings, payments, reviews, inReview] = await Promise.all([
+  const [users, bookings, payments, reviews, inReview, contacts] = await Promise.all([
     prisma.user.findMany({
       where: { role: { in: ['BUYER', 'SELLER'] } },
       orderBy: { createdAt: 'desc' },
@@ -777,6 +777,12 @@ export async function listNotifications(limit = 15): Promise<{ data: AdminNotifi
       where: { profileJson: { path: '$.guideListing.status', equals: 'under_review' } },
       take: each,
       select: { id: true, name: true, profileJson: true },
+    }),
+    // Messages submitted from the website "Contact us" form.
+    prisma.contactMessage.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: each,
+      select: { id: true, name: true, topic: true, createdAt: true },
     }),
   ]);
 
@@ -826,6 +832,14 @@ export async function listNotifications(limit = 15): Promise<{ data: AdminNotifi
         createdAt: submittedAt,
       };
     }),
+    ...contacts.map((c) => ({
+      id: `contact:${c.id}`,
+      type: 'contact' as const,
+      title: 'New contact message',
+      detail: `${c.name || 'Someone'} · ${c.topic}`,
+      href: `/contact/${c.id}`,
+      createdAt: c.createdAt.toISOString(),
+    })),
   ];
   items.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   return { data: items.slice(0, limit) };

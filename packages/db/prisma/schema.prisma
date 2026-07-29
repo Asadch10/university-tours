@@ -569,6 +569,20 @@ model CmsBlock {
   @@map("cms_blocks")
 }
 
+// Messages submitted from the public website "Contact us" form.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String   @db.Text
+  status    String   @default("new") // new | read
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("contact_messages")
+}
+
 model AppConfig {
   id                        String  @id @default(cuid())
   featureFlagsJson          Json    @map("feature_flags_json")

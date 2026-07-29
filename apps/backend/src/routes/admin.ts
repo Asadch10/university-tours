@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import * as svc from '../services/admin.service.js';
+import * as contactSvc from '../services/contact.service.js';
 import { questionnaireApiRouter } from './api/questionnaire.js';
 import { imageUpload, uploadUrl } from '../lib/uploads.js';
 
@@ -266,6 +267,25 @@ adminRouter.get('/templates', requirePermission('templates.edit'), asyncHandler(
 
 adminRouter.patch('/templates/:id', requirePermission('templates.edit'), asyncHandler(async (req, res) => {
   res.json(await svc.updateTemplate(req.params['id'] as string, req.body as { subject?: string; body?: string }, req.user!.id));
+}));
+
+// ─── Contact-us messages ────────────────────────────────────────────────────────
+
+adminRouter.get('/contact-messages', requirePermission('cms.edit'), asyncHandler(async (req, res) => {
+  const { q, status, page, limit } = req.query as Record<string, string>;
+  res.json(await contactSvc.listContactMessages({ q, status, page: page ? +page : 1, limit: limit ? +limit : 100 }));
+}));
+
+adminRouter.get('/contact-messages/:id', requirePermission('cms.edit'), asyncHandler(async (req, res) => {
+  res.json(await contactSvc.getContactMessage(req.params['id'] as string));
+}));
+
+adminRouter.patch('/contact-messages/:id', requirePermission('cms.edit'), asyncHandler(async (req, res) => {
+  res.json(await contactSvc.updateContactMessage(req.params['id'] as string, req.body as { status?: string }));
+}));
+
+adminRouter.delete('/contact-messages/:id', requirePermission('cms.edit'), asyncHandler(async (req, res) => {
+  res.json(await contactSvc.deleteContactMessage(req.params['id'] as string));
 }));
 
 // ─── Push campaigns ───────────────────────────────────────────────────────────

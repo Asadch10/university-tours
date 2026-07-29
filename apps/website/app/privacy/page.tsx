@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Lock } from 'lucide-react';
+import { LegalShell } from '@/components/legal/legal-shell';
+import { universities } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -9,39 +11,14 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
-        <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
-          aria-hidden
-        />
-        <div className="container-page relative py-16 sm:py-20">
-          <div className="max-w-3xl">
-            <span className="eyebrow text-gold-300">
-              <span className="h-px w-6 bg-gold-300/60" /> Legal
-            </span>
-            <h1 className="mt-4 flex items-center gap-3 font-display text-4xl font-semibold leading-[1.1] sm:text-5xl">
-              <Lock className="text-gold-300" size={34} aria-hidden />
-              Privacy Policy
-            </h1>
-            <p className="mt-4 text-sm font-medium uppercase tracking-wider text-ivory/60">
-              Last updated: June 15, 2026
-            </p>
-            <p className="mt-3 max-w-xl text-lg leading-relaxed text-ivory/75">
-              What we collect, how we use it, and the controls you have — written to be clear, not
-              clever.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Body */}
-      <section className="py-16 sm:py-20">
-        <div className="container-page">
-          <div className="mx-auto max-w-3xl">
-            <div className="prose prose-ink max-w-none prose-headings:font-display prose-headings:text-ink-900 prose-a:text-maroon-800 prose-a:font-medium hover:prose-a:text-maroon-900">
+    <LegalShell
+      icon={Lock}
+      title="Privacy Policy"
+      updated="June 15, 2026"
+      intro="How University Campus Private Tours collects, uses, shares, and protects your personal data — and the rights you have over it."
+      image={universities[1]?.image ?? universities[0]?.image ?? ''}
+      imageAlt="A university campus"
+    >
               <p className="lead">
                 University Campus Private Tours (&ldquo;UCPT,&rdquo; &ldquo;we,&rdquo;
                 &ldquo;us&rdquo;) respects your privacy. This policy explains what personal data we
@@ -159,10 +136,6 @@ export default function PrivacyPage() {
                 For privacy questions or to exercise your rights, email our privacy team at{' '}
                 <a href="mailto:privacy@ucpt.example">privacy@ucpt.example</a>.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
+    </LegalShell>
   );
 }

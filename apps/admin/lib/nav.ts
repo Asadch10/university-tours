@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   SlidersHorizontal,
   Mail,
+  Inbox,
   ShieldCheck,
 } from 'lucide-react';
 import type { Permission } from './rbac';
@@ -152,6 +153,13 @@ export const NAV: NavSection[] = [
         icon: Mail,
         permissions: ['templates.edit'],
         desc: 'Edit email + push templates',
+      },
+      {
+        href: '/contact',
+        label: 'Contact us',
+        icon: Inbox,
+        permissions: ['contact.view'],
+        desc: 'Messages submitted from the website contact form',
       },
       {
         href: '/app-config',

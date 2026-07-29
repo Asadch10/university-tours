@@ -40,14 +40,6 @@ const COLUMNS = [
     ],
   },
   {
-    title: 'Guide',
-    links: [
-      { href: '/become-a-guide', label: 'Become a guide' },
-      { href: '/prepare-to-host', label: 'Prepare to host' },
-      { href: '/hosting-resources', label: 'Hosting resources' },
-    ],
-  },
-  {
     title: 'Terms & Policies',
     links: [
       { href: '/terms', label: 'Terms of Service' },

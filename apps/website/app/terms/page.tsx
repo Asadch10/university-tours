@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Scale } from 'lucide-react';
+import { LegalShell } from '@/components/legal/legal-shell';
+import { universities } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -9,39 +11,14 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-maroon-gradient pt-[var(--header-h)] text-ivory">
-        <div className="bg-grid absolute inset-0 opacity-30" aria-hidden />
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gold-500/15 blur-3xl"
-          aria-hidden
-        />
-        <div className="container-page relative py-16 sm:py-20">
-          <div className="max-w-3xl">
-            <span className="eyebrow text-gold-300">
-              <span className="h-px w-6 bg-gold-300/60" /> Legal
-            </span>
-            <h1 className="mt-4 flex items-center gap-3 font-display text-4xl font-semibold leading-[1.1] sm:text-5xl">
-              <Scale className="text-gold-300" size={36} aria-hidden />
-              Terms of Service
-            </h1>
-            <p className="mt-4 text-sm font-medium uppercase tracking-wider text-ivory/60">
-              Last updated: June 15, 2026
-            </p>
-            <p className="mt-3 max-w-xl text-lg leading-relaxed text-ivory/75">
-              The agreement that governs how families and student guides use University Campus
-              Private Tours to book and host campus visits.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Body */}
-      <section className="py-16 sm:py-20">
-        <div className="container-page">
-          <div className="mx-auto max-w-3xl">
-            <div className="prose prose-ink max-w-none prose-headings:font-display prose-headings:text-ink-900 prose-a:text-maroon-800 prose-a:font-medium hover:prose-a:text-maroon-900">
+    <LegalShell
+      icon={Scale}
+      title="Terms of Service"
+      updated="June 15, 2026"
+      intro="The agreement that governs how families and student guides use University Campus Private Tours to book and host campus visits."
+      image={universities[0]?.image ?? ''}
+      imageAlt="A university campus"
+    >
               <p className="lead">
                 Welcome to University Campus Private Tours (&ldquo;UCPT,&rdquo; &ldquo;we,&rdquo;
                 &ldquo;us,&rdquo; or &ldquo;our&rdquo;). These Terms of Service (the
@@ -165,10 +142,6 @@ export default function TermsPage() {
                 <a href="mailto:legal@ucpt.example">legal@ucpt.example</a> and we will be glad to
                 help.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
+    </LegalShell>
   );
 }

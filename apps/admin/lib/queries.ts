@@ -21,6 +21,7 @@ import type {
   Payout,
   Refund,
   Review,
+  ContactMessage,
   CmsBlock,
   NotificationTemplate,
   PushCampaign,
@@ -666,6 +667,48 @@ export function useTemplateActions() {
   const inv = () => qc.invalidateQueries({ queryKey: ['templates'] });
   return {
     update: useMutation({ mutationFn: (v: { id: string; subject?: string; body?: string }) => adminApi.templateUpdate(v.id, { subject: v.subject, body: v.body }), onSuccess: inv }),
+  };
+}
+
+// ─── Contact-us messages ────────────────────────────────────────────────────────
+
+export function useContactMessages() {
+  return useQuery({
+    queryKey: ['contact-messages'],
+    queryFn: async (): Promise<ContactMessage[]> => {
+      const res = await adminApi.contactMessages();
+      return (
+        res.data
+          .map((m) => ({
+            id: m.id,
+            name: m.name,
+            email: m.email,
+            topic: m.topic,
+            message: m.message,
+            status: m.status,
+            createdAt: m.createdAt,
+          }))
+          // Sequential "C-<n>" by submission order (oldest = C-1); keep newest first for display.
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          .map((m, i) => ({ ...m, contactNo: i + 1 }))
+          .reverse()
+      );
+    },
+  });
+}
+
+export function useContactActions() {
+  const qc = useQueryClient();
+  const inv = () => qc.invalidateQueries({ queryKey: ['contact-messages'] });
+  return {
+    setStatus: useMutation({
+      mutationFn: (v: { id: string; status: string }) => adminApi.contactMessageUpdate(v.id, { status: v.status }),
+      onSuccess: inv,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => adminApi.contactMessageDelete(id),
+      onSuccess: inv,
+    }),
   };
 }
 

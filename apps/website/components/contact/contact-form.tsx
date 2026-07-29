@@ -1,9 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { Send, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Send, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { contactApi, friendlyError } from '@/lib/client-api';
 
 const TOPICS = [
   'General question',
@@ -21,10 +22,33 @@ const labelClass = 'mb-1.5 block text-sm font-semibold text-ink-800';
 
 export function ContactForm() {
   const [submitted, setSubmitted] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
+  const [error, setError] = React.useState('');
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitted(true);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const name = String(fd.get('name') ?? '').trim();
+    const email = String(fd.get('email') ?? '').trim();
+    const topic = String(fd.get('topic') ?? '').trim();
+    const message = String(fd.get('message') ?? '').trim();
+
+    if (!name || !email || !topic || !message) {
+      setError('Please fill in your name, email, a topic, and a message.');
+      return;
+    }
+
+    setError('');
+    setSending(true);
+    try {
+      await contactApi.submit({ name, email, topic, message });
+      setSubmitted(true);
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setSending(false);
+    }
   }
 
   if (submitted) {
@@ -48,7 +72,10 @@ export function ContactForm() {
           type="button"
           variant="outline"
           className="mt-8"
-          onClick={() => setSubmitted(false)}
+          onClick={() => {
+            setSubmitted(false);
+            setError('');
+          }}
         >
           Send another message <ArrowRight size={16} />
         </Button>
@@ -62,8 +89,15 @@ export function ContactForm() {
       noValidate
       className="rounded-4xl border border-ink-200/70 bg-white p-6 shadow-soft sm:p-8"
     >
-      <fieldset className="space-y-5">
+      <fieldset disabled={sending} className="space-y-5">
         <legend className="sr-only">Contact form</legend>
+
+        {error && (
+          <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <AlertCircle size={17} className="mt-0.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -130,8 +164,16 @@ export function ContactForm() {
           <p className="text-xs leading-relaxed text-ink-500">
             We typically reply within one business day. Your details stay private.
           </p>
-          <Button type="submit" variant="primary" size="lg" className="shrink-0">
-            Send message <Send size={16} />
+          <Button type="submit" variant="primary" size="lg" className="shrink-0" disabled={sending}>
+            {sending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Sending…
+              </>
+            ) : (
+              <>
+                Send message <Send size={16} />
+              </>
+            )}
           </Button>
         </div>
       </fieldset>

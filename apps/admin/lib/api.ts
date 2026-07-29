@@ -286,6 +286,13 @@ export const adminApi = {
   templates: () => request<TemplateDto[]>('GET', '/admin/templates'),
   templateUpdate: (id: string, b: { subject?: string; body?: string }) => request('PATCH', `/admin/templates/${id}`, b),
 
+  contactMessages: (p: { q?: string; status?: string; page?: number } = {}) =>
+    request<Paged<ContactMessageDto>>('GET', `/admin/contact-messages${qs({ ...p, limit: 200 })}`),
+  contactMessage: (id: string) => request<ContactMessageDto>('GET', `/admin/contact-messages/${id}`),
+  contactMessageUpdate: (id: string, b: { status?: string }) =>
+    request<ContactMessageDto>('PATCH', `/admin/contact-messages/${id}`, b),
+  contactMessageDelete: (id: string) => request<{ ok: true }>('DELETE', `/admin/contact-messages/${id}`),
+
   campaigns: () => request<CampaignDto[]>('GET', '/admin/campaigns'),
   campaignCreate: (b: { segment: string; title: string; body: string; scheduledAt?: string }) =>
     request('POST', '/admin/campaigns', b),
@@ -303,7 +310,7 @@ export const adminApi = {
 
 export interface NotificationDto {
   id: string;
-  type: 'signup' | 'booking' | 'payment' | 'review' | 'listing';
+  type: 'signup' | 'booking' | 'payment' | 'review' | 'listing' | 'contact';
   title: string;
   detail: string;
   href: string;
@@ -658,6 +665,16 @@ export interface TemplateDto {
   subject: string | null;
   body: string;
   sampleVars?: Record<string, string> | null; // realistic values for the live preview
+}
+
+export interface ContactMessageDto {
+  id: string;
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+  status: string; // new | read
+  createdAt: string;
 }
 
 export interface CampaignDto {

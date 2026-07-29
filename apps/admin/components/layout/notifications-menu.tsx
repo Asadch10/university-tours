@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, UserPlus, CalendarCheck, CreditCard, Star, CheckCheck, ClipboardCheck, type LucideIcon } from 'lucide-react';
+import { Bell, UserPlus, CalendarCheck, CreditCard, Star, CheckCheck, ClipboardCheck, Inbox, type LucideIcon } from 'lucide-react';
 import { cn, timeAgo } from '@/lib/utils';
 import { useNotifications } from '@/lib/queries';
 import type { NotificationDto } from '@/lib/api';
@@ -14,32 +14,50 @@ const META: Record<NotificationDto['type'], { Icon: LucideIcon; cls: string }> =
   payment: { Icon: CreditCard, cls: 'bg-emerald-50 text-emerald-600' },
   review: { Icon: Star, cls: 'bg-amber-50 text-amber-600' },
   listing: { Icon: ClipboardCheck, cls: 'bg-gold-100 text-gold-800' },
+  contact: { Icon: Inbox, cls: 'bg-indigo-50 text-indigo-600' },
 };
 
-// Read state is tracked as a "last read" timestamp — anything newer is unread.
-const READ_KEY = 'ucpt-admin-notif-read-at';
+// The recent-activity feed is computed (not stored), so read-state lives client-side:
+// we remember which notification ids the admin has already opened.
+const READ_KEY = 'ucpt-admin-notif-read-ids';
 
 export function NotificationsMenu() {
   const router = useRouter();
   const { data: items = [] } = useNotifications();
   const [open, setOpen] = useState(false);
-  const [lastReadAt, setLastReadAt] = useState(0);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const v = typeof window !== 'undefined' ? window.localStorage.getItem(READ_KEY) : null;
-    if (v) setLastReadAt(Number(v) || 0);
+    try {
+      const raw = typeof window !== 'undefined' ? window.localStorage.getItem(READ_KEY) : null;
+      if (raw) setReadIds(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      /* ignore malformed storage */
+    }
   }, []);
 
-  const unread = items.filter((n) => new Date(n.createdAt).getTime() > lastReadAt).length;
+  const unread = items.filter((n) => !readIds.has(n.id)).length;
 
-  const markAllRead = () => {
-    const newest = items.length
-      ? Math.max(...items.map((n) => new Date(n.createdAt).getTime()))
-      : Date.now();
-    setLastReadAt(newest);
-    window.localStorage.setItem(READ_KEY, String(newest));
+  // Persist, pruning to ids still in the current feed so storage can't grow forever.
+  const persistRead = (next: Set<string>) => {
+    const visible = new Set(items.map((n) => n.id));
+    const pruned = new Set([...next].filter((id) => visible.has(id)));
+    setReadIds(pruned);
+    try {
+      window.localStorage.setItem(READ_KEY, JSON.stringify([...pruned]));
+    } catch {
+      /* storage unavailable */
+    }
   };
+
+  const markRead = (ids: string[]) => {
+    const next = new Set(readIds);
+    ids.forEach((id) => next.add(id));
+    persistRead(next);
+  };
+
+  const markAllRead = () => markRead(items.map((n) => n.id));
 
   useEffect(() => {
     if (!open) return;
@@ -54,6 +72,13 @@ export function NotificationsMenu() {
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  // Opening a notification marks just that one read (the count ticks down), then navigates.
+  const openNotification = (n: NotificationDto) => {
+    markRead([n.id]);
+    setOpen(false);
+    router.push(n.href);
+  };
 
   const go = (href: string) => {
     setOpen(false);
@@ -106,12 +131,12 @@ export function NotificationsMenu() {
               ) : (
                 items.map((n) => {
                   const { Icon, cls } = META[n.type];
-                  const isUnread = new Date(n.createdAt).getTime() > lastReadAt;
+                  const isUnread = !readIds.has(n.id);
                   return (
                     <button
                       key={n.id}
                       type="button"
-                      onClick={() => go(n.href)}
+                      onClick={() => openNotification(n)}
                       className={cn(
                         'flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ink-50',
                         isUnread && 'bg-maroon-50/40',

@@ -203,6 +203,12 @@ export const contentApi = {
     ),
 };
 
+export const contactApi = {
+  // Public "Contact us" form submission (no auth).
+  submit: (input: { name: string; email: string; topic: string; message: string }) =>
+    rawRequest<{ ok: true; id: string }>('POST', '/contact', input, false),
+};
+
 export const authApi = {
   // Role is omitted — the backend defaults new website accounts to BUYER.
   register: (email: string, password: string, name?: string) =>

@@ -25,6 +25,7 @@ export type Permission =
   | 'reviews.moderate'
   | 'universities.manage'
   | 'cms.edit'
+  | 'contact.view'
   | 'appconfig.manage'
   | 'campaigns.send'
   | 'templates.edit'

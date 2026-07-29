@@ -199,6 +199,18 @@ export interface Review {
   createdAt: string;
 }
 
+// ─────────────────────────────────────────────────────── Contact us
+export interface ContactMessage {
+  id: string;
+  contactNo: number; // sequential display id → "C-1", "C-2", … by submission order
+  name: string;
+  email: string;
+  topic: string;
+  message: string;
+  status: string; // new | read
+  createdAt: string;
+}
+
 // ─────────────────────────────────────────────────────────── CMS
 export interface CmsBlock {
   id: string;
