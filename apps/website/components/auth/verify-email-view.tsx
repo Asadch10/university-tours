@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2, MailCheck, AlertCircle } from 'lucide-react';
 import { authApi, ApiError, tokenStore } from '@/lib/client-api';
-import { updateSessionUser } from '@/lib/auth';
+import { updateSessionUser, signOut } from '@/lib/auth';
 
 /* University campus background — Stanford (Hoover Tower / Main Quad). */
 const BG_IMAGE =
@@ -94,6 +94,13 @@ export function VerifyEmailView() {
     }
   }, [router]);
 
+  // "Fix it" — the user typed the wrong email. Clear the half-finished, unverified
+  // session so /register is a clean slate, then send them there to sign up again.
+  const handleFixEmail = useCallback(() => {
+    signOut();
+    router.push('/register');
+  }, [router]);
+
   const first = (name || '').trim().split(/\s+/)[0] || 'there';
 
   // ── Verifying ────────────────────────────────────────────────────────────
@@ -126,6 +133,7 @@ export function VerifyEmailView() {
             Let’s finish setting up your account.
           </p>
           <button
+            type="button"
             onClick={() => router.push('/onboarding')}
             className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-maroon-900 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
           >
@@ -150,6 +158,7 @@ export function VerifyEmailView() {
           <p className="mt-4 text-[15px] leading-relaxed text-ink-600">{errorMsg}</p>
 
           <button
+            type="button"
             onClick={handleResend}
             disabled={resendState === 'sending' || resendState === 'sent'}
             className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-maroon-900 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800 disabled:cursor-not-allowed disabled:opacity-70"
@@ -196,26 +205,30 @@ export function VerifyEmailView() {
         <div className="mt-10 space-y-2 text-sm text-ink-500">
           <p>
             Didn’t get the email?{' '}
-            {resendState === 'sent' ? (
-              <span className="font-semibold text-green-600">Sent — check your inbox.</span>
-            ) : (
-              <button
-                onClick={handleResend}
-                disabled={resendState === 'sending'}
-                className="font-semibold text-maroon-900 hover:underline disabled:opacity-60"
-              >
-                {resendState === 'sending' ? 'Resending…' : 'Resend email'}
-              </button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendState === 'sending'}
+              className="font-semibold text-maroon-900 hover:underline disabled:opacity-60"
+            >
+              {resendState === 'sending' ? 'Resending…' : resendState === 'sent' ? 'Resend again' : 'Resend email'}
+            </button>
+            {resendState === 'sent' && (
+              <span className="ml-2 font-semibold text-green-600">Sent — check your inbox.</span>
             )}
             {resendState === 'error' && (
-              <span className="ml-1 text-maroon-900">Couldn’t resend — try again.</span>
+              <span className="ml-2 text-maroon-900">Couldn’t resend — try again.</span>
             )}
           </p>
           <p>
             Is there an error in your email?{' '}
-            <Link href="/register" className="font-semibold text-maroon-900 hover:underline">
+            <button
+              type="button"
+              onClick={handleFixEmail}
+              className="font-semibold text-maroon-900 hover:underline"
+            >
               Fix it
-            </Link>
+            </button>
           </p>
         </div>
       </div>

@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 /**
- * Brand lockup: crest mark + wordmark. Uses /logo.svg (replace with your exact
- * PNG/SVG in /public to swap the mark). `variant` adapts colors for dark heroes.
+ * Brand lockup: the crest badge at /logo.png + the "University · Campus Private
+ * Tours" wordmark. `variant` adapts the wordmark colors for dark heroes.
  */
 export function Logo({
   variant = 'default',
@@ -21,10 +21,12 @@ export function Logo({
       aria-label="University Campus Private Tours — home"
       className={cn('group inline-flex items-center gap-3', className)}
     >
-      <span className="relative inline-flex h-11 w-[2.35rem] shrink-0 transition-transform duration-300 ease-premium group-hover:-translate-y-0.5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="" className="h-full w-full object-contain" />
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo.png"
+        alt=""
+        className="h-12 w-12 shrink-0 object-contain transition-transform duration-300 ease-premium group-hover:-translate-y-0.5"
+      />
       {showWordmark && (
         <span className="flex flex-col gap-1 leading-none">
           <span
