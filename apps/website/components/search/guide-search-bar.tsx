@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronLeft, ChevronRight, Footprints, Video } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Footprints, Video, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { universities } from '@/lib/data';
 
@@ -20,6 +20,12 @@ const TOUR_OPTIONS = [
     icon: Video,
     label: 'Video chat',
     desc: 'Connect live with a current student and get the scoop from anywhere',
+  },
+  {
+    value: 'CONSULTATION',
+    icon: MessageSquare,
+    label: 'Consultancy',
+    desc: 'A focused 1-on-1 advising session on admissions, essays, or student life',
   },
 ];
 
@@ -335,9 +341,17 @@ export function GuideSearchBar({
           </button>
         </div>
 
-        {/* ── School dropdown ──────────────────────────────────────── */}
+        {/* ── Dropdown panels — smooth open/close ──────────────────── */}
+        <AnimatePresence>
         {active === 'school' && (
-          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[400px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:w-[400px]">
+          <motion.div
+            key="school"
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[400px] origin-top overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:w-[400px]"
+          >
             <div className="max-h-[330px] overflow-y-auto p-2">
               {schoolMatches.length === 0 ? (
                 <p className="px-3 py-6 text-center text-sm text-ink-400">No schools found</p>
@@ -373,12 +387,19 @@ export function GuideSearchBar({
             >
               Suggest a new school
             </button>
-          </div>
+          </motion.div>
         )}
 
         {/* ── Date calendar ────────────────────────────────────────── */}
         {active === 'date' && (
-          <div className="absolute left-0 top-[calc(100%+0.75rem)] z-50 sm:left-1/4">
+          <motion.div
+            key="date"
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-0 top-[calc(100%+0.75rem)] z-50 origin-top sm:left-1/4"
+          >
             <Calendar
               value={date}
               onSelect={(v) => {
@@ -386,12 +407,19 @@ export function GuideSearchBar({
                 setActive('type');
               }}
             />
-          </div>
+          </motion.div>
         )}
 
         {/* ── Tour type dropdown ───────────────────────────────────── */}
         {active === 'type' && (
-          <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[380px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:right-14 sm:w-[380px]">
+          <motion.div
+            key="type"
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[380px] origin-top overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:right-14 sm:w-[380px]"
+          >
             <p className="px-6 pb-3 pt-5 text-base font-bold text-ink-900">
               How would you like to tour?
             </p>
@@ -425,8 +453,9 @@ export function GuideSearchBar({
                 </button>
               );
             })}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
         </motion.div>
       )}

@@ -101,7 +101,7 @@ function Gallery({ g }: { g: GuideProfile }) {
         <img
           src={g.gallery[active]}
           alt={`${g.name} photo ${active + 1}`}
-          className="aspect-square w-full object-cover"
+          className="aspect-square w-full object-contain"
         />
 
         <button
@@ -336,8 +336,8 @@ function HostedBy({ g }: { g: GuideProfile }) {
         <div>
           <p className="text-justify leading-relaxed text-ink-700 sm:text-left">{g.hostedBy}</p>
           <Link
-            href={`/ambassadors/${g.id}`}
-            className="mt-3 inline-block font-medium text-blue-600 hover:underline"
+            href={`/u/${g.id}`}
+            className="mt-3 inline-block font-semibold text-maroon-800 hover:text-maroon-900 hover:underline"
           >
             View profile
           </Link>
@@ -392,9 +392,10 @@ function BookingCard({ g }: { g: GuideProfile }) {
   const [date, setDate] = useState<{ y: number; m: number; d: number } | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [duration, setDuration] = useState<string | null>(null);
-  // Progressive reveal: only Tour type shows until the guest actively picks one,
-  // then Date → Time → (Guests + Duration + Reserve) unfold as each is filled.
-  const [tourPicked, setTourPicked] = useState(false);
+  // All booking fields (Tour type, Date, Time, Guests, Duration, Reserve) are shown
+  // together by default — no step-by-step reveal. Reserve stays disabled until the
+  // required picks are made.
+  const [tourPicked, setTourPicked] = useState(true);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'paying' | 'requested'>('idle');
   // Set when the backend returns a Stripe client secret — drives the payment step.
   const [pay, setPay] = useState<{ bookingId: string; clientSecret: string; publishableKey: string } | null>(null);
@@ -673,14 +674,16 @@ function BookingCard({ g }: { g: GuideProfile }) {
         </div>
       )}
 
-      {/* Start time — revealed once a date is chosen */}
-      {tourPicked && date && (
+      {/* Start time — pick a date first to load its available times */}
+      {tourPicked && (
         <div className="relative">
           <Trigger label="Start time" value={time ?? 'Add time'} muted={!time} active={open === 'time'} onClick={() => toggle('time')} />
           {open === 'time' && (
             <DropPanel>
               {timesForDate.length === 0 ? (
-                <p className="py-2 text-sm text-ink-600">No times available for this date.</p>
+                <p className="py-2 text-sm text-ink-600">
+                  {date ? 'No times available for this date.' : 'Pick a date first to see available times.'}
+                </p>
               ) : (
                 <div className="grid max-h-72 grid-cols-2 gap-x-4 overflow-y-auto">
                   {timesForDate.map((s) => {
@@ -714,8 +717,8 @@ function BookingCard({ g }: { g: GuideProfile }) {
         </div>
       )}
 
-      {/* Guests, duration & reserve — revealed once a time is chosen */}
-      {tourPicked && date && time && (
+      {/* Guests, duration & reserve — always shown (Reserve enables once date+time+duration set) */}
+      {tourPicked && (
         <>
           <div className="relative grid grid-cols-2 gap-4">
             <Trigger label="Guests" value={guestLabel} active={open === 'guests'} onClick={() => toggle('guests')} />
@@ -802,19 +805,6 @@ function BookingCard({ g }: { g: GuideProfile }) {
               'Reserve'
             )}
           </button>
-          <p className="text-center text-sm text-ink-500">
-            {selectedDuration ? (
-              <>
-                <span className="font-semibold text-ink-900">{formatPrice(priceCents)}</span> total · you
-                won’t be charged yet
-              </>
-            ) : (
-              <>
-                From <span className="font-semibold text-ink-900">{formatPrice(g.price)}</span> · you won’t
-                be charged yet
-              </>
-            )}
-          </p>
         </>
       )}
     </div>
