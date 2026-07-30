@@ -5,7 +5,7 @@ import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { CreditCard, Loader2, Trash2, Plus, Check, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { paymentMethodsApi, friendlyError, type SavedCard } from '@/lib/client-api';
+import { paymentMethodsApi, friendlyError, ApiError, type SavedCard } from '@/lib/client-api';
 import { useToast } from '@/lib/toast';
 
 // Cache one Stripe.js loader per publishable key.
@@ -48,7 +48,15 @@ export function PaymentsSettings() {
       setSetup({ clientSecret, publishableKey });
     } catch (e) {
       setAdding(false);
-      toast.error('Couldn’t start adding a card', friendlyError(e));
+      // Card payments not set up on the server (missing Stripe keys) → be honest
+      // rather than blaming a generic outage.
+      const stripeDisabled =
+        (e instanceof ApiError && e.code === 'stripe_disabled') ||
+        (e instanceof Error && e.message === 'Payments are not configured.');
+      toast.error(
+        'Couldn’t start adding a card',
+        stripeDisabled ? 'Card payments aren’t enabled yet. Please try again later.' : friendlyError(e),
+      );
     }
   }
 

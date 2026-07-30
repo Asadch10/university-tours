@@ -7,7 +7,6 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,8 +14,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import { fetchUniversities, type UniversityPin } from '../api/schools';
+import { SchoolRowSkeleton } from '../components/Skeleton';
 
 // Continental-US default region until the schools load / a pin is picked.
 const US_REGION = { latitude: 39.5, longitude: -98.35, latitudeDelta: 45, longitudeDelta: 55 };
@@ -73,8 +73,10 @@ export function ExploreScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.maroon800} size="large" />
+        <View style={styles.list}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SchoolRowSkeleton key={i} />
+          ))}
         </View>
       ) : view === 'list' ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -209,7 +211,7 @@ function SchoolDetail({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.white },
   header: { paddingHorizontal: spacing(5), paddingTop: spacing(2), paddingBottom: spacing(3) },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink900 },
+  title: { fontSize: font(28), fontWeight: '800', color: colors.ink900 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,11 +224,11 @@ const styles = StyleSheet.create({
     height: 46,
     marginTop: spacing(4),
   },
-  searchInput: { flex: 1, fontSize: 15, color: colors.ink900 },
+  searchInput: { flex: 1, fontSize: font(15), color: colors.ink900 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: spacing(5), paddingBottom: spacing(24) },
-  count: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: colors.ink300, paddingVertical: spacing(3) },
-  emptyText: { fontSize: 14, color: colors.ink500, textAlign: 'center', paddingVertical: spacing(10) },
+  count: { fontSize: font(11), fontWeight: '700', letterSpacing: 0.5, color: colors.ink300, paddingVertical: spacing(3) },
+  emptyText: { fontSize: font(14), color: colors.ink500, textAlign: 'center', paddingVertical: spacing(10) },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,9 +239,9 @@ const styles = StyleSheet.create({
   },
   rowImg: { height: 56, width: 56, borderRadius: radius.md, backgroundColor: colors.ink100 },
   rowImgFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.maroon900 },
-  rowImgLetter: { color: colors.ivory, fontSize: 20, fontWeight: '800' },
-  rowName: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  rowLoc: { fontSize: 13, color: colors.ink500, marginTop: 2 },
+  rowImgLetter: { color: colors.ivory, fontSize: font(20), fontWeight: '800' },
+  rowName: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
+  rowLoc: { fontSize: font(13), color: colors.ink500, marginTop: 2 },
   map: { flex: 1 },
   toggle: {
     position: 'absolute',
@@ -258,7 +260,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  toggleText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  toggleText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
 
   // Detail sheet
   sheetBackdrop: { flex: 1, backgroundColor: '#00000055', justifyContent: 'flex-end' },
@@ -266,9 +268,9 @@ const styles = StyleSheet.create({
   hero: { height: 200 },
   heroImg: { height: 200, width: '100%', backgroundColor: colors.ink100 },
   heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.maroon900 },
-  heroLetter: { color: colors.ivory, fontSize: 56, fontWeight: '800' },
+  heroLetter: { color: colors.ivory, fontSize: font(56), fontWeight: '800' },
   heroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
-  heroName: { position: 'absolute', left: spacing(5), right: spacing(12), bottom: spacing(4), color: colors.white, fontSize: 20, fontWeight: '800', textShadowColor: '#000000aa', textShadowRadius: 8 },
+  heroName: { position: 'absolute', left: spacing(5), right: spacing(12), bottom: spacing(4), color: colors.white, fontSize: font(20), fontWeight: '800', textShadowColor: '#000000aa', textShadowRadius: 8 },
   closeBtn: {
     position: 'absolute',
     right: spacing(3),
@@ -282,11 +284,11 @@ const styles = StyleSheet.create({
   },
   sheetBody: { padding: spacing(5) },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
-  locText: { fontSize: 13, color: colors.ink600 },
-  scoopLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.5, color: colors.ink300, marginTop: spacing(4) },
-  scoop: { fontSize: 14, color: colors.ink600, lineHeight: 21, marginTop: spacing(2) },
+  locText: { fontSize: font(13), color: colors.ink600 },
+  scoopLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 1.5, color: colors.ink300, marginTop: spacing(4) },
+  scoop: { fontSize: font(14), color: colors.ink600, lineHeight: 21, marginTop: spacing(2) },
   ambRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(4) },
-  ambText: { fontSize: 14, color: colors.ink500 },
+  ambText: { fontSize: font(14), color: colors.ink500 },
   ambStrong: { fontWeight: '800', color: colors.ink900 },
   viewGuidesBtn: {
     flexDirection: 'row',
@@ -298,5 +300,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(4),
     marginTop: spacing(6),
   },
-  viewGuidesText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  viewGuidesText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
 });

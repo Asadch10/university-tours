@@ -14,7 +14,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { session, friendlyError } from '../api/auth';
 
@@ -75,8 +75,17 @@ export function AuthScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Brand */}
           <View style={styles.brand}>
             <View style={styles.badge}>
@@ -97,7 +106,7 @@ export function AuthScreen({ navigation }: Props) {
               return (
                 <Pressable key={m} onPress={() => switchMode(m)} style={[styles.segmentBtn, active && styles.segmentBtnActive]}>
                   <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                    {m === 'signin' ? 'Sign in' : 'Create account'}
+                    {m === 'signin' ? 'Login' : 'Sign Up'}
                   </Text>
                 </Pressable>
               );
@@ -198,14 +207,14 @@ export function AuthScreen({ navigation }: Props) {
             {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.submitText}>{isSignup ? 'Create account' : 'Sign in'}</Text>
+              <Text style={styles.submitText}>{isSignup ? 'Sign Up' : 'Login'}</Text>
             )}
           </Pressable>
 
           <Text style={styles.switch}>
             {isSignup ? 'Already have an account? ' : "Don't have an account? "}
             <Text style={styles.switchLink} onPress={() => switchMode(isSignup ? 'signin' : 'signup')}>
-              {isSignup ? 'Sign in' : 'Create one'}
+              {isSignup ? 'Login' : 'Sign up'}
             </Text>
           </Text>
         </ScrollView>
@@ -238,9 +247,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: { height: 52, width: 52 },
-  brandName: { marginTop: spacing(3), fontSize: 13, fontWeight: '700', color: colors.maroon900, textAlign: 'center' },
-  heading: { fontSize: 26, fontWeight: '800', color: colors.ink900 },
-  sub: { fontSize: 14, color: colors.ink500, marginTop: spacing(1) },
+  brandName: { marginTop: spacing(3), fontSize: font(13), fontWeight: '700', color: colors.maroon900, textAlign: 'center' },
+  heading: { fontSize: font(26), fontWeight: '800', color: colors.ink900 },
+  sub: { fontSize: font(14), color: colors.ink500, marginTop: spacing(1) },
   segment: {
     flexDirection: 'row',
     backgroundColor: colors.cream,
@@ -250,16 +259,16 @@ const styles = StyleSheet.create({
   },
   segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing(2.5), borderRadius: radius.pill },
   segmentBtnActive: { backgroundColor: colors.white, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  segmentText: { fontSize: 14, fontWeight: '600', color: colors.ink500 },
+  segmentText: { fontSize: font(14), fontWeight: '600', color: colors.ink500 },
   segmentTextActive: { color: colors.maroon900 },
-  label: { fontSize: 13, fontWeight: '700', color: colors.ink900, marginBottom: spacing(1.5) },
+  label: { fontSize: font(13), fontWeight: '700', color: colors.ink900, marginBottom: spacing(1.5) },
   nameRow: { flexDirection: 'row', gap: spacing(3) },
-  hint: { fontSize: 12, color: colors.ink500, marginTop: spacing(1.5) },
+  hint: { fontSize: font(12), color: colors.ink500, marginTop: spacing(1.5) },
   error: {
     marginTop: spacing(5),
     marginBottom: -spacing(2),
     color: colors.maroon900,
-    fontSize: 13,
+    fontSize: font(13),
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -270,7 +279,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
-    fontSize: 15,
+    fontSize: font(15),
     color: colors.ink900,
   },
   passwordRow: {
@@ -282,9 +291,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
   },
-  showText: { fontSize: 13, fontWeight: '700', color: colors.maroon800, paddingLeft: spacing(3) },
+  showText: { fontSize: font(13), fontWeight: '700', color: colors.maroon800, paddingLeft: spacing(3) },
   forgot: { alignSelf: 'flex-end', marginTop: spacing(3) },
-  forgotText: { fontSize: 13, fontWeight: '600', color: colors.maroon800 },
+  forgotText: { fontSize: font(13), fontWeight: '600', color: colors.maroon800 },
   submit: {
     marginTop: spacing(6),
     backgroundColor: colors.maroon900,
@@ -293,7 +302,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitDisabled: { backgroundColor: colors.ink200 },
-  submitText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-  switch: { marginTop: spacing(6), textAlign: 'center', fontSize: 14, color: colors.ink500 },
+  submitText: { color: colors.white, fontSize: font(16), fontWeight: '700' },
+  switch: { marginTop: spacing(6), textAlign: 'center', fontSize: font(14), color: colors.ink500 },
   switchLink: { color: colors.maroon800, fontWeight: '700' },
 });

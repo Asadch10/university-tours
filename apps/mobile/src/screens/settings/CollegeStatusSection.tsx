@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
-import { colors, radius, spacing } from '../../theme';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { font, colors, radius, spacing } from '../../theme';
 import { accountApi, type MyProfileDto } from '../../api/account';
 import { friendlyError } from '../../api/auth';
+import { useToast } from '../../components/Toast';
 import { PrimaryButton } from './kit';
 
 const OPTIONS = [
@@ -13,13 +14,14 @@ const OPTIONS = [
 
 export function CollegeStatusSection({
   profile,
-  onRoleChange,
+  onSaved,
 }: {
   profile: MyProfileDto | null;
-  onRoleChange?: (role: MyProfileDto['role']) => void;
+  onSaved?: (next: { role: MyProfileDto['role']; intent: string }) => void;
 }) {
   const [selected, setSelected] = useState('book');
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (!profile) return;
@@ -33,10 +35,12 @@ export function CollegeStatusSection({
     setSaving(true);
     try {
       const res = await accountApi.completeOnboarding(selected);
-      if (res.role) onRoleChange?.(res.role);
-      Alert.alert('College status updated', 'Your preference has been saved.');
+      // Sync BOTH the role and the saved intent up to the parent's cached profile,
+      // so re-opening this section reflects the new choice instead of reverting.
+      onSaved?.({ role: res.role ?? profile?.role ?? null, intent: selected });
+      toast.success('College status updated', 'Your preference has been saved.');
     } catch (e) {
-      Alert.alert('Could not save', friendlyError(e));
+      toast.error('Could not save', friendlyError(e));
     } finally {
       setSaving(false);
     }
@@ -71,7 +75,7 @@ export function CollegeStatusSection({
 }
 
 const styles = StyleSheet.create({
-  prompt: { fontSize: 14, fontWeight: '600', color: colors.ink600, marginTop: spacing(1) },
+  prompt: { fontSize: font(14), fontWeight: '600', color: colors.ink600, marginTop: spacing(1) },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -95,5 +99,5 @@ const styles = StyleSheet.create({
   },
   radioActive: { borderColor: colors.maroon800 },
   radioDot: { height: 10, width: 10, borderRadius: 5, backgroundColor: colors.maroon800 },
-  optionLabel: { fontSize: 15, fontWeight: '600', color: colors.ink900 },
+  optionLabel: { fontSize: font(15), fontWeight: '600', color: colors.ink900 },
 });

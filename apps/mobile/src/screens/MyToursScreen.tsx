@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import {
   bookingsApi,
   formatPrice,
@@ -27,6 +27,7 @@ import {
   type BookingServiceType,
 } from '../api/bookings';
 import { friendlyError } from '../api/auth';
+import { BookingCardSkeleton } from '../components/Skeleton';
 
 type ViewKey = 'guest' | 'guide';
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
@@ -171,8 +172,10 @@ export function MyToursScreen() {
 
       {/* Content */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.maroon800} size="large" />
+        <View style={[styles.list, { gap: spacing(3) }]}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <BookingCardSkeleton key={i} />
+          ))}
         </View>
       ) : (
         <ScrollView
@@ -562,7 +565,7 @@ function StarsStatic({ value }: { value: number }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.white },
   header: { paddingHorizontal: spacing(5), paddingTop: spacing(2), paddingBottom: spacing(3) },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink900 },
+  title: { fontSize: font(28), fontWeight: '800', color: colors.ink900 },
   segment: {
     flexDirection: 'row',
     backgroundColor: colors.cream,
@@ -578,7 +581,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
-  segmentText: { fontSize: 14, fontWeight: '600', color: colors.ink500 },
+  segmentText: { fontSize: font(14), fontWeight: '600', color: colors.ink500 },
   segmentTextActive: { color: colors.maroon900 },
 
   tabRow: {
@@ -588,9 +591,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.ink100,
   },
   tabBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing(2.5) },
-  tabText: { fontSize: 13, fontWeight: '700', color: colors.ink500 },
+  tabText: { fontSize: font(13), fontWeight: '700', color: colors.ink500 },
   tabTextActive: { color: colors.maroon900 },
-  tabCount: { fontSize: 12, fontWeight: '600', color: colors.ink300, marginTop: 2 },
+  tabCount: { fontSize: font(12), fontWeight: '600', color: colors.ink300, marginTop: 2 },
   tabCountActive: { color: colors.maroon800 },
   tabUnderline: {
     position: 'absolute',
@@ -615,8 +618,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing(1),
   },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.ink900 },
-  emptyText: { fontSize: 14, color: colors.ink500, textAlign: 'center', maxWidth: 280 },
+  emptyTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900 },
+  emptyText: { fontSize: font(14), color: colors.ink500, textAlign: 'center', maxWidth: 280 },
 
   row: {
     flexDirection: 'row',
@@ -636,20 +639,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  rowRef: { fontSize: 12, fontWeight: '700', color: colors.maroon800, marginTop: 1 },
-  rowSub: { fontSize: 13, color: colors.ink500, marginTop: 1 },
-  rowMeta: { fontSize: 12, color: colors.ink300, marginTop: 2 },
+  rowTitle: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
+  rowRef: { fontSize: font(12), fontWeight: '700', color: colors.maroon800, marginTop: 1 },
+  rowSub: { fontSize: font(13), color: colors.ink500, marginTop: 1 },
+  rowMeta: { fontSize: font(12), color: colors.ink300, marginTop: 2 },
   rowRight: { alignItems: 'flex-end', gap: spacing(1) },
-  rowPrice: { fontSize: 14, fontWeight: '800', color: colors.ink900 },
+  rowPrice: { fontSize: font(14), fontWeight: '800', color: colors.ink900 },
 
   pill: { borderRadius: radius.pill, paddingHorizontal: spacing(2.5), paddingVertical: 3 },
-  pillText: { fontSize: 11, fontWeight: '700' },
+  pillText: { fontSize: font(11), fontWeight: '700' },
 
   // Detail
   detailScroll: { padding: spacing(5), paddingBottom: spacing(10) },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginBottom: spacing(4) },
-  backText: { fontSize: 14, fontWeight: '700', color: colors.maroon900 },
+  backText: { fontSize: font(14), fontWeight: '700', color: colors.maroon900 },
   detailCard: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -673,8 +676,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  detailKicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1, color: colors.ink300 },
-  detailTitle: { fontSize: 20, fontWeight: '800', color: colors.ink900, marginTop: 2 },
+  detailKicker: { fontSize: font(11), fontWeight: '800', letterSpacing: 1, color: colors.ink300 },
+  detailTitle: { fontSize: font(20), fontWeight: '800', color: colors.ink900, marginTop: 2 },
   detailStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -682,7 +685,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(5),
     paddingTop: spacing(5),
   },
-  detailPrice: { fontSize: 18, fontWeight: '800', color: colors.ink900 },
+  detailPrice: { fontSize: font(18), fontWeight: '800', color: colors.ink900 },
   rowsBox: {
     marginHorizontal: spacing(5),
     marginTop: spacing(4),
@@ -692,8 +695,8 @@ const styles = StyleSheet.create({
   },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingHorizontal: spacing(4), paddingVertical: spacing(3.5) },
   detailRowBorder: { borderTopWidth: 1, borderTopColor: colors.ink100 },
-  detailRowLabel: { width: 84, fontSize: 13, color: colors.ink500 },
-  detailRowValue: { flex: 1, textAlign: 'right', fontSize: 13, fontWeight: '600', color: colors.ink900 },
+  detailRowLabel: { width: 84, fontSize: font(13), color: colors.ink500 },
+  detailRowValue: { flex: 1, textAlign: 'right', fontSize: font(13), fontWeight: '600', color: colors.ink900 },
 
   linkBox: {
     margin: spacing(5),
@@ -704,7 +707,7 @@ const styles = StyleSheet.create({
     borderColor: GREEN_FG + '55',
     backgroundColor: GREEN_BG + '80',
   },
-  linkBoxTitle: { fontSize: 14, fontWeight: '700', color: colors.ink900 },
+  linkBoxTitle: { fontSize: font(14), fontWeight: '700', color: colors.ink900 },
   joinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -715,8 +718,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(3),
     marginTop: spacing(3),
   },
-  joinBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
-  linkUrl: { fontSize: 12, color: colors.ink500, textAlign: 'center', marginTop: spacing(2) },
+  joinBtnText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
+  linkUrl: { fontSize: font(12), color: colors.ink500, textAlign: 'center', marginTop: spacing(2) },
 
   inputBox: {
     margin: spacing(5),
@@ -727,8 +730,8 @@ const styles = StyleSheet.create({
     borderColor: colors.ink200,
     backgroundColor: colors.ivory,
   },
-  inputLabel: { fontSize: 14, fontWeight: '700', color: colors.ink900 },
-  inputLabelPlain: { fontSize: 14, fontWeight: '700', color: colors.ink900 },
+  inputLabel: { fontSize: font(14), fontWeight: '700', color: colors.ink900 },
+  inputLabelPlain: { fontSize: font(14), fontWeight: '700', color: colors.ink900 },
   input: {
     marginTop: spacing(2),
     borderWidth: 1,
@@ -737,11 +740,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3),
-    fontSize: 14,
+    fontSize: font(14),
     color: colors.ink900,
   },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
-  inputHint: { fontSize: 12, color: colors.ink500, marginTop: spacing(2) },
+  inputHint: { fontSize: font(12), color: colors.ink500, marginTop: spacing(2) },
 
   note: {
     marginHorizontal: spacing(5),
@@ -750,13 +753,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing(3.5),
     paddingVertical: spacing(2.5),
-    fontSize: 12,
+    fontSize: font(12),
     color: colors.ink500,
     textAlign: 'center',
   },
 
   starsRow: { flexDirection: 'row', gap: spacing(1.5), marginTop: spacing(3) },
-  reviewText: { fontSize: 14, fontStyle: 'italic', color: colors.ink600, marginTop: spacing(2), lineHeight: 20 },
+  reviewText: { fontSize: font(14), fontStyle: 'italic', color: colors.ink600, marginTop: spacing(2), lineHeight: 20 },
 
   primaryBtn: {
     flexDirection: 'row',
@@ -769,7 +772,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing(5),
     marginTop: spacing(3),
   },
-  primaryBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  primaryBtnText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
   dangerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -781,6 +784,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(3.5),
     marginHorizontal: spacing(5),
   },
-  dangerBtnText: { color: colors.danger, fontSize: 14, fontWeight: '700' },
+  dangerBtnText: { color: colors.danger, fontSize: font(14), fontWeight: '700' },
   btnDisabled: { opacity: 0.55 },
 });

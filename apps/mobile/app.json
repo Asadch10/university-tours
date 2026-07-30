@@ -11,14 +11,15 @@
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6b1521"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ucpt.mobile"
     },
     "android": {
-      "package": "com.ucpt.mobile"
+      "package": "com.ucpt.mobile",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
       "expo-secure-store",

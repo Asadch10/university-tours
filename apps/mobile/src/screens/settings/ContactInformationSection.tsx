@@ -1,18 +1,26 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { font, colors, radius, spacing } from '../../theme';
 import { accountApi, DIAL_CODES, type MyProfileDto } from '../../api/account';
 import { friendlyError } from '../../api/auth';
+import { useToast } from '../../components/Toast';
 import { Field, SInput, PrimaryButton, kit, GREEN_FG } from './kit';
 
-export function ContactInformationSection({ profile }: { profile: MyProfileDto | null }) {
+export function ContactInformationSection({
+  profile,
+  onUpdated,
+}: {
+  profile: MyProfileDto | null;
+  onUpdated?: (patch: { phone: string; promo: boolean }) => void;
+}) {
   const [email, setEmail] = useState('');
   const [dial, setDial] = useState('+92');
   const [phone, setPhone] = useState('');
   const [promo, setPromo] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (!profile) return;
@@ -27,10 +35,14 @@ export function ContactInformationSection({ profile }: { profile: MyProfileDto |
   async function save() {
     setSaving(true);
     try {
-      await accountApi.updateContact({ phone: phone.trim(), promo });
-      Alert.alert('Contact info updated', 'Your changes have been saved.');
+      const trimmed = phone.trim();
+      await accountApi.updateContact({ phone: trimmed, promo });
+      // Push the saved values up so the parent's cached profile stays in sync —
+      // otherwise re-opening this section shows the stale (pre-save) phone.
+      onUpdated?.({ phone: trimmed, promo });
+      toast.success('Contact info updated', 'Your changes have been saved.');
     } catch (e) {
-      Alert.alert('Could not save', friendlyError(e));
+      toast.error('Could not save', friendlyError(e));
     } finally {
       setSaving(false);
     }
@@ -129,7 +141,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: colors.ink200,
   },
-  dialText: { fontSize: 15, fontWeight: '600', color: colors.ink900 },
+  dialText: { fontSize: font(15), fontWeight: '600', color: colors.ink900 },
   phoneInput: { flex: 1, borderWidth: 0 },
   promoRow: { flexDirection: 'row', gap: spacing(2.5), marginTop: spacing(5), alignItems: 'flex-start' },
   checkbox: {
@@ -143,10 +155,10 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   checkboxOn: { backgroundColor: colors.maroon900, borderColor: colors.maroon900 },
-  promoText: { flex: 1, fontSize: 13, color: colors.ink600, lineHeight: 19 },
+  promoText: { flex: 1, fontSize: font(13), color: colors.ink600, lineHeight: 19 },
   modalBackdrop: { flex: 1, backgroundColor: '#00000055', justifyContent: 'center', padding: spacing(8) },
   modalCard: { backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing(3) },
-  modalTitle: { fontSize: 13, fontWeight: '700', color: colors.ink500, padding: spacing(3) },
+  modalTitle: { fontSize: font(13), fontWeight: '700', color: colors.ink500, padding: spacing(3) },
   modalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -155,5 +167,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(3),
     borderRadius: radius.md,
   },
-  modalRowText: { fontSize: 15, color: colors.ink900 },
+  modalRowText: { fontSize: font(15), color: colors.ink900 },
 });

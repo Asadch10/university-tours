@@ -15,7 +15,7 @@ import {
   ListingsScreen,
   EarningsScreen,
 } from '../screens';
-import { colors } from '../theme';
+import { font, colors } from '../theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -33,7 +33,7 @@ const screenOptions = {
   tabBarActiveTintColor: colors.maroon900,
   tabBarInactiveTintColor: colors.ink500,
   tabBarStyle: { borderTopColor: colors.ink200, backgroundColor: colors.white },
-  tabBarLabelStyle: { fontSize: 11, fontWeight: '600' as const },
+  tabBarLabelStyle: { fontSize: font(11), fontWeight: '600' as const },
 };
 
 export function BuyerTabs() {

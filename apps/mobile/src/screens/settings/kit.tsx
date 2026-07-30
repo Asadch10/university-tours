@@ -1,7 +1,7 @@
 // Shared building blocks for the mobile Settings sections (mirrors the web's shared.ts + Button).
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { font, colors, radius, spacing } from '../../theme';
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -92,7 +92,7 @@ export function Loading() {
 }
 
 export const kit = StyleSheet.create({
-  label: { fontSize: 13, fontWeight: '700', color: colors.ink900, marginBottom: spacing(2) },
+  label: { fontSize: font(13), fontWeight: '700', color: colors.ink900, marginBottom: spacing(2) },
   input: {
     borderWidth: 1,
     borderColor: colors.ink200,
@@ -100,11 +100,11 @@ export const kit = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
-    fontSize: 15,
+    fontSize: font(15),
     color: colors.ink900,
   },
   inputDisabled: { backgroundColor: colors.ink100, color: colors.ink500 },
-  hint: { fontSize: 12, color: colors.ink500, marginTop: spacing(2) },
+  hint: { fontSize: font(12), color: colors.ink500, marginTop: spacing(2) },
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -114,7 +114,7 @@ export const kit = StyleSheet.create({
     borderRadius: radius.lg,
     paddingVertical: spacing(4),
   },
-  primaryBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  primaryBtnText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
   outlineBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -126,8 +126,8 @@ export const kit = StyleSheet.create({
     borderRadius: radius.lg,
     paddingVertical: spacing(3.5),
   },
-  outlineBtnText: { color: colors.maroon900, fontSize: 15, fontWeight: '700' },
+  outlineBtnText: { color: colors.maroon900, fontSize: font(15), fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
   verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(2.5) },
-  verifiedText: { fontSize: 14, fontWeight: '600', color: colors.maroon800 },
+  verifiedText: { fontSize: font(14), fontWeight: '600', color: colors.maroon800 },
 });

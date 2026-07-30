@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import { guidesApi, communityGuideToGuide, type Guide } from '../api/guides';
+import { GuideCardSkeleton } from '../components/Skeleton';
 import { GuideCard } from './guide/GuideCard';
 import { GuideDetail } from './guide/GuideDetail';
 
@@ -40,8 +41,10 @@ export function GuideScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.maroon800} size="large" />
+        <View style={styles.list}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <GuideCardSkeleton key={i} />
+          ))}
         </View>
       ) : (
         <ScrollView
@@ -73,8 +76,8 @@ export function GuideScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.white },
   header: { paddingHorizontal: spacing(5), paddingTop: spacing(2), paddingBottom: spacing(3) },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink900 },
-  subtitle: { fontSize: 14, color: colors.ink500, marginTop: spacing(1) },
+  title: { fontSize: font(28), fontWeight: '800', color: colors.ink900 },
+  subtitle: { fontSize: font(14), color: colors.ink500, marginTop: spacing(1) },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing(5), paddingTop: spacing(2), gap: spacing(4), flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing(20), gap: spacing(2) },
@@ -87,6 +90,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing(1),
   },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.ink900 },
-  emptyText: { fontSize: 14, color: colors.ink500, textAlign: 'center', maxWidth: 280 },
+  emptyTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900 },
+  emptyText: { fontSize: font(14), color: colors.ink500, textAlign: 'center', maxWidth: 280 },
 });

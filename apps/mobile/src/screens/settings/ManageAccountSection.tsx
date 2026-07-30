@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { font, colors, radius, spacing } from '../../theme';
 import { accountApi } from '../../api/account';
 import { session, friendlyError } from '../../api/auth';
+import { useToast } from '../../components/Toast';
 
 export function ManageAccountSection({ onSignedOut }: { onSignedOut: () => void }) {
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const toast = useToast();
 
   async function del() {
     if (!confirm) return;
@@ -17,7 +19,7 @@ export function ManageAccountSection({ onSignedOut }: { onSignedOut: () => void 
       await session.clear();
       onSignedOut();
     } catch (e) {
-      Alert.alert('Could not delete account', friendlyError(e));
+      toast.error('Could not delete account', friendlyError(e));
       setDeleting(false);
     }
   }
@@ -61,8 +63,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.danger, borderColor: colors.danger },
-  confirmText: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  warning: { fontSize: 14, color: colors.ink600, marginTop: spacing(5), lineHeight: 20 },
+  confirmText: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
+  warning: { fontSize: font(14), color: colors.ink600, marginTop: spacing(5), lineHeight: 20 },
   deleteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -74,5 +76,5 @@ const styles = StyleSheet.create({
     marginTop: spacing(10),
   },
   deleteBtnDisabled: { backgroundColor: colors.ink100 },
-  deleteText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  deleteText: { fontSize: font(15), fontWeight: '700', color: colors.white },
 });

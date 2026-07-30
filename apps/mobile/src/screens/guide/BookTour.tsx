@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { font, colors, radius, spacing } from '../../theme';
 import { fromPrice, type Guide, type Availability, type GuideService, TIME_SLOTS } from '../../api/guides';
 import { bookingsApi } from '../../api/bookings';
 import { authorizeCard } from '../../api/payments';
@@ -463,17 +463,17 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.ink100,
   },
   backBtn: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '800', color: colors.ink900 },
+  headerTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900 },
   scroll: { padding: spacing(5), paddingBottom: spacing(10) },
 
-  guideName: { fontSize: 22, fontWeight: '800', color: colors.ink900, letterSpacing: -0.3 },
+  guideName: { fontSize: font(22), fontWeight: '800', color: colors.ink900, letterSpacing: -0.3 },
   uniRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(1) },
-  uni: { fontSize: 14, color: colors.ink600 },
+  uni: { fontSize: font(14), color: colors.ink600 },
 
   sectionLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), marginTop: spacing(7), marginBottom: spacing(3) },
   stepDot: { height: 22, width: 22, borderRadius: 11, backgroundColor: colors.maroon900, alignItems: 'center', justifyContent: 'center' },
-  stepDotText: { color: colors.white, fontSize: 12, fontWeight: '800' },
-  sectionLabelText: { fontSize: 16, fontWeight: '800', color: colors.ink900 },
+  stepDotText: { color: colors.white, fontSize: font(12), fontWeight: '800' },
+  sectionLabelText: { fontSize: font(16), fontWeight: '800', color: colors.ink900 },
 
   // Tour type + duration cards
   tourCard: {
@@ -488,26 +488,26 @@ const styles = StyleSheet.create({
   tourCardActive: { borderColor: colors.maroon800, backgroundColor: colors.maroon50 },
   tourIcon: { height: 38, width: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.ink100 },
   tourIconActive: { backgroundColor: colors.maroon800 },
-  tourTitle: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  tourDesc: { fontSize: 13, color: colors.ink500, marginTop: 2, lineHeight: 18 },
+  tourTitle: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
+  tourDesc: { fontSize: font(13), color: colors.ink500, marginTop: 2, lineHeight: 18 },
   durTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
   recBadge: { backgroundColor: colors.maroon50, borderRadius: radius.pill, paddingHorizontal: spacing(2), paddingVertical: 2 },
-  recBadgeText: { fontSize: 10, fontWeight: '700', color: colors.maroon800 },
+  recBadgeText: { fontSize: font(10), fontWeight: '700', color: colors.maroon800 },
 
   // Calendar
-  availHint: { fontSize: 13, color: colors.ink500, marginBottom: spacing(2.5), lineHeight: 19 },
+  availHint: { fontSize: font(13), color: colors.ink500, marginBottom: spacing(2.5), lineHeight: 19 },
   availDot: { color: colors.maroon800 },
   calCard: { borderWidth: 1, borderColor: colors.ink200, borderRadius: radius.lg, padding: spacing(4) },
   calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing(3) },
   calNav: { height: 32, width: 32, alignItems: 'center', justifyContent: 'center' },
-  calMonth: { fontSize: 15, fontWeight: '800', color: colors.ink900 },
+  calMonth: { fontSize: font(15), fontWeight: '800', color: colors.ink900 },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calCell: { width: `${100 / 7}%`, alignItems: 'center', justifyContent: 'center', paddingVertical: 2 },
-  calWeekday: { fontSize: 12, fontWeight: '700', color: colors.ink500, paddingVertical: spacing(1) },
+  calWeekday: { fontSize: font(12), fontWeight: '700', color: colors.ink500, paddingVertical: spacing(1) },
   calDay: { height: 38, width: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   calDayOffered: { backgroundColor: colors.maroon50 },
   calDaySel: { backgroundColor: colors.maroon900 },
-  calDayText: { fontSize: 14, color: colors.ink900 },
+  calDayText: { fontSize: font(14), color: colors.ink900 },
   calDayDisabled: { color: colors.ink200 },
   calDayOfferedText: { color: colors.maroon800, fontWeight: '800' },
   calDayTextSel: { color: colors.white, fontWeight: '800' },
@@ -516,20 +516,20 @@ const styles = StyleSheet.create({
   timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
   timeChip: { borderWidth: 1, borderColor: colors.ink200, borderRadius: radius.md, paddingHorizontal: spacing(3.5), paddingVertical: spacing(2.5) },
   timeChipSel: { borderColor: colors.maroon800, backgroundColor: colors.maroon50 },
-  timeChipText: { fontSize: 14, fontWeight: '600', color: colors.ink600 },
+  timeChipText: { fontSize: font(14), fontWeight: '600', color: colors.ink600 },
   timeChipTextSel: { color: colors.maroon800 },
-  muted: { fontSize: 14, color: colors.ink500 },
+  muted: { fontSize: font(14), color: colors.ink500 },
 
   // Guests
   counterCard: { borderWidth: 1, borderColor: colors.ink200, borderRadius: radius.lg, paddingHorizontal: spacing(4) },
   counterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing(3.5) },
   divider: { height: 1, backgroundColor: colors.ink100 },
-  counterLabel: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  counterSub: { fontSize: 13, color: colors.ink500, marginTop: 1 },
+  counterLabel: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
+  counterSub: { fontSize: font(13), color: colors.ink500, marginTop: 1 },
   counterCtrls: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
   counterBtn: { height: 34, width: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.ink300, alignItems: 'center', justifyContent: 'center' },
   counterBtnDisabled: { borderColor: colors.ink100 },
-  counterValue: { fontSize: 16, fontWeight: '700', color: colors.ink900, minWidth: 18, textAlign: 'center' },
+  counterValue: { fontSize: font(16), fontWeight: '700', color: colors.ink900, minWidth: 18, textAlign: 'center' },
 
   // Reserve bar
   bar: {
@@ -547,8 +547,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -3 },
     elevation: 8,
   },
-  barPrice: { fontSize: 18, fontWeight: '800', color: colors.maroon900 },
-  barNote: { fontSize: 12, color: colors.ink500, marginTop: 1 },
+  barPrice: { fontSize: font(18), fontWeight: '800', color: colors.maroon900 },
+  barNote: { fontSize: font(12), color: colors.ink500, marginTop: 1 },
   reserveBtn: {
     backgroundColor: colors.maroon900,
     borderRadius: radius.lg,
@@ -559,19 +559,19 @@ const styles = StyleSheet.create({
     minWidth: 130,
   },
   reserveBtnDisabled: { backgroundColor: colors.ink200 },
-  reserveBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  reserveBtnText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
 
   // Confirmation
   confirmWrap: { flex: 1, paddingHorizontal: spacing(6), alignItems: 'center' },
   confirmIcon: { height: 64, width: 64, borderRadius: 32, backgroundColor: colors.maroon50, alignItems: 'center', justifyContent: 'center' },
-  confirmTitle: { fontSize: 22, fontWeight: '800', color: colors.ink900, marginTop: spacing(4) },
-  confirmSub: { fontSize: 14, color: colors.ink600, textAlign: 'center', lineHeight: 21, marginTop: spacing(2) },
+  confirmTitle: { fontSize: font(22), fontWeight: '800', color: colors.ink900, marginTop: spacing(4) },
+  confirmSub: { fontSize: font(14), color: colors.ink600, textAlign: 'center', lineHeight: 21, marginTop: spacing(2) },
   summary: { alignSelf: 'stretch', backgroundColor: colors.cream, borderRadius: radius.lg, padding: spacing(4), marginTop: spacing(6) },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing(4), paddingVertical: spacing(1.5) },
-  summaryLabel: { fontSize: 14, color: colors.ink500 },
-  summaryValue: { fontSize: 14, fontWeight: '600', color: colors.ink900, flexShrink: 1, textAlign: 'right' },
+  summaryLabel: { fontSize: font(14), color: colors.ink500 },
+  summaryValue: { fontSize: font(14), fontWeight: '600', color: colors.ink900, flexShrink: 1, textAlign: 'right' },
   summaryTotal: { borderTopWidth: 1, borderTopColor: colors.ink200, marginTop: spacing(1.5), paddingTop: spacing(3) },
-  summaryTotalValue: { fontSize: 15, fontWeight: '800', color: colors.maroon900 },
+  summaryTotalValue: { fontSize: font(15), fontWeight: '800', color: colors.maroon900 },
   primaryBtn: { alignSelf: 'stretch', backgroundColor: colors.maroon900, borderRadius: radius.lg, paddingVertical: spacing(4), alignItems: 'center', marginTop: spacing(6) },
-  primaryBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  primaryBtnText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
 });
