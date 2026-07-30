@@ -47,9 +47,35 @@ export const session = {
   updateContact(body: { email?: string; phone?: string; promo?: boolean }) {
     return api.request('POST', '/users/me/contact', body);
   },
+  // Confirm an email address from a verification token (from the email link / deep link).
+  verifyEmail(token: string) {
+    return api.request<{ ok: true; email: string; name: string; emailVerified: true }>(
+      'POST',
+      '/auth/verify-email',
+      { token },
+    );
+  },
+  // Re-send the verification email to the signed-in user.
+  resendVerification() {
+    return api.request<{ ok: true; alreadyVerified?: boolean }>('POST', '/auth/resend-verification');
+  },
+  // Fresh account snapshot — includes `emailVerified`, used to poll for verification.
+  me() {
+    return api.request<{ id: string; email: string; name: string; role: Role | null; emailVerified: boolean }>(
+      'GET',
+      '/auth/me',
+    );
+  },
   async currentUser(): Promise<SessionUser | null> {
     const raw = await SecureStore.getItemAsync(USER_KEY);
     return raw ? (JSON.parse(raw) as SessionUser) : null;
+  },
+  // Merge fields into the stored user (e.g. after verification or onboarding sets the role).
+  async setUser(patch: Partial<SessionUser>) {
+    const raw = await SecureStore.getItemAsync(USER_KEY);
+    const current = raw ? (JSON.parse(raw) as SessionUser) : null;
+    if (!current) return;
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify({ ...current, ...patch }));
   },
   async isSignedIn() {
     return Boolean(await SecureStore.getItemAsync(ACCESS_KEY));

@@ -1,33 +1,52 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
+  FlatList,
   Pressable,
   StyleSheet,
   TextInput,
-  Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Img } from '../components/Img';
 import { font, colors, radius, spacing } from '../theme';
 import { fetchUniversities, type UniversityPin } from '../api/schools';
-import { SchoolRowSkeleton } from '../components/Skeleton';
+import { guidesApi, communityGuideToGuide, type Guide } from '../api/guides';
+import { SchoolRowSkeleton, GuideCardSkeleton } from '../components/Skeleton';
+import { FadeInView } from '../components/FadeInView';
+import { GuideCard } from './guide/GuideCard';
+import { GuideDetail } from './guide/GuideDetail';
 
 // Continental-US default region until the schools load / a pin is picked.
 const US_REGION = { latitude: 39.5, longitude: -98.35, latitudeDelta: 45, longitudeDelta: 55 };
 
+// A map region that comfortably frames the given pins (centred, with padding).
+function regionForPins(pins: UniversityPin[]) {
+  const lats = pins.map((p) => p.lat as number);
+  const lngs = pins.map((p) => p.lng as number);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  return {
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLng + maxLng) / 2,
+    latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.4),
+    longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.4),
+  };
+}
+
 export function ExploreScreen() {
-  const nav = useNavigation<any>();
   const [universities, setUniversities] = useState<UniversityPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'list' | 'map'>('list');
   const [selected, setSelected] = useState<UniversityPin | null>(null);
+  const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     fetchUniversities()
@@ -47,7 +66,17 @@ export function ExploreScreen() {
     );
   }, [search, universities]);
 
-  const pinned = universities.filter((u) => u.lat != null && u.lng != null);
+  // Pins reflect the search: only the matching schools that have coordinates.
+  const pinned = useMemo(() => filtered.filter((u) => u.lat != null && u.lng != null), [filtered]);
+
+  // When searching in map view, glide the map to frame the current matches.
+  useEffect(() => {
+    if (view !== 'map' || pinned.length === 0) return;
+    mapRef.current?.animateToRegion(regionForPins(pinned), 450);
+  }, [pinned, view]);
+
+  // Full-screen school detail (replaces the old bottom sheet).
+  if (selected) return <SchoolDetail school={selected} onBack={() => setSelected(null)} />;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -79,38 +108,24 @@ export function ExploreScreen() {
           ))}
         </View>
       ) : view === 'list' ? (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          <Text style={styles.count}>
-            {filtered.length} school{filtered.length !== 1 ? 's' : ''}
-          </Text>
-          {filtered.length === 0 ? (
-            <Text style={styles.emptyText}>No schools found</Text>
-          ) : (
-            filtered.map((u) => (
-              <Pressable key={u.id} style={styles.row} onPress={() => setSelected(u)}>
-                {u.image ? (
-                  <Image source={{ uri: u.image }} style={styles.rowImg} />
-                ) : (
-                  <View style={[styles.rowImg, styles.rowImgFallback]}>
-                    <Text style={styles.rowImgLetter}>{u.name.charAt(0)}</Text>
-                  </View>
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.rowName} numberOfLines={1}>
-                    {u.name}
-                  </Text>
-                  <Text style={styles.rowLoc} numberOfLines={1}>
-                    {u.city}
-                    {u.state ? `, ${u.state}` : ''}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.ink300} />
-              </Pressable>
-            ))
-          )}
-        </ScrollView>
+        <FlatList
+          data={filtered}
+          keyExtractor={(u) => u.id}
+          renderItem={({ item }) => <SchoolRow school={item} onPress={() => setSelected(item)} />}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          initialNumToRender={10}
+          windowSize={11}
+          ListHeaderComponent={
+            <Text style={styles.count}>
+              {filtered.length} school{filtered.length !== 1 ? 's' : ''}
+            </Text>
+          }
+          ListEmptyComponent={<Text style={styles.emptyText}>No schools found</Text>}
+        />
       ) : (
-        <MapView provider={PROVIDER_DEFAULT} style={styles.map} initialRegion={US_REGION}>
+        <MapView ref={mapRef} provider={PROVIDER_DEFAULT} style={styles.map} initialRegion={US_REGION}>
           {pinned.map((u) => (
             <Marker
               key={u.id}
@@ -130,81 +145,161 @@ export function ExploreScreen() {
         <Ionicons name={view === 'list' ? 'map' : 'list'} size={16} color={colors.white} />
         <Text style={styles.toggleText}>{view === 'list' ? 'Map' : 'List'}</Text>
       </Pressable>
-
-      {/* School detail sheet */}
-      <SchoolDetail
-        school={selected}
-        onClose={() => setSelected(null)}
-        onViewGuides={() => {
-          setSelected(null);
-          nav.navigate('Guide');
-        }}
-      />
     </SafeAreaView>
   );
 }
 
-function SchoolDetail({
-  school,
-  onClose,
-  onViewGuides,
-}: {
-  school: UniversityPin | null;
-  onClose: () => void;
-  onViewGuides: () => void;
-}) {
+/* ═══ School list row (memoized for FlatList recycling) ════════════════ */
+
+const SchoolRow = memo(function SchoolRow({ school: u, onPress }: { school: UniversityPin; onPress: () => void }) {
   return (
-    <Modal visible={!!school} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.sheetBackdrop}>
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-        {school && (
-          <View style={styles.sheet}>
-            {/* Hero */}
-            <View style={styles.hero}>
-              {school.image ? (
-                <Image source={{ uri: school.image }} style={styles.heroImg} />
-              ) : (
-                <View style={[styles.heroImg, styles.heroFallback]}>
-                  <Text style={styles.heroLetter}>{school.name.charAt(0)}</Text>
-                </View>
-              )}
-              <View style={styles.heroScrim} />
-              <Text style={styles.heroName}>{school.name}</Text>
-              <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-                <Ionicons name="close" size={18} color={colors.ink900} />
-              </Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.sheetBody}>
-              <View style={styles.locRow}>
-                <Ionicons name="location-outline" size={14} color={colors.ink300} />
-                <Text style={styles.locText}>
-                  {school.city}
-                  {school.state ? `, ${school.state}` : ''}
-                  {school.ranking ? `  ·  ${school.ranking}` : ''}
-                </Text>
-              </View>
-
-              <Text style={styles.scoopLabel}>THE INSIDE SCOOP</Text>
-              <Text style={styles.scoop}>{school.blurb}</Text>
-
-              <View style={styles.ambRow}>
-                <Ionicons name="people-outline" size={15} color={colors.ink500} />
-                <Text style={styles.ambText}>
-                  <Text style={styles.ambStrong}>{school.ambassadors}</Text> verified student guide
-                  {school.ambassadors === 1 ? '' : 's'}
-                </Text>
-              </View>
-
-              <Pressable style={styles.viewGuidesBtn} onPress={onViewGuides}>
-                <Ionicons name="people" size={16} color={colors.white} />
-                <Text style={styles.viewGuidesText}>View student guides</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        )}
+    <Pressable style={styles.row} onPress={onPress}>
+      {u.image ? (
+        <Img source={{ uri: u.image }} style={styles.rowImg} recyclingKey={u.id} />
+      ) : (
+        <View style={[styles.rowImg, styles.rowImgFallback]}>
+          <Text style={styles.rowImgLetter}>{u.name.charAt(0)}</Text>
+        </View>
+      )}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.rowName} numberOfLines={1}>
+          {u.name}
+        </Text>
+        <Text style={styles.rowLoc} numberOfLines={1}>
+          {u.city}
+          {u.state ? `, ${u.state}` : ''}
+        </Text>
       </View>
-    </Modal>
+      <Ionicons name="chevron-forward" size={18} color={colors.ink300} />
+    </Pressable>
+  );
+});
+
+/* ═══ Full-screen school detail ════════════════════════════════════════ */
+
+type TabKey = 'about' | 'guides' | 'reviews' | 'photos';
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'about', label: 'About' },
+  { key: 'guides', label: 'Guides' },
+  { key: 'reviews', label: 'Reviews' },
+  { key: 'photos', label: 'Photos' },
+];
+
+function SchoolDetail({ school, onBack }: { school: UniversityPin; onBack: () => void }) {
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState<TabKey>('about');
+  const [guides, setGuides] = useState<Guide[]>([]);
+  const [loadingGuides, setLoadingGuides] = useState(true);
+  const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    guidesApi
+      .community()
+      .then((r) => {
+        if (!active) return;
+        const all = r.data.map(communityGuideToGuide);
+        setGuides(all.filter((g) => g.university && g.university.toLowerCase() === school.name.toLowerCase()));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoadingGuides(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [school.name]);
+
+  if (selectedGuide) return <GuideDetail preview={selectedGuide} onBack={() => setSelectedGuide(null)} />;
+
+  const loc = `${school.city}${school.state ? `, ${school.state}` : ''}`;
+  const guideCount = loadingGuides ? school.ambassadors : guides.length;
+
+  return (
+    <FadeInView style={styles.dSafe}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing(10) }} showsVerticalScrollIndicator={false}>
+        {/* Hero */}
+        <View style={styles.dHero}>
+          {school.image ? (
+            <Img source={{ uri: school.image }} style={styles.dHeroImg} />
+          ) : (
+            <View style={[styles.dHeroImg, styles.heroFallback]}>
+              <Text style={styles.heroLetter}>{school.name.charAt(0)}</Text>
+            </View>
+          )}
+        </View>
+        <Pressable style={[styles.dBackBtn, { top: insets.top + spacing(2) }]} onPress={onBack} hitSlop={8}>
+          <Ionicons name="arrow-back" size={22} color={colors.ink900} />
+        </Pressable>
+
+        {/* Info */}
+        <View style={styles.dBody}>
+          <Text style={styles.dName}>{school.name}</Text>
+          <View style={styles.locRow}>
+            <Ionicons name="location-outline" size={14} color={colors.ink500} />
+            <Text style={styles.locText}>{loc}</Text>
+          </View>
+          <View style={styles.dStats}>
+            <Ionicons name="people-outline" size={15} color={colors.maroon800} />
+            <Text style={styles.dStatsText}>
+              <Text style={styles.ambStrong}>{guideCount}</Text> verified student guide{guideCount === 1 ? '' : 's'}
+            </Text>
+          </View>
+
+          {/* Tabs */}
+          <View style={styles.dTabs}>
+            {TABS.map((t) => {
+              const on = tab === t.key;
+              return (
+                <Pressable key={t.key} onPress={() => setTab(t.key)} style={styles.dTab}>
+                  <Text style={[styles.dTabText, on && styles.dTabTextOn]}>{t.label}</Text>
+                  {on && <View style={styles.dTabUnderline} />}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Tab content */}
+          {tab === 'about' && (
+            <View style={{ marginTop: spacing(5) }}>
+              <Text style={styles.scoopLabel}>THE INSIDE SCOOP</Text>
+              <Text style={styles.scoop}>
+                {school.blurb || `Meet verified student guides at ${school.name} and see the campus through their eyes.`}
+              </Text>
+            </View>
+          )}
+
+          {tab === 'guides' && (
+            <View style={{ marginTop: spacing(5), gap: spacing(4) }}>
+              {loadingGuides ? (
+                Array.from({ length: 3 }).map((_, i) => <GuideCardSkeleton key={i} />)
+              ) : guides.length === 0 ? (
+                <Text style={styles.emptyState}>No student guides at {school.name} yet.</Text>
+              ) : (
+                guides.map((g) => <GuideCard key={g.id} guide={g} onPress={() => setSelectedGuide(g)} />)
+              )}
+            </View>
+          )}
+
+          {tab === 'reviews' && (
+            <View style={{ marginTop: spacing(5) }}>
+              <Text style={styles.emptyState}>No reviews yet.</Text>
+            </View>
+          )}
+
+          {tab === 'photos' && (
+            <View style={{ marginTop: spacing(5) }}>
+              {school.image ? (
+                <Img source={{ uri: school.image }} style={styles.photoImg} contentFit="cover" />
+              ) : (
+                <Text style={styles.emptyState}>No photos yet.</Text>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </FadeInView>
   );
 }
 
@@ -225,7 +320,6 @@ const styles = StyleSheet.create({
     marginTop: spacing(4),
   },
   searchInput: { flex: 1, fontSize: font(15), color: colors.ink900 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: spacing(5), paddingBottom: spacing(24) },
   count: { fontSize: font(11), fontWeight: '700', letterSpacing: 0.5, color: colors.ink300, paddingVertical: spacing(3) },
   emptyText: { fontSize: font(14), color: colors.ink500, textAlign: 'center', paddingVertical: spacing(10) },
@@ -262,43 +356,45 @@ const styles = StyleSheet.create({
   },
   toggleText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
 
-  // Detail sheet
-  sheetBackdrop: { flex: 1, backgroundColor: '#00000055', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.white, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, maxHeight: '82%', overflow: 'hidden' },
-  hero: { height: 200 },
-  heroImg: { height: 200, width: '100%', backgroundColor: colors.ink100 },
+  // ── Full-screen detail ──
+  dSafe: { flex: 1, backgroundColor: colors.white },
+  dHero: { height: 240, backgroundColor: colors.ink100 },
+  dHeroImg: { height: 240, width: '100%' },
   heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.maroon900 },
   heroLetter: { color: colors.ivory, fontSize: font(56), fontWeight: '800' },
-  heroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
-  heroName: { position: 'absolute', left: spacing(5), right: spacing(12), bottom: spacing(4), color: colors.white, fontSize: font(20), fontWeight: '800', textShadowColor: '#000000aa', textShadowRadius: 8 },
-  closeBtn: {
+  dBackBtn: {
     position: 'absolute',
-    right: spacing(3),
-    top: spacing(3),
-    height: 32,
-    width: 32,
-    borderRadius: 16,
+    left: spacing(4),
+    height: 40,
+    width: 40,
+    borderRadius: 20,
     backgroundColor: '#ffffffe6',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-  sheetBody: { padding: spacing(5) },
-  locRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
+  dBody: { paddingHorizontal: spacing(5), paddingTop: spacing(5) },
+  dName: { fontSize: font(24), fontWeight: '800', color: colors.ink900, letterSpacing: -0.3 },
+  locRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(2) },
   locText: { fontSize: font(13), color: colors.ink600 },
-  scoopLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 1.5, color: colors.ink300, marginTop: spacing(4) },
-  scoop: { fontSize: font(14), color: colors.ink600, lineHeight: 21, marginTop: spacing(2) },
-  ambRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(4) },
-  ambText: { fontSize: font(14), color: colors.ink500 },
+  dStats: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(3) },
+  dStatsText: { fontSize: font(14), color: colors.ink500 },
   ambStrong: { fontWeight: '800', color: colors.ink900 },
-  viewGuidesBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing(2),
-    backgroundColor: colors.maroon900,
-    borderRadius: radius.lg,
-    paddingVertical: spacing(4),
-    marginTop: spacing(6),
-  },
-  viewGuidesText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
+
+  // Tabs
+  dTabs: { flexDirection: 'row', gap: spacing(6), marginTop: spacing(5), borderBottomWidth: 1, borderBottomColor: colors.ink100 },
+  dTab: { paddingBottom: spacing(3) },
+  dTabText: { fontSize: font(15), fontWeight: '700', color: colors.ink500 },
+  dTabTextOn: { color: colors.maroon900 },
+  dTabUnderline: { position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, borderRadius: 1, backgroundColor: colors.maroon900 },
+
+  // Tab content
+  scoopLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 1.5, color: colors.ink300 },
+  scoop: { fontSize: font(15), color: colors.ink600, lineHeight: 23, marginTop: spacing(2) },
+  emptyState: { fontSize: font(14), color: colors.ink500, paddingVertical: spacing(6), textAlign: 'center' },
+  photoImg: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: colors.ink100 },
 });

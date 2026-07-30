@@ -1,13 +1,17 @@
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { memo } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Img } from '../../components/Img';
 import { font, colors, radius, spacing } from '../../theme';
 import { fromPrice, serviceLabel, type Guide } from '../../api/guides';
 
-export function GuideCard({ guide, onPress }: { guide: Guide; onPress: () => void }) {
+// Memoized: guide cards render in long lists, so skip re-rendering every card
+// when the parent screen re-renders for unrelated reasons (search text, etc.).
+export const GuideCard = memo(function GuideCard({ guide, onPress }: { guide: Guide; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.top}>
-        <Image source={{ uri: guide.photo }} style={styles.avatar} />
+        <Img source={{ uri: guide.photo }} style={styles.avatar} contentFit="contain" recyclingKey={guide.id} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.name} numberOfLines={1}>
             {guide.name}
@@ -59,7 +63,7 @@ export function GuideCard({ guide, onPress }: { guide: Guide; onPress: () => voi
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

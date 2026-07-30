@@ -16,6 +16,7 @@ import { fromPrice, type Guide, type Availability, type GuideService, TIME_SLOTS
 import { bookingsApi } from '../../api/bookings';
 import { authorizeCard } from '../../api/payments';
 import { session, friendlyError } from '../../api/auth';
+import { ApiClientError } from '../../api/client';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -55,7 +56,9 @@ export function BookTour({
   const fn = guide.name.split(' ')[0];
 
   const [tourType, setTourType] = useState<GuideService>(guide.services[0] ?? 'CAMPUS_TOUR');
-  const [tourPicked, setTourPicked] = useState(guide.services.length === 1);
+  // No tour type is selected by default. Once the guest picks one, ALL remaining
+  // fields (Date, Time, Guests, Duration) appear together — not step by step.
+  const [tourPicked, setTourPicked] = useState(false);
   const [date, setDate] = useState<{ y: number; m: number; d: number } | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [adults, setAdults] = useState(1);
@@ -127,7 +130,13 @@ export function BookTour({
       });
     } catch (e) {
       setStatus('idle');
-      Alert.alert('Couldn’t send request', friendlyError(e));
+      // A surviving 401 (token refresh also failed) means the session is truly expired.
+      if (e instanceof ApiClientError && e.status === 401) {
+        await session.clear();
+        Alert.alert('Session expired', 'Please sign in again from the Settings tab to request a tour.');
+      } else {
+        Alert.alert('Couldn’t send request', friendlyError(e));
+      }
       return;
     }
 
@@ -311,11 +320,13 @@ export function BookTour({
         )}
 
         {/* Time */}
-        {tourPicked && date && (
+        {tourPicked && (
           <>
             <SectionLabel n={3} text="Start time" />
             {timesForDate.length === 0 ? (
-              <Text style={styles.muted}>No times available for this date.</Text>
+              <Text style={styles.muted}>
+                {date ? 'No times available for this date.' : 'Pick a date first to see available times.'}
+              </Text>
             ) : (
               <View style={styles.timeGrid}>
                 {timesForDate.map((t) => {
@@ -332,7 +343,7 @@ export function BookTour({
         )}
 
         {/* Guests + duration */}
-        {tourPicked && date && time && (
+        {tourPicked && (
           <>
             <SectionLabel n={4} text="Guests" />
             <View style={styles.counterCard}>
@@ -371,13 +382,11 @@ export function BookTour({
         )}
       </ScrollView>
 
-      {/* Reserve bar */}
-      <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing(3)) }]}>
+      {/* Reserve bar — sits above the tab bar (which already handles the bottom inset) */}
+      <View style={styles.bar}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.barPrice}>
-            {selectedDuration ? fromPrice(priceCents) : `From ${fromPrice(guide.price)}`}
-          </Text>
-          <Text style={styles.barNote}>You won’t be charged yet</Text>
+          <Text style={styles.barLabel}>Amount</Text>
+          <Text style={styles.barPrice}>{fromPrice(selectedDuration ? priceCents : guide.price)}</Text>
         </View>
         <Pressable
           disabled={!ready || busy}
@@ -537,7 +546,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing(3),
     paddingHorizontal: spacing(5),
-    paddingTop: spacing(3),
+    paddingVertical: spacing(2.5),
     borderTopWidth: 1,
     borderTopColor: colors.ink200,
     backgroundColor: colors.white,
@@ -547,19 +556,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -3 },
     elevation: 8,
   },
-  barPrice: { fontSize: font(18), fontWeight: '800', color: colors.maroon900 },
+  barLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: colors.ink300 },
+  barPrice: { fontSize: font(19), fontWeight: '800', color: colors.maroon900, marginTop: 1 },
   barNote: { fontSize: font(12), color: colors.ink500, marginTop: 1 },
   reserveBtn: {
     backgroundColor: colors.maroon900,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing(8),
-    paddingVertical: spacing(3.5),
+    borderRadius: radius.md,
+    paddingHorizontal: spacing(6),
+    paddingVertical: spacing(2.5),
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 130,
   },
   reserveBtnDisabled: { backgroundColor: colors.ink200 },
-  reserveBtnText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
+  reserveBtnText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
 
   // Confirmation
   confirmWrap: { flex: 1, paddingHorizontal: spacing(6), alignItems: 'center' },

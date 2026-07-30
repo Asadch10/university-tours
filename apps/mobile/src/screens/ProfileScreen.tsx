@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { Img } from '../components/Img';
 import { font, colors, radius, spacing } from '../theme';
 import { accountApi, type SellerReview } from '../api/account';
 import { friendlyError } from '../api/auth';
@@ -154,7 +154,7 @@ export function ProfileScreen({ onBack, onSaved }: { onBack: () => void; onSaved
             <View style={styles.hero}>
               <View style={styles.avatar}>
                 {photo ? (
-                  <Image source={{ uri: photo }} style={styles.avatarImg} />
+                  <Img source={{ uri: photo }} style={styles.avatarImg} contentFit="cover" />
                 ) : (
                   <Text style={styles.avatarText}>{initialsOf(fullName)}</Text>
                 )}

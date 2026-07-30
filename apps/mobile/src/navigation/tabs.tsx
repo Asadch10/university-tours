@@ -30,6 +30,10 @@ function tabIcon(outline: IoniconName, filled: IoniconName) {
 
 const screenOptions = {
   headerShown: false,
+  // NOTE: the bottom-tab `animation` option (e.g. 'shift'/'fade') is intentionally
+  // NOT set — in RN Navigation 7 it can leave a tab screen rendering blank/white
+  // until you switch away and back. Tabs swap instantly (standard iOS behaviour);
+  // smooth slide animations still apply to stack pushes (see RootNavigator).
   tabBarActiveTintColor: colors.maroon900,
   tabBarInactiveTintColor: colors.ink500,
   tabBarStyle: { borderTopColor: colors.ink200, backgroundColor: colors.white },

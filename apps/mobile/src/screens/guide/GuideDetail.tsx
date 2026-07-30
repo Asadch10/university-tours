@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -14,7 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { font, colors, radius, spacing } from '../../theme';
+import { Img } from '../../components/Img';
 import { Skeleton } from '../../components/Skeleton';
+import { FadeInView } from '../../components/FadeInView';
 import {
   guidesApi,
   communityGuideToProfile,
@@ -23,7 +24,7 @@ import {
   type Guide,
   type GuideProfile,
 } from '../../api/guides';
-import { friendlyError } from '../../api/auth';
+import { friendlyError, session } from '../../api/auth';
 import { BookTour } from './BookTour';
 
 const { width } = Dimensions.get('window');
@@ -47,6 +48,8 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [booking, setBooking] = useState(false);
+  // A guide viewing their OWN listing can see it but can't book themselves.
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     guidesApi
@@ -54,6 +57,16 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
       .then((dto) => setProfile(communityGuideToProfile(dto)))
       .catch((e) => setError(friendlyError(e)))
       .finally(() => setLoading(false));
+  }, [preview.id]);
+
+  useEffect(() => {
+    let active = true;
+    session.currentUser().then((u) => {
+      if (active) setIsOwner(!!u && u.id === preview.id);
+    });
+    return () => {
+      active = false;
+    };
   }, [preview.id]);
 
   const g = profile;
@@ -86,7 +99,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
   }
 
   return (
-    <View style={styles.safe}>
+    <FadeInView style={styles.safe}>
       <StatusBar style="dark" />
 
       <ScrollView
@@ -106,7 +119,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
             onMomentumScrollEnd={onGalleryScroll}
           >
             {gallery.map((uri, i) => (
-              <Image key={i} source={{ uri }} style={styles.galleryImg} resizeMode="contain" />
+              <Img key={i} source={{ uri }} style={styles.galleryImg} contentFit="contain" />
             ))}
           </ScrollView>
         </View>
@@ -290,18 +303,30 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
         <Ionicons name="arrow-back" size={22} color={colors.white} />
       </Pressable>
 
-      {/* Book bar — sits above the tab bar (which already handles the bottom inset) */}
-      <View style={styles.bookBar}>
-        <View>
-          <Text style={styles.bookFrom}>From</Text>
-          <Text style={styles.bookPrice}>{fromPrice(preview.price)}</Text>
+      {/* Bottom bar — owners see a note (can't book themselves); everyone else can book. */}
+      {isOwner ? (
+        <View style={styles.ownerBar}>
+          <View style={styles.ownerIcon}>
+            <Ionicons name="eye-outline" size={18} color={colors.maroon800} />
+          </View>
+          <Text style={styles.ownerText} numberOfLines={1}>
+            This is your listing — only others can book.
+          </Text>
         </View>
-        <Pressable style={styles.bookBtn} onPress={() => setBooking(true)}>
-          <Ionicons name="calendar" size={15} color={colors.white} />
-          <Text style={styles.bookBtnText}>Book a tour</Text>
-        </Pressable>
-      </View>
-    </View>
+      ) : (
+        /* Book bar — sits above the tab bar (which already handles the bottom inset) */
+        <View style={styles.bookBar}>
+          <View>
+            <Text style={styles.bookFrom}>From</Text>
+            <Text style={styles.bookPrice}>{fromPrice(preview.price)}</Text>
+          </View>
+          <Pressable style={styles.bookBtn} onPress={() => setBooking(true)}>
+            <Ionicons name="calendar" size={15} color={colors.white} />
+            <Text style={styles.bookBtnText}>Book a tour</Text>
+          </Pressable>
+        </View>
+      )}
+    </FadeInView>
   );
 }
 
@@ -491,4 +516,30 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(2.5),
   },
   bookBtnText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
+
+  // Owner bar (viewing your own listing)
+  ownerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingHorizontal: spacing(5),
+    paddingVertical: spacing(3.5),
+    borderTopWidth: 1,
+    borderTopColor: colors.ink200,
+    backgroundColor: colors.white,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -3 },
+    elevation: 8,
+  },
+  ownerIcon: {
+    height: 40,
+    width: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.maroon50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ownerText: { flex: 1, fontSize: font(13), fontWeight: '700', color: colors.ink900 },
 });

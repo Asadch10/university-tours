@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   logo: { height: 200, width: 200 },
   brandName: {
     marginTop: spacing(4),
-    fontSize: font(16),
+    fontSize: font(18),
     fontWeight: '800',
     color: colors.maroon900,
     textAlign: 'center',

@@ -56,10 +56,12 @@ export function AuthScreen({ navigation }: Props) {
             // Non-fatal: the account exists; phone can be set later in Profile.
           }
         }
+        // New sign-ups verify their email, then onboard — same flow as the website.
+        navigation.replace('VerifyEmail');
       } else {
         await session.login(email.trim(), password);
+        navigation.replace('Main');
       }
-      navigation.replace('Main');
     } catch (e) {
       setError(friendlyError(e));
     } finally {

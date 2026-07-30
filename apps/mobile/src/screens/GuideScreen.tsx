@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,14 +47,18 @@ export function GuideScreen() {
           ))}
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={guides}
+          keyExtractor={(g) => g.id}
+          renderItem={({ item }) => <GuideCard guide={item} onPress={() => setSelected(item)} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          windowSize={11}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={colors.maroon800} />
           }
-        >
-          {guides.length === 0 ? (
+          ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
                 <Ionicons name="people-outline" size={26} color={colors.maroon800} />
@@ -64,10 +68,8 @@ export function GuideScreen() {
                 Approved student guides will show up here. Pull down to refresh.
               </Text>
             </View>
-          ) : (
-            guides.map((g) => <GuideCard key={g.id} guide={g} onPress={() => setSelected(g)} />)
-          )}
-        </ScrollView>
+          }
+        />
       )}
     </SafeAreaView>
   );

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -12,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Img } from '../components/Img';
 import { font, colors, radius, spacing } from '../theme';
 import { session } from '../api/auth';
 import { fetchUniversities, type UniversityPin } from '../api/schools';
@@ -19,6 +19,12 @@ import { guidesApi, communityGuideToGuide, type Guide } from '../api/guides';
 import { GuideCardSkeleton, UniCardSkeleton } from '../components/Skeleton';
 import { GuideCard } from './guide/GuideCard';
 import { GuideDetail } from './guide/GuideDetail';
+
+// Resolve `p`, but never wait longer than `ms` — a slow/broken image must not
+// keep the skeleton up forever.
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([p, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
+}
 
 export function HomeScreen() {
   const nav = useNavigation<any>();
@@ -36,7 +42,15 @@ export function HomeScreen() {
       fetchUniversities().catch(() => [] as UniversityPin[]),
       guidesApi.community().then((r) => r.data.map(communityGuideToGuide)).catch(() => [] as Guide[]),
     ])
-      .then(([s, g]) => {
+      .then(async ([s, g]) => {
+        // Warm the image cache for the cards we're about to show, so the skeleton
+        // stays up until images are downloaded — cards then appear fully-formed
+        // instead of flashing empty image placeholders.
+        const urls = [
+          ...s.slice(0, 10).map((u) => u.image),
+          ...g.slice(0, 5).map((x) => x.photo),
+        ].filter((u): u is string => typeof u === 'string' && !!u);
+        await Promise.all(urls.map((u) => withTimeout(Img.prefetch(u).catch(() => false), 5000)));
         setSchools(s);
         setGuides(g);
       })
@@ -105,7 +119,7 @@ export function HomeScreen() {
             {schools.slice(0, 10).map((u) => (
               <Pressable key={u.id} style={styles.uniCard} onPress={() => nav.navigate('Explore')}>
                 {u.image ? (
-                  <Image source={{ uri: u.image }} style={styles.uniImage} />
+                  <Img source={{ uri: u.image }} style={styles.uniImage} recyclingKey={u.id} />
                 ) : (
                   <View style={[styles.uniImage, styles.uniFallback]}>
                     <Text style={styles.uniLetter}>{u.name.charAt(0)}</Text>

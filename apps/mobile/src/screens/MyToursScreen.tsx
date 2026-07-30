@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   Pressable,
   StyleSheet,
   ActivityIndicator,
@@ -178,13 +179,17 @@ export function MyToursScreen() {
           ))}
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={active}
+          keyExtractor={(b) => b.id}
+          renderItem={({ item }) => <BookingRow booking={item} view={view} onPress={() => setSelected(item)} />}
           contentContainerStyle={styles.list}
+          initialNumToRender={8}
+          windowSize={11}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={colors.maroon800} />
           }
-        >
-          {active.length === 0 ? (
+          ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
                 <Ionicons name="calendar-outline" size={26} color={colors.maroon800} />
@@ -196,10 +201,8 @@ export function MyToursScreen() {
                   : 'Tour requests from families will show up here once you’re listed as a guide.'}
               </Text>
             </View>
-          ) : (
-            active.map((b) => <BookingRow key={b.id} booking={b} view={view} onPress={() => setSelected(b)} />)
-          )}
-        </ScrollView>
+          }
+        />
       )}
     </SafeAreaView>
   );
