@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Star, ChevronLeft, ChevronRight, ChevronDown, Check, Share, Maximize2,
-  Footprints, Video, Minus, Plus, MessageSquare, Loader2, CalendarCheck, ArrowLeft,
+  Footprints, Video, Minus, Plus, MessageSquare, Loader2, CalendarCheck, ArrowLeft, Eye,
 } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
 import type { GuideProfile } from '@/lib/guides';
@@ -399,6 +399,12 @@ function BookingCard({ g }: { g: GuideProfile }) {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'paying' | 'requested'>('idle');
   // Set when the backend returns a Stripe client secret — drives the payment step.
   const [pay, setPay] = useState<{ bookingId: string; clientSecret: string; publishableKey: string } | null>(null);
+  // A guide viewing their OWN listing can see it (like everyone else) but can't book
+  // themselves. Read after mount to avoid a hydration mismatch (token is client-side).
+  const [isOwner, setIsOwner] = useState(false);
+  useEffect(() => {
+    setIsOwner(!!tokenStore.user && tokenStore.user.id === g.id);
+  }, [g.id]);
 
   // Per-tour-type availability. Guests can only pick the dates/times the guide
   // offers for the SELECTED tour type; a type with no availability (or a sample
@@ -569,6 +575,28 @@ function BookingCard({ g }: { g: GuideProfile }) {
             <ArrowLeft size={15} /> Book again
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // ---- Own listing — visible to all, but the owner can't book themselves ----
+  if (isOwner) {
+    return (
+      <div className="mt-6 rounded-3xl border border-ink-200/70 bg-white p-6 text-center shadow-card">
+        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-maroon-50 text-maroon-800">
+          <Eye size={26} />
+        </span>
+        <h3 className="mt-4 font-display text-xl font-bold text-ink-900">This is your listing</h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+          Your guide profile is live and visible to everyone browsing guides — but you can’t book
+          yourself. Only other students and families can request a tour with you.
+        </p>
+        <Link
+          href="/manage-listing"
+          className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-maroon-900 py-3 text-sm font-semibold text-ivory transition-colors hover:bg-maroon-800"
+        >
+          Manage your listing
+        </Link>
       </div>
     );
   }
