@@ -252,6 +252,7 @@ export interface AppConfig {
   maintenanceMode: boolean;
   maintenanceBanner: string;
   emailNotificationsEnabled: boolean;
+  pushNotificationsEnabled: boolean;
   featureFlags: { key: string; label: string; enabled: boolean; desc: string }[];
 }
 

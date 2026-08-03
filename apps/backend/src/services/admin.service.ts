@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { stripe, isStripeEnabled } from '../lib/stripe.js';
 import { syncPaymentRecord } from './booking.service.js';
 import { sendProfileApprovedEmail, sendProfileDeclinedEmail, ensureEmailTemplates, emailTemplateSample } from './mailer.service.js';
+import { broadcastPush, sendPushToUsers } from './push.service.js';
 import { forgotPassword } from './auth.service.js';
 import * as argon2 from 'argon2';
 
@@ -569,6 +570,12 @@ export async function moderateListing(id: string, data: { status?: string }, adm
       sendProfileApprovedEmail({ to: user.email, name: user.name, dashboardUrl }).catch((err) =>
         logger.error({ err, userId: id }, 'Approval email dispatch failed'),
       );
+      // Push the guide: their listing was approved.
+      void sendPushToUsers(id, {
+        title: 'Listing approved 🎉',
+        body: 'Your guide listing is now live. Guests can find and book you.',
+        data: { type: 'listing', status: 'published' },
+      });
     } else if (next === 'suspended') {
       sendProfileDeclinedEmail({ to: user.email, name: user.name, dashboardUrl }).catch((err) =>
         logger.error({ err, userId: id }, 'Decline email dispatch failed'),
@@ -1200,7 +1207,7 @@ export async function getAppConfig() {
   return prisma.appConfig.findFirst();
 }
 
-export async function setAppConfig(data: { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown; emailNotificationsEnabled?: boolean }, adminId?: string) {
+export async function setAppConfig(data: { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown; emailNotificationsEnabled?: boolean; pushNotificationsEnabled?: boolean }, adminId?: string) {
   const existing = await prisma.appConfig.findFirst();
   const patch = {
     ...(data.minSupportedVersion !== undefined && { minSupportedVersion: data.minSupportedVersion }),
@@ -1208,6 +1215,7 @@ export async function setAppConfig(data: { minSupportedVersion?: string; forceUp
     ...(data.maintenanceBanner !== undefined && { maintenanceBanner: data.maintenanceBanner }),
     ...(data.featureFlagsJson !== undefined && { featureFlagsJson: data.featureFlagsJson as Prisma.InputJsonValue }),
     ...(data.emailNotificationsEnabled !== undefined && { emailNotificationsEnabled: data.emailNotificationsEnabled }),
+    ...(data.pushNotificationsEnabled !== undefined && { pushNotificationsEnabled: data.pushNotificationsEnabled }),
   };
   let updated;
   if (existing) {
@@ -1250,9 +1258,29 @@ export async function createCampaign(data: { segment: string; title: string; bod
 export async function sendCampaign(id: string, adminId?: string) {
   const campaign = await prisma.pushCampaign.findUnique({ where: { id } });
   if (!campaign) throw new HttpError(404, 'not_found', 'Campaign not found');
+  // Actually deliver the push to the target segment (best-effort — never throws).
+  const msg = { title: campaign.title, body: campaign.body, data: { type: 'campaign', campaignId: id } };
+  if (campaign.segment === 'ALL') {
+    await broadcastPush(msg);
+  } else {
+    const role = campaign.segment === 'GUIDES' ? 'SELLER' : 'BUYER';
+    const users = await prisma.user.findMany({ where: { role }, select: { id: true } });
+    await sendPushToUsers(users.map((u) => u.id), msg);
+  }
   const updated = await prisma.pushCampaign.update({ where: { id }, data: { status: 'SENT', scheduledAt: campaign.scheduledAt ?? new Date() } });
   if (adminId) await prisma.auditLog.create({ data: { adminId, action: 'campaign.send', entity: `campaigns/${id} (${campaign.title})`, ip: '127.0.0.1' } });
   return updated;
+}
+
+/** Broadcast a push to every registered device (App Config composer). */
+export async function broadcastAppPush(msg: { title: string; body: string }, adminId?: string) {
+  const result = await broadcastPush({ title: msg.title, body: msg.body, data: { type: 'broadcast' } });
+  if (adminId) {
+    await prisma.auditLog.create({
+      data: { adminId, action: 'push.broadcast', entity: `broadcast — ${result.devices} device(s)`, ip: '127.0.0.1' },
+    });
+  }
+  return { ok: true as const, ...result };
 }
 
 // ─── Admin accounts ───────────────────────────────────────────────────────────

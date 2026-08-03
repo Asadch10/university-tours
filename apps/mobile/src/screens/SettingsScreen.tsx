@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { font, colors, radius, spacing } from '../theme';
 import { accountApi, type MyProfileDto } from '../api/account';
 import { session } from '../api/auth';
+import { unregisterForPush } from '../api/push';
 import { Skeleton } from '../components/Skeleton';
 import { ProfileScreen } from './ProfileScreen';
 import { ContactInformationSection } from './settings/ContactInformationSection';
@@ -62,6 +63,7 @@ export function SettingsScreen() {
   }, []);
 
   async function logout() {
+    await unregisterForPush(); // stop this device receiving pushes for the account
     await session.clear();
     goAuth();
   }

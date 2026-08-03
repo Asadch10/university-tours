@@ -282,6 +282,8 @@ export const adminApi = {
 
   appConfig: () => request<AppConfigDtoRaw>('GET', '/admin/app-config'),
   appConfigSet: (b: Record<string, unknown>) => request('PUT', '/admin/app-config', b),
+  broadcastPush: (b: { title?: string; body: string }) =>
+    request<{ ok: true; devices: number }>('POST', '/admin/app-config/broadcast-push', b),
 
   templates: () => request<TemplateDto[]>('GET', '/admin/templates'),
   templateUpdate: (id: string, b: { subject?: string; body?: string }) => request('PATCH', `/admin/templates/${id}`, b),
@@ -656,6 +658,7 @@ export interface AppConfigDtoRaw {
   forceUpdateMessage: string | null;
   maintenanceBanner: string | null;
   emailNotificationsEnabled: boolean;
+  pushNotificationsEnabled: boolean;
 }
 
 export interface TemplateDto {

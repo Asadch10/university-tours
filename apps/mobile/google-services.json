@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "858266667527",
+    "project_id": "ucpt-672a6",
+    "storage_bucket": "ucpt-672a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:858266667527:android:0272bd38c99d12e28cf8a2",
+        "android_client_info": {
+          "package_name": "com.ucpt.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdBTu6OQ8wcnTyYWD3e_5iGSH0Nej5jTk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

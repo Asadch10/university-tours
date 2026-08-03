@@ -7,6 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { font, colors, radius, spacing } from '../theme';
 import { session, friendlyError } from '../api/auth';
 import { accountApi } from '../api/account';
+import { registerForPush } from '../api/push';
 import { fetchUniversities, type UniversityPin } from '../api/schools';
 import { useToast } from '../components/Toast';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -40,6 +41,7 @@ export function OnboardingScreen({ navigation }: Props) {
   }, []);
 
   function goMain() {
+    void registerForPush(); // new users: ask for notifications on entering the app
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
   }
 

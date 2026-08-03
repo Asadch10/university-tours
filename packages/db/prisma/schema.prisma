@@ -179,8 +179,9 @@ model Device {
   userId    String         @map("user_id")
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   platform  DevicePlatform
-  pushToken String         @map("push_token")
+  pushToken String         @unique @map("push_token") // Expo push token (unique so a device re-registers, not duplicates)
   createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at")
 
   @@index([userId])
   @@map("devices")
@@ -590,6 +591,7 @@ model AppConfig {
   forceUpdateMessage        String? @map("force_update_message")
   maintenanceBanner         String? @map("maintenance_banner")
   emailNotificationsEnabled Boolean @default(true) @map("email_notifications_enabled") // master switch: off = no emails sent
+  pushNotificationsEnabled  Boolean @default(true) @map("push_notifications_enabled") // master switch: off = no mobile push sent
 
   @@map("app_config")
 }

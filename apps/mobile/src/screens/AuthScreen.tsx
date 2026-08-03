@@ -17,6 +17,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { font, colors, radius, spacing } from '../theme';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { session, friendlyError } from '../api/auth';
+import { registerForPush } from '../api/push';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 type Mode = 'signin' | 'signup';
@@ -60,6 +61,7 @@ export function AuthScreen({ navigation }: Props) {
         navigation.replace('VerifyEmail');
       } else {
         await session.login(email.trim(), password);
+        void registerForPush(); // ask for notifications + register this device
         navigation.replace('Main');
       }
     } catch (e) {

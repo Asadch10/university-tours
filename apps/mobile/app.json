@@ -19,20 +19,41 @@
     },
     "android": {
       "package": "com.ucpt.mobile",
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#7a1f2b"
+        }
+      ],
       [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.ucpt.mobile",
           "enableGooglePay": false
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
-      "apiBaseUrl": "http://localhost:4000"
-    }
+      "apiBaseUrl": "http://192.168.18.43:4000",
+      "eas": {
+        "projectId": "998998d6-11fd-473b-8b90-fa7fa131df46"
+      }
+    },
+    "owner": "asad133"
   }
 }
