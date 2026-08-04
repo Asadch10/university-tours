@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "University Campus Private Tours",
+    "name": "Campus Private Tours",
     "slug": "ucpt-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +20,16 @@
     "android": {
       "package": "com.ucpt.mobile",
       "softwareKeyboardLayoutMode": "resize",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_ANDROID_API_KEY"
+        }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-secure-store",

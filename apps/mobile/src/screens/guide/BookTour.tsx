@@ -19,6 +19,8 @@ import { session, friendlyError } from '../../api/auth';
 import { ApiClientError } from '../../api/client';
 import { SERVICE_LABEL, SERVICE_DESC } from '../../tour-types';
 import { usePriceBounds, priceFor } from '../../api/pricing';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -56,6 +58,8 @@ export function BookTour({
   availability: Availability;
   onBack: () => void;
 }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const fn = guide.name.split(' ')[0];
 
@@ -159,7 +163,11 @@ export function BookTour({
     }
 
     setStatus('paying');
-    const pay = await authorizeCard({ clientSecret: res.clientSecret, publishableKey: res.publishableKey });
+    const pay = await authorizeCard({
+      clientSecret: res.clientSecret,
+      publishableKey: res.publishableKey,
+      palette: tc,
+    });
     if (pay.status === 'unavailable') {
       // In-app card entry needs a dev build; the booking is reserved — finish on web.
       setStatus('reserved');
@@ -192,7 +200,7 @@ export function BookTour({
         <StatusBar style="dark" />
         <View style={[styles.confirmWrap, { paddingTop: insets.top + spacing(10) }]}>
           <View style={styles.confirmIcon}>
-            <Ionicons name={webFinish ? 'card' : 'calendar'} size={30} color={colors.maroon800} />
+            <Ionicons name={webFinish ? 'card' : 'calendar'} size={30} color={tc.maroon800} />
           </View>
           <Text style={styles.confirmTitle}>{webFinish ? 'Almost there' : 'Request sent'}</Text>
           <Text style={styles.confirmSub}>
@@ -226,7 +234,7 @@ export function BookTour({
       <StatusBar style="dark" />
       <View style={[styles.header, { paddingTop: insets.top + spacing(2) }]}>
         <Pressable onPress={onBack} hitSlop={8} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.ink900} />
+          <Ionicons name="arrow-back" size={22} color={tc.ink900} />
         </Pressable>
         <Text style={styles.headerTitle}>Request to book</Text>
       </View>
@@ -236,7 +244,7 @@ export function BookTour({
         <Text style={styles.guideName}>{guide.name}</Text>
         {!!guide.university && (
           <View style={styles.uniRow}>
-            <Ionicons name="school-outline" size={14} color={colors.ink500} />
+            <Ionicons name="school-outline" size={14} color={tc.ink500} />
             <Text style={styles.uni}>{guide.university}</Text>
           </View>
         )}
@@ -250,7 +258,7 @@ export function BookTour({
             return (
               <Pressable key={s} onPress={() => changeTourType(s)} style={[styles.tourCard, active && styles.tourCardActive]}>
                 <View style={[styles.tourIcon, active && styles.tourIconActive]}>
-                  <Ionicons name={meta.icon} size={18} color={active ? colors.white : colors.ink600} />
+                  <Ionicons name={meta.icon} size={18} color={active ? tc.white : tc.ink600} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.tourTitle}>{meta.label}</Text>
@@ -261,7 +269,7 @@ export function BookTour({
                 <Ionicons
                   name={active ? 'radio-button-on' : 'radio-button-off'}
                   size={20}
-                  color={active ? colors.maroon800 : colors.ink300}
+                  color={active ? tc.maroon800 : tc.ink300}
                 />
               </Pressable>
             );
@@ -280,11 +288,11 @@ export function BookTour({
             <View style={styles.calCard}>
               <View style={styles.calHead}>
                 <Pressable onPress={() => shiftMonth(-1)} hitSlop={8} style={styles.calNav}>
-                  <Ionicons name="chevron-back" size={20} color={colors.maroon800} />
+                  <Ionicons name="chevron-back" size={20} color={tc.maroon800} />
                 </Pressable>
                 <Text style={styles.calMonth}>{monthLabel}</Text>
                 <Pressable onPress={() => shiftMonth(1)} hitSlop={8} style={styles.calNav}>
-                  <Ionicons name="chevron-forward" size={20} color={colors.maroon800} />
+                  <Ionicons name="chevron-forward" size={20} color={tc.maroon800} />
                 </Pressable>
               </View>
               <View style={styles.calGrid}>
@@ -388,7 +396,7 @@ export function BookTour({
                     <Ionicons
                       name={sel ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={sel ? colors.maroon800 : colors.ink300}
+                      color={sel ? tc.maroon800 : tc.ink300}
                     />
                   </Pressable>
                 );
@@ -410,7 +418,7 @@ export function BookTour({
           style={[styles.reserveBtn, (!ready || busy) && styles.reserveBtnDisabled]}
         >
           {busy ? (
-            <ActivityIndicator color={colors.white} />
+            <ActivityIndicator color={tc.white} />
           ) : (
             <Text style={styles.reserveBtnText}>Reserve</Text>
           )}
@@ -421,6 +429,7 @@ export function BookTour({
 }
 
 function SectionLabel({ n, text }: { n: number; text: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.sectionLabel}>
       <View style={styles.stepDot}>
@@ -432,6 +441,7 @@ function SectionLabel({ n, text }: { n: number; text: string }) {
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.summaryRow}>
       <Text style={styles.summaryLabel}>{label}</Text>
@@ -453,6 +463,8 @@ function Counter({
   min: number;
   onChange: (v: number) => void;
 }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.counterRow}>
       <View>
@@ -465,19 +477,20 @@ function Counter({
           onPress={() => onChange(Math.max(min, value - 1))}
           style={[styles.counterBtn, value <= min && styles.counterBtnDisabled]}
         >
-          <Ionicons name="remove" size={18} color={value <= min ? colors.ink300 : colors.ink600} />
+          <Ionicons name="remove" size={18} color={value <= min ? tc.ink300 : tc.ink600} />
         </Pressable>
         <Text style={styles.counterValue}>{value}</Text>
         <Pressable onPress={() => onChange(value + 1)} style={styles.counterBtn}>
-          <Ionicons name="add" size={18} color={colors.ink600} />
+          <Ionicons name="add" size={18} color={tc.ink600} />
         </Pressable>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -485,20 +498,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(3),
     paddingBottom: spacing(2),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
   backBtn: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900 },
+  headerTitle: { fontSize: font(17), fontWeight: '800', color: tc.ink900 },
   scroll: { padding: spacing(5), paddingBottom: spacing(10) },
 
-  guideName: { fontSize: font(22), fontWeight: '800', color: colors.ink900, letterSpacing: -0.3 },
+  guideName: { fontSize: font(22), fontWeight: '800', color: tc.ink900, letterSpacing: -0.3 },
   uniRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(1) },
-  uni: { fontSize: font(14), color: colors.ink600 },
+  uni: { fontSize: font(14), color: tc.ink600 },
 
   sectionLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), marginTop: spacing(7), marginBottom: spacing(3) },
-  stepDot: { height: 22, width: 22, borderRadius: 11, backgroundColor: colors.maroon900, alignItems: 'center', justifyContent: 'center' },
-  stepDotText: { color: colors.white, fontSize: font(12), fontWeight: '800' },
-  sectionLabelText: { fontSize: font(16), fontWeight: '800', color: colors.ink900 },
+  stepDot: { height: 22, width: 22, borderRadius: 11, backgroundColor: tc.maroon900, alignItems: 'center', justifyContent: 'center' },
+  stepDotText: { color: tc.white, fontSize: font(12), fontWeight: '800' },
+  sectionLabelText: { fontSize: font(16), fontWeight: '800', color: tc.ink900 },
 
   // Tour type + duration cards
   tourCard: {
@@ -506,55 +519,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing(3),
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     padding: spacing(3.5),
   },
-  tourCardActive: { borderColor: colors.maroon800, backgroundColor: colors.maroon50 },
-  tourIcon: { height: 38, width: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.ink100 },
-  tourIconActive: { backgroundColor: colors.maroon800 },
-  tourTitle: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
-  tourDesc: { fontSize: font(13), color: colors.ink500, marginTop: 2, lineHeight: 18 },
+  tourCardActive: { borderColor: tc.maroon800, backgroundColor: tc.maroon50 },
+  tourIcon: { height: 38, width: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: tc.ink100 },
+  tourIconActive: { backgroundColor: tc.maroon800 },
+  tourTitle: { fontSize: font(15), fontWeight: '700', color: tc.ink900 },
+  tourDesc: { fontSize: font(13), color: tc.ink500, marginTop: 2, lineHeight: 18 },
   durTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
-  recBadge: { backgroundColor: colors.maroon50, borderRadius: radius.pill, paddingHorizontal: spacing(2), paddingVertical: 2 },
-  recBadgeText: { fontSize: font(10), fontWeight: '700', color: colors.maroon800 },
+  recBadge: { backgroundColor: tc.maroon50, borderRadius: radius.pill, paddingHorizontal: spacing(2), paddingVertical: 2 },
+  recBadgeText: { fontSize: font(10), fontWeight: '700', color: tc.maroon800 },
 
   // Calendar
-  availHint: { fontSize: font(13), color: colors.ink500, marginBottom: spacing(2.5), lineHeight: 19 },
-  availDot: { color: colors.maroon800 },
-  calCard: { borderWidth: 1, borderColor: colors.ink200, borderRadius: radius.lg, padding: spacing(4) },
+  availHint: { fontSize: font(13), color: tc.ink500, marginBottom: spacing(2.5), lineHeight: 19 },
+  availDot: { color: tc.maroon800 },
+  calCard: { borderWidth: 1, borderColor: tc.ink200, borderRadius: radius.lg, padding: spacing(4) },
   calHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing(3) },
   calNav: { height: 32, width: 32, alignItems: 'center', justifyContent: 'center' },
-  calMonth: { fontSize: font(15), fontWeight: '800', color: colors.ink900 },
+  calMonth: { fontSize: font(15), fontWeight: '800', color: tc.ink900 },
   calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calCell: { width: `${100 / 7}%`, alignItems: 'center', justifyContent: 'center', paddingVertical: 2 },
-  calWeekday: { fontSize: font(12), fontWeight: '700', color: colors.ink500, paddingVertical: spacing(1) },
+  calWeekday: { fontSize: font(12), fontWeight: '700', color: tc.ink500, paddingVertical: spacing(1) },
   calDay: { height: 38, width: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  calDayOffered: { backgroundColor: colors.maroon50 },
-  calDaySel: { backgroundColor: colors.maroon900 },
-  calDayText: { fontSize: font(14), color: colors.ink900 },
-  calDayDisabled: { color: colors.ink200 },
-  calDayOfferedText: { color: colors.maroon800, fontWeight: '800' },
-  calDayTextSel: { color: colors.white, fontWeight: '800' },
+  calDayOffered: { backgroundColor: tc.maroon50 },
+  calDaySel: { backgroundColor: tc.maroon900 },
+  calDayText: { fontSize: font(14), color: tc.ink900 },
+  calDayDisabled: { color: tc.ink200 },
+  calDayOfferedText: { color: tc.maroon800, fontWeight: '800' },
+  calDayTextSel: { color: tc.white, fontWeight: '800' },
 
   // Time
   timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
-  timeChip: { borderWidth: 1, borderColor: colors.ink200, borderRadius: radius.md, paddingHorizontal: spacing(3.5), paddingVertical: spacing(2.5) },
-  timeChipSel: { borderColor: colors.maroon800, backgroundColor: colors.maroon50 },
-  timeChipText: { fontSize: font(14), fontWeight: '600', color: colors.ink600 },
-  timeChipTextSel: { color: colors.maroon800 },
-  muted: { fontSize: font(14), color: colors.ink500 },
+  timeChip: { borderWidth: 1, borderColor: tc.ink200, borderRadius: radius.md, paddingHorizontal: spacing(3.5), paddingVertical: spacing(2.5) },
+  timeChipSel: { borderColor: tc.maroon800, backgroundColor: tc.maroon50 },
+  timeChipText: { fontSize: font(14), fontWeight: '600', color: tc.ink600 },
+  timeChipTextSel: { color: tc.maroon800 },
+  muted: { fontSize: font(14), color: tc.ink500 },
 
   // Guests
-  counterCard: { borderWidth: 1, borderColor: colors.ink200, borderRadius: radius.lg, paddingHorizontal: spacing(4) },
+  counterCard: { borderWidth: 1, borderColor: tc.ink200, borderRadius: radius.lg, paddingHorizontal: spacing(4) },
   counterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing(3.5) },
-  divider: { height: 1, backgroundColor: colors.ink100 },
-  counterLabel: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
-  counterSub: { fontSize: font(13), color: colors.ink500, marginTop: 1 },
+  divider: { height: 1, backgroundColor: tc.ink100 },
+  counterLabel: { fontSize: font(15), fontWeight: '700', color: tc.ink900 },
+  counterSub: { fontSize: font(13), color: tc.ink500, marginTop: 1 },
   counterCtrls: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
-  counterBtn: { height: 34, width: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.ink300, alignItems: 'center', justifyContent: 'center' },
-  counterBtnDisabled: { borderColor: colors.ink100 },
-  counterValue: { fontSize: font(16), fontWeight: '700', color: colors.ink900, minWidth: 18, textAlign: 'center' },
+  counterBtn: { height: 34, width: 34, borderRadius: 17, borderWidth: 1, borderColor: tc.ink300, alignItems: 'center', justifyContent: 'center' },
+  counterBtnDisabled: { borderColor: tc.ink100 },
+  counterValue: { fontSize: font(16), fontWeight: '700', color: tc.ink900, minWidth: 18, textAlign: 'center' },
 
   // Reserve bar
   bar: {
@@ -564,20 +577,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(5),
     paddingVertical: spacing(2.5),
     borderTopWidth: 1,
-    borderTopColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderTopColor: tc.ink200,
+    backgroundColor: tc.white,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: -3 },
     elevation: 8,
   },
-  barLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: colors.ink300 },
-  durPrice: { fontSize: font(15), fontWeight: '700', color: colors.maroon800, marginRight: spacing(2) },
-  barPrice: { fontSize: font(19), fontWeight: '800', color: colors.maroon900, marginTop: 1 },
-  barNote: { fontSize: font(12), color: colors.ink500, marginTop: 1 },
+  barLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: tc.ink300 },
+  durPrice: { fontSize: font(15), fontWeight: '700', color: tc.maroon800, marginRight: spacing(2) },
+  barPrice: { fontSize: font(19), fontWeight: '800', color: tc.maroon900, marginTop: 1 },
+  barNote: { fontSize: font(12), color: tc.ink500, marginTop: 1 },
   reserveBtn: {
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.md,
     paddingHorizontal: spacing(6),
     paddingVertical: spacing(2.5),
@@ -585,20 +598,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 130,
   },
-  reserveBtnDisabled: { backgroundColor: colors.ink200 },
-  reserveBtnText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
+  reserveBtnDisabled: { backgroundColor: tc.ink200 },
+  reserveBtnText: { color: tc.white, fontSize: font(14), fontWeight: '700' },
 
   // Confirmation
   confirmWrap: { flex: 1, paddingHorizontal: spacing(6), alignItems: 'center' },
-  confirmIcon: { height: 64, width: 64, borderRadius: 32, backgroundColor: colors.maroon50, alignItems: 'center', justifyContent: 'center' },
-  confirmTitle: { fontSize: font(22), fontWeight: '800', color: colors.ink900, marginTop: spacing(4) },
-  confirmSub: { fontSize: font(14), color: colors.ink600, textAlign: 'center', lineHeight: 21, marginTop: spacing(2) },
-  summary: { alignSelf: 'stretch', backgroundColor: colors.cream, borderRadius: radius.lg, padding: spacing(4), marginTop: spacing(6) },
+  confirmIcon: { height: 64, width: 64, borderRadius: 32, backgroundColor: tc.maroon50, alignItems: 'center', justifyContent: 'center' },
+  confirmTitle: { fontSize: font(22), fontWeight: '800', color: tc.ink900, marginTop: spacing(4) },
+  confirmSub: { fontSize: font(14), color: tc.ink600, textAlign: 'center', lineHeight: 21, marginTop: spacing(2) },
+  summary: { alignSelf: 'stretch', backgroundColor: tc.cream, borderRadius: radius.lg, padding: spacing(4), marginTop: spacing(6) },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing(4), paddingVertical: spacing(1.5) },
-  summaryLabel: { fontSize: font(14), color: colors.ink500 },
-  summaryValue: { fontSize: font(14), fontWeight: '600', color: colors.ink900, flexShrink: 1, textAlign: 'right' },
-  summaryTotal: { borderTopWidth: 1, borderTopColor: colors.ink200, marginTop: spacing(1.5), paddingTop: spacing(3) },
-  summaryTotalValue: { fontSize: font(15), fontWeight: '800', color: colors.maroon900 },
-  primaryBtn: { alignSelf: 'stretch', backgroundColor: colors.maroon900, borderRadius: radius.lg, paddingVertical: spacing(4), alignItems: 'center', marginTop: spacing(6) },
-  primaryBtnText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
+  summaryLabel: { fontSize: font(14), color: tc.ink500 },
+  summaryValue: { fontSize: font(14), fontWeight: '600', color: tc.ink900, flexShrink: 1, textAlign: 'right' },
+  summaryTotal: { borderTopWidth: 1, borderTopColor: tc.ink200, marginTop: spacing(1.5), paddingTop: spacing(3) },
+  summaryTotalValue: { fontSize: font(15), fontWeight: '800', color: tc.maroon900 },
+  primaryBtn: { alignSelf: 'stretch', backgroundColor: tc.maroon900, borderRadius: radius.lg, paddingVertical: spacing(4), alignItems: 'center', marginTop: spacing(6) },
+  primaryBtnText: { color: tc.white, fontSize: font(15), fontWeight: '700' },
 });

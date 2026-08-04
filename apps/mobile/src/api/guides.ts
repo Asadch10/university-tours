@@ -222,7 +222,7 @@ export function communityGuideToProfile(dto: CommunityGuideDto): GuideProfile {
     })),
     hostedBy:
       str(gl.intro) ||
-      `I joined University Campus Private Tours to share an honest, student's-eye view of ${base.university || 'my campus'}.`,
+      `I joined Campus Private Tours to share an honest, student's-eye view of ${base.university || 'my campus'}.`,
   };
 }
 

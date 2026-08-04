@@ -5,7 +5,9 @@ import { font, colors, radius, spacing } from '../../theme';
 import { accountApi, DIAL_CODES, type MyProfileDto } from '../../api/account';
 import { friendlyError } from '../../api/auth';
 import { useToast } from '../../components/Toast';
-import { Field, SInput, PrimaryButton, kit, GREEN_FG } from './kit';
+import { Field, SInput, PrimaryButton, useKit, GREEN_FG } from './kit';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 export function ContactInformationSection({
   profile,
@@ -14,6 +16,9 @@ export function ContactInformationSection({
   profile: MyProfileDto | null;
   onUpdated?: (patch: { phone: string; promo: boolean }) => void;
 }) {
+  const tc = useThemeColors();
+  const kit = useKit();
+  const styles = useStyles(makeStyles);
   const [email, setEmail] = useState('');
   const [dial, setDial] = useState('+92');
   const [phone, setPhone] = useState('');
@@ -66,7 +71,7 @@ export function ContactInformationSection({
             <Text style={styles.dialText}>
               {dialFlag} {dial}
             </Text>
-            <Ionicons name="chevron-down" size={14} color={colors.ink300} />
+            <Ionicons name="chevron-down" size={14} color={tc.ink300} />
           </Pressable>
           <SInput
             value={phone}
@@ -81,10 +86,10 @@ export function ContactInformationSection({
       {/* Promo */}
       <Pressable style={styles.promoRow} onPress={() => setPromo((v) => !v)}>
         <View style={[styles.checkbox, promo && styles.checkboxOn]}>
-          {promo && <Ionicons name="checkmark" size={14} color={colors.white} />}
+          {promo && <Ionicons name="checkmark" size={14} color={tc.white} />}
         </View>
         <Text style={styles.promoText}>
-          I&apos;d like to receive promotional messages from University Campus Private Tours. Message and data rates
+          I&apos;d like to receive promotional messages from Campus Private Tours. Message and data rates
           may apply. Text STOP to cancel.
         </Text>
       </Pressable>
@@ -112,7 +117,7 @@ export function ContactInformationSection({
                   <Text style={styles.modalRowText}>
                     {c.flag}  {c.label}  ·  {c.code}
                   </Text>
-                  {on && <Ionicons name="checkmark" size={18} color={colors.maroon800} />}
+                  {on && <Ionicons name="checkmark" size={18} color={tc.maroon800} />}
                 </Pressable>
               );
             })}
@@ -123,14 +128,15 @@ export function ContactInformationSection({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.md,
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
   },
   dialBtn: {
     flexDirection: 'row',
@@ -139,9 +145,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(3.5),
     borderRightWidth: 1,
-    borderRightColor: colors.ink200,
+    borderRightColor: tc.ink200,
   },
-  dialText: { fontSize: font(15), fontWeight: '600', color: colors.ink900 },
+  dialText: { fontSize: font(15), fontWeight: '600', color: tc.ink900 },
   phoneInput: { flex: 1, borderWidth: 0 },
   promoRow: { flexDirection: 'row', gap: spacing(2.5), marginTop: spacing(5), alignItems: 'flex-start' },
   checkbox: {
@@ -149,16 +155,16 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: colors.ink300,
+    borderColor: tc.ink300,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
   },
-  checkboxOn: { backgroundColor: colors.maroon900, borderColor: colors.maroon900 },
-  promoText: { flex: 1, fontSize: font(13), color: colors.ink600, lineHeight: 19 },
+  checkboxOn: { backgroundColor: tc.maroon900, borderColor: tc.maroon900 },
+  promoText: { flex: 1, fontSize: font(13), color: tc.ink600, lineHeight: 19 },
   modalBackdrop: { flex: 1, backgroundColor: '#00000055', justifyContent: 'center', padding: spacing(8) },
-  modalCard: { backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing(3) },
-  modalTitle: { fontSize: font(13), fontWeight: '700', color: colors.ink500, padding: spacing(3) },
+  modalCard: { backgroundColor: tc.white, borderRadius: radius.xl, padding: spacing(3) },
+  modalTitle: { fontSize: font(13), fontWeight: '700', color: tc.ink500, padding: spacing(3) },
   modalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -167,5 +173,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(3),
     borderRadius: radius.md,
   },
-  modalRowText: { fontSize: font(15), color: colors.ink900 },
+  modalRowText: { fontSize: font(15), color: tc.ink900 },
 });

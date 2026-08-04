@@ -15,7 +15,8 @@ import {
   ListingsScreen,
   EarningsScreen,
 } from '../screens';
-import { font, colors } from '../theme';
+import { font, type Palette } from '../theme';
+import { useThemeColors } from '../theme-context';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -28,21 +29,21 @@ function tabIcon(outline: IoniconName, filled: IoniconName) {
   );
 }
 
-const screenOptions = {
+const makeScreenOptions = (tc: Palette) => ({
   headerShown: false,
   // NOTE: the bottom-tab `animation` option (e.g. 'shift'/'fade') is intentionally
   // NOT set — in RN Navigation 7 it can leave a tab screen rendering blank/white
   // until you switch away and back. Tabs swap instantly (standard iOS behaviour);
   // smooth slide animations still apply to stack pushes (see RootNavigator).
-  tabBarActiveTintColor: colors.maroon900,
-  tabBarInactiveTintColor: colors.ink500,
-  tabBarStyle: { borderTopColor: colors.ink200, backgroundColor: colors.white },
+  tabBarActiveTintColor: tc.maroon900,
+  tabBarInactiveTintColor: tc.ink500,
+  tabBarStyle: { borderTopColor: tc.ink200, backgroundColor: tc.white },
   tabBarLabelStyle: { fontSize: font(11), fontWeight: '600' as const },
-};
+});
 
 export function BuyerTabs() {
   return (
-    <Tab.Navigator initialRouteName="Home" screenOptions={screenOptions}>
+    <Tab.Navigator initialRouteName="Home" screenOptions={makeScreenOptions(useThemeColors())}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -74,7 +75,7 @@ export function BuyerTabs() {
 
 export function AmbassadorTabs() {
   return (
-    <Tab.Navigator initialRouteName="Requests" screenOptions={screenOptions}>
+    <Tab.Navigator initialRouteName="Requests" screenOptions={makeScreenOptions(useThemeColors())}>
       <Tab.Screen
         name="Requests"
         component={RequestsScreen}

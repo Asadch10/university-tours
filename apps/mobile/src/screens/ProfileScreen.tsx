@@ -17,7 +17,9 @@ import { accountApi, type SellerReview } from '../api/account';
 import { friendlyError } from '../api/auth';
 import { useToast } from '../components/Toast';
 import { Skeleton } from '../components/Skeleton';
-import { Field, SInput, PrimaryButton, kit } from './settings/kit';
+import { Field, SInput, PrimaryButton, useKit } from './settings/kit';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function fmtDate(iso: string) {
@@ -39,6 +41,9 @@ function initialsOf(name: string) {
 
 /** Mobile profile — mirrors the website /profile page (identity, bio, reviews). */
 export function ProfileScreen({ onBack, onSaved }: { onBack: () => void; onSaved?: (name: string) => void }) {
+  const tc = useThemeColors();
+  const kit = useKit();
+  const styles = useStyles(makeStyles);
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,7 +120,7 @@ export function ProfileScreen({ onBack, onSaved }: { onBack: () => void; onSaved
       <StatusBar style="dark" />
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={8} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.ink900} />
+          <Ionicons name="arrow-back" size={22} color={tc.ink900} />
         </Pressable>
         <Text style={styles.headerTitle}>My profile</Text>
       </View>
@@ -162,13 +167,13 @@ export function ProfileScreen({ onBack, onSaved }: { onBack: () => void; onSaved
               <Text style={styles.name}>{fullName || 'Your name'}</Text>
               {!!email && (
                 <View style={styles.emailRow}>
-                  <Ionicons name="mail-outline" size={14} color={colors.ink500} />
+                  <Ionicons name="mail-outline" size={14} color={tc.ink500} />
                   <Text style={styles.email}>{email}</Text>
                 </View>
               )}
               {reviews.length > 0 && (
                 <View style={styles.ratingPill}>
-                  <Ionicons name="star" size={14} color={colors.gold500} />
+                  <Ionicons name="star" size={14} color={tc.gold500} />
                   <Text style={styles.ratingValue}>{avg.toFixed(1)}</Text>
                   <Text style={styles.ratingCount}>
                     · {reviews.length} review{reviews.length === 1 ? '' : 's'}
@@ -235,7 +240,7 @@ export function ProfileScreen({ onBack, onSaved }: { onBack: () => void; onSaved
                       <Text style={styles.reviewName}>{r.buyer?.name ?? 'Guest'}</Text>
                       <View style={styles.stars}>
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <Ionicons key={n} name={r.rating >= n ? 'star' : 'star-outline'} size={13} color={colors.gold500} />
+                          <Ionicons key={n} name={r.rating >= n ? 'star' : 'star-outline'} size={13} color={tc.gold500} />
                         ))}
                       </View>
                     </View>
@@ -252,8 +257,9 @@ export function ProfileScreen({ onBack, onSaved }: { onBack: () => void; onSaved
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -261,10 +267,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
   backBtn: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: font(20), fontWeight: '800', color: colors.ink900 },
+  headerTitle: { fontSize: font(20), fontWeight: '800', color: tc.ink900 },
   scroll: { padding: spacing(5), paddingBottom: spacing(12) },
 
   // Hero
@@ -273,31 +279,31 @@ const styles = StyleSheet.create({
     height: 88,
     width: 88,
     borderRadius: 44,
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarImg: { height: 88, width: 88 },
-  avatarText: { color: colors.white, fontSize: font(30), fontWeight: '800' },
-  name: { fontSize: font(22), fontWeight: '800', color: colors.ink900, marginTop: spacing(3.5) },
+  avatarText: { color: tc.white, fontSize: font(30), fontWeight: '800' },
+  name: { fontSize: font(22), fontWeight: '800', color: tc.ink900, marginTop: spacing(3.5) },
   emailRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(1.5) },
-  email: { fontSize: font(14), color: colors.ink500 },
+  email: { fontSize: font(14), color: tc.ink500 },
   ratingPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(1),
     marginTop: spacing(3),
-    backgroundColor: colors.cream,
+    backgroundColor: tc.cream,
     borderRadius: radius.pill,
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(1.5),
   },
-  ratingValue: { fontSize: font(14), fontWeight: '800', color: colors.ink900 },
-  ratingCount: { fontSize: font(13), color: colors.ink500 },
+  ratingValue: { fontSize: font(14), fontWeight: '800', color: tc.ink900 },
+  ratingCount: { fontSize: font(13), color: tc.ink500 },
 
   // Sections
-  sectionTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900, marginTop: spacing(7) },
+  sectionTitle: { fontSize: font(17), fontWeight: '800', color: tc.ink900, marginTop: spacing(7) },
   nameRow: { flexDirection: 'row', gap: spacing(3) },
   textarea: { minHeight: 110, paddingTop: spacing(3), textAlignVertical: 'top' },
 
@@ -306,17 +312,17 @@ const styles = StyleSheet.create({
     marginTop: spacing(3),
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     paddingVertical: spacing(8),
     alignItems: 'center',
   },
-  emptyText: { fontSize: font(14), color: colors.ink500 },
+  emptyText: { fontSize: font(14), color: tc.ink500 },
   reviewCard: {
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     padding: spacing(4),
   },
   reviewHead: { flexDirection: 'row', alignItems: 'center', gap: spacing(2.5) },
@@ -324,13 +330,13 @@ const styles = StyleSheet.create({
     height: 32,
     width: 32,
     borderRadius: 16,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reviewAvatarText: { fontSize: font(12), fontWeight: '800', color: colors.maroon800 },
-  reviewName: { flex: 1, fontSize: font(14), fontWeight: '700', color: colors.ink900 },
+  reviewAvatarText: { fontSize: font(12), fontWeight: '800', color: tc.maroon800 },
+  reviewName: { flex: 1, fontSize: font(14), fontWeight: '700', color: tc.ink900 },
   stars: { flexDirection: 'row', gap: 1 },
-  reviewText: { fontSize: font(14), color: colors.ink600, lineHeight: 21, fontStyle: 'italic', marginTop: spacing(3) },
-  reviewDate: { fontSize: font(12), color: colors.ink500, marginTop: spacing(3) },
+  reviewText: { fontSize: font(14), color: tc.ink600, lineHeight: 21, fontStyle: 'italic', marginTop: spacing(3) },
+  reviewDate: { fontSize: font(12), color: tc.ink500, marginTop: spacing(3) },
 });

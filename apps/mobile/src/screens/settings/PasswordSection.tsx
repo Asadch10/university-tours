@@ -5,9 +5,14 @@ import { colors, spacing } from '../../theme';
 import { accountApi } from '../../api/account';
 import { friendlyError } from '../../api/auth';
 import { useToast } from '../../components/Toast';
-import { Field, SInput, PrimaryButton, kit } from './kit';
+import { Field, SInput, PrimaryButton, useKit } from './kit';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 export function PasswordSection() {
+  const tc = useThemeColors();
+  const kit = useKit();
+  const styles = useStyles(makeStyles);
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,7 +49,7 @@ export function PasswordSection() {
             style={styles.input}
           />
           <Pressable onPress={() => setShow((s) => !s)} hitSlop={8} style={styles.eye}>
-            <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={colors.ink300} />
+            <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={tc.ink300} />
           </Pressable>
         </View>
         <Text style={kit.hint}>Use at least 8 characters.</Text>
@@ -62,7 +67,8 @@ export function PasswordSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
   row: { position: 'relative', justifyContent: 'center' },
   input: { paddingRight: spacing(12) },
   eye: { position: 'absolute', right: spacing(3) },

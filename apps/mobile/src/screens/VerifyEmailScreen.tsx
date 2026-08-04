@@ -8,6 +8,8 @@ import { font, colors, radius, spacing } from '../theme';
 import { session, friendlyError } from '../api/auth';
 import { useToast } from '../components/Toast';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VerifyEmail'>;
 
@@ -18,6 +20,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'VerifyEmail'>;
  * email link — which verifies on the backend — is picked up when the app returns).
  */
 export function VerifyEmailScreen({ navigation, route }: Props) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const toast = useToast();
   const token = route.params?.token;
   const [email, setEmail] = useState('');
@@ -114,7 +118,7 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.safe}>
         <StatusBar style="dark" />
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.maroon900} />
+          <ActivityIndicator size="large" color={tc.maroon900} />
           <Text style={styles.verifyingText}>Verifying your email…</Text>
         </View>
       </SafeAreaView>
@@ -126,7 +130,7 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
       <StatusBar style="dark" />
       <View style={styles.body}>
         <View style={styles.badge}>
-          <Ionicons name="mail-outline" size={28} color={colors.maroon900} />
+          <Ionicons name="mail-outline" size={28} color={tc.maroon900} />
         </View>
         <Text style={styles.heading}>Hi {first}, check your inbox to verify your email</Text>
         <Text style={styles.sub}>
@@ -155,7 +159,7 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
         </View>
 
         <View style={styles.waiting}>
-          <ActivityIndicator size="small" color={colors.ink300} />
+          <ActivityIndicator size="small" color={tc.ink300} />
           <Text style={styles.waitingText}>Waiting for confirmation…</Text>
         </View>
       </View>
@@ -163,33 +167,34 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing(4) },
-  verifyingText: { fontSize: font(15), color: colors.ink600 },
+  verifyingText: { fontSize: font(15), color: tc.ink600 },
   body: { flex: 1, paddingHorizontal: spacing(6), paddingTop: spacing(10) },
   badge: {
     height: 56,
     width: 56,
     borderRadius: radius.lg,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heading: { fontSize: font(26), fontWeight: '800', color: colors.ink900, marginTop: spacing(6), lineHeight: 34 },
-  sub: { fontSize: font(15), color: colors.ink600, lineHeight: 23, marginTop: spacing(4) },
-  email: { fontWeight: '800', color: colors.ink900 },
+  heading: { fontSize: font(26), fontWeight: '800', color: tc.ink900, marginTop: spacing(6), lineHeight: 34 },
+  sub: { fontSize: font(15), color: tc.ink600, lineHeight: 23, marginTop: spacing(4) },
+  email: { fontWeight: '800', color: tc.ink900 },
   primaryBtn: {
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.lg,
     paddingVertical: spacing(4),
     alignItems: 'center',
     marginTop: spacing(8),
   },
-  primaryBtnText: { color: colors.white, fontSize: font(15), fontWeight: '700' },
+  primaryBtnText: { color: tc.white, fontSize: font(15), fontWeight: '700' },
   links: { marginTop: spacing(6), gap: spacing(2.5) },
-  linkRow: { fontSize: font(14), color: colors.ink500 },
-  link: { fontWeight: '800', color: colors.maroon900 },
+  linkRow: { fontSize: font(14), color: tc.ink500 },
+  link: { fontWeight: '800', color: tc.maroon900 },
   waiting: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), marginTop: spacing(8) },
-  waitingText: { fontSize: font(13), color: colors.ink500 },
+  waitingText: { fontSize: font(13), color: tc.ink500 },
 });

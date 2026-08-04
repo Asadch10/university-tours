@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Animated, StyleSheet, View, type ViewStyle, type StyleProp } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing, type Palette } from '../theme';
+import { useStyles, useThemeColors } from '../theme-context';
 
 // One shared pulse so every skeleton on screen breathes in sync with a single loop.
 const pulse = new Animated.Value(0.5);
@@ -28,10 +29,12 @@ export function Skeleton({
   r?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const tc = useThemeColors();
+  const s = useStyles(makeS);
   useEffect(ensurePulse, []);
   return (
     <Animated.View
-      style={[{ width: w, height: h, borderRadius: r, backgroundColor: colors.ink100, opacity: pulse }, style]}
+      style={[{ width: w, height: h, borderRadius: r, backgroundColor: tc.ink100, opacity: pulse }, style]}
     />
   );
 }
@@ -40,6 +43,8 @@ export function Skeleton({
 
 /** Matches GuideCard. */
 export function GuideCardSkeleton() {
+  const tc = useThemeColors();
+  const s = useStyles(makeS);
   return (
     <View style={s.card}>
       <View style={s.row}>
@@ -66,6 +71,8 @@ export function GuideCardSkeleton() {
 
 /** Matches an Explore school row. */
 export function SchoolRowSkeleton() {
+  const tc = useThemeColors();
+  const s = useStyles(makeS);
   return (
     <View style={s.rowItem}>
       <Skeleton w={56} h={56} r={radius.md} />
@@ -79,6 +86,8 @@ export function SchoolRowSkeleton() {
 
 /** Matches a My-Tours booking row. */
 export function BookingCardSkeleton() {
+  const tc = useThemeColors();
+  const s = useStyles(makeS);
   return (
     <View style={s.card}>
       <View style={[s.row, { alignItems: 'center' }]}>
@@ -95,6 +104,8 @@ export function BookingCardSkeleton() {
 
 /** Matches a Home horizontal university card. */
 export function UniCardSkeleton() {
+  const tc = useThemeColors();
+  const s = useStyles(makeS);
   return (
     <View style={{ width: 156 }}>
       <Skeleton w={156} h={120} r={radius.md} />
@@ -104,11 +115,12 @@ export function UniCardSkeleton() {
   );
 }
 
-const s = StyleSheet.create({
+const makeS = (tc: Palette) =>
+  StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.xl,
     padding: spacing(4),
   },
@@ -118,7 +130,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: colors.ink100,
+    borderTopColor: tc.ink100,
     marginTop: spacing(4),
     paddingTop: spacing(3),
   },
@@ -128,6 +140,6 @@ const s = StyleSheet.create({
     gap: spacing(3),
     paddingVertical: spacing(3.5),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
 });

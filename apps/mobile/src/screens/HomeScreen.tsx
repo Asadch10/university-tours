@@ -19,6 +19,8 @@ import { guidesApi, communityGuideToGuide, type Guide } from '../api/guides';
 import { GuideCardSkeleton, UniCardSkeleton } from '../components/Skeleton';
 import { GuideCard } from './guide/GuideCard';
 import { GuideDetail } from './guide/GuideDetail';
+import { useStyles, useThemeColors, useTheme } from '../theme-context';
+import type { Palette } from '../theme';
 
 // Resolve `p`, but never wait longer than `ms` — a slow/broken image must not
 // keep the skeleton up forever.
@@ -27,6 +29,9 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
 }
 
 export function HomeScreen() {
+  const { theme, toggleTheme } = useTheme();
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const nav = useNavigation<any>();
   const [firstName, setFirstName] = useState('there');
   const [schools, setSchools] = useState<UniversityPin[]>([]);
@@ -76,17 +81,32 @@ export function HomeScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={colors.maroon800} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={tc.maroon800} />
         }
       >
         {/* Top bar */}
         <View style={styles.topBar}>
           <Pressable hitSlop={8} onPress={() => nav.navigate('Settings')}>
-            <Ionicons name="menu" size={26} color={colors.ink900} />
+            <Ionicons name="menu" size={26} color={tc.ink900} />
           </Pressable>
-          <Pressable hitSlop={8}>
-            <Ionicons name="notifications-outline" size={23} color={colors.ink900} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(4) }}>
+            {/* Light / dark switch — the app defaults to dark. */}
+            <Pressable
+              hitSlop={8}
+              onPress={toggleTheme}
+              accessibilityRole="button"
+              accessibilityLabel={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            >
+              <Ionicons
+                name={theme === 'dark' ? 'sunny-outline' : 'moon-outline'}
+                size={23}
+                color={tc.ink900}
+              />
+            </Pressable>
+            <Pressable hitSlop={8}>
+              <Ionicons name="notifications-outline" size={23} color={tc.ink900} />
+            </Pressable>
+          </View>
         </View>
 
         {/* Greeting */}
@@ -96,11 +116,11 @@ export function HomeScreen() {
         {/* Search → Explore */}
         <View style={styles.searchRow}>
           <Pressable style={styles.searchBox} onPress={() => nav.navigate('Explore')}>
-            <Ionicons name="search" size={18} color={colors.ink300} />
+            <Ionicons name="search" size={18} color={tc.ink300} />
             <Text style={styles.searchPlaceholder}>Search universities or cities</Text>
           </Pressable>
           <Pressable style={styles.filterBtn} onPress={() => nav.navigate('Explore')}>
-            <Ionicons name="options-outline" size={20} color={colors.ink900} />
+            <Ionicons name="options-outline" size={20} color={tc.ink900} />
           </Pressable>
         </View>
 
@@ -129,7 +149,7 @@ export function HomeScreen() {
                   {u.name}
                 </Text>
                 <View style={styles.uniMetaRow}>
-                  <Ionicons name="location-outline" size={12} color={colors.ink500} />
+                  <Ionicons name="location-outline" size={12} color={tc.ink500} />
                   <Text style={styles.uniMeta} numberOfLines={1}>
                     {u.city}
                     {u.state ? `, ${u.state}` : ''}
@@ -163,6 +183,7 @@ export function HomeScreen() {
 }
 
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -173,33 +194,34 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => voi
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   scroll: { paddingHorizontal: spacing(5), paddingBottom: spacing(10) },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing(2) },
-  greeting: { fontSize: font(15), color: colors.ink600, marginTop: spacing(3) },
-  heading: { fontSize: font(28), fontWeight: '800', color: colors.ink900, marginTop: spacing(2), lineHeight: 34 },
+  greeting: { fontSize: font(15), color: tc.ink600, marginTop: spacing(3) },
+  heading: { fontSize: font(28), fontWeight: '800', color: tc.ink900, marginTop: spacing(2), lineHeight: 34 },
   searchRow: { flexDirection: 'row', gap: spacing(3), marginTop: spacing(5) },
   searchBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(2),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     height: 52,
   },
-  searchPlaceholder: { fontSize: font(15), color: colors.ink300 },
+  searchPlaceholder: { fontSize: font(15), color: tc.ink300 },
   filterBtn: {
     width: 52,
     height: 52,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,15 +232,15 @@ const styles = StyleSheet.create({
     marginTop: spacing(7),
     marginBottom: spacing(3),
   },
-  sectionTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900 },
-  seeAll: { fontSize: font(14), fontWeight: '600', color: colors.maroon800 },
-  emptyLine: { fontSize: font(14), color: colors.ink500, paddingVertical: spacing(4) },
+  sectionTitle: { fontSize: font(17), fontWeight: '800', color: tc.ink900 },
+  seeAll: { fontSize: font(14), fontWeight: '600', color: tc.maroon800 },
+  emptyLine: { fontSize: font(14), color: tc.ink500, paddingVertical: spacing(4) },
   uniRow: { gap: spacing(3), paddingRight: spacing(2) },
   uniCard: { width: 156 },
-  uniImage: { height: 120, width: 156, borderRadius: radius.md, backgroundColor: colors.ink100 },
-  uniFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.maroon900 },
-  uniLetter: { color: colors.ivory, fontSize: font(34), fontWeight: '800' },
-  uniName: { fontSize: font(14), fontWeight: '700', color: colors.ink900, marginTop: spacing(2.5) },
+  uniImage: { height: 120, width: 156, borderRadius: radius.md, backgroundColor: tc.ink100 },
+  uniFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: tc.maroon900 },
+  uniLetter: { color: tc.ivory, fontSize: font(34), fontWeight: '800' },
+  uniName: { fontSize: font(14), fontWeight: '700', color: tc.ink900, marginTop: spacing(2.5) },
   uniMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1), marginTop: spacing(1) },
-  uniMeta: { flex: 1, fontSize: font(12), color: colors.ink500 },
+  uniMeta: { flex: 1, fontSize: font(12), color: tc.ink500 },
 });

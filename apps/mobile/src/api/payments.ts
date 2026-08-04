@@ -32,6 +32,8 @@ function loadStripe(): typeof StripeRN | null {
  * `publishableKey` + `clientSecret` come from `bookingsApi.createGuide`.
  */
 export async function authorizeCard(opts: {
+  /** Active palette — the Stripe sheet is native UI and cannot read app styles. */
+  palette?: { maroon900: string; ivory: string; white: string; ink900: string };
   clientSecret: string;
   publishableKey: string;
 }): Promise<PaymentResult> {
@@ -43,9 +45,21 @@ export async function authorizeCard(opts: {
     await stripe.initStripe({ publishableKey: opts.publishableKey });
 
     const init = await stripe.initPaymentSheet({
-      merchantDisplayName: 'University Campus Private Tours',
+      merchantDisplayName: 'Campus Private Tours',
       paymentIntentClientSecret: opts.clientSecret,
-      appearance: { colors: { primary: colors.maroon900 } },
+      // The PaymentSheet is native UI, so it must be themed explicitly — otherwise it
+      // renders light over a dark app.
+      appearance: opts.palette
+        ? {
+            colors: {
+              primary: opts.palette.maroon900,
+              background: opts.palette.white,
+              componentBackground: opts.palette.ivory,
+              primaryText: opts.palette.ink900,
+              secondaryText: opts.palette.ink900,
+            },
+          }
+        : { colors: { primary: colors.maroon900 } },
     });
     if (init.error) return { status: 'failed', message: init.error.message };
 

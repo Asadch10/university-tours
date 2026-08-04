@@ -3,6 +3,8 @@ import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { font, colors, radius, spacing } from '../theme';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 // Approximate bottom tab-bar height (content only; the safe-area inset is added on top).
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
@@ -31,14 +33,15 @@ export function useToast(): ToastApi {
   return ctx;
 }
 
-const META: Record<ToastType, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  success: { icon: 'checkmark-circle', color: '#188a4e' },
-  error: { icon: 'alert-circle', color: colors.danger },
-  info: { icon: 'information-circle', color: colors.maroon800 },
-};
+const meta = (tc: Palette): Record<ToastType, { icon: keyof typeof Ionicons.glyphMap; color: string }> => ({
+  success: { icon: 'checkmark-circle', color: tc.successFg },
+  error: { icon: 'alert-circle', color: tc.danger },
+  info: { icon: 'information-circle', color: tc.maroon800 },
+});
 
 /** App-wide lightweight toast — a small card that slides in from the top and auto-dismisses. */
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<ToastState | null>(null);
   const anim = useRef(new Animated.Value(0)).current;
@@ -73,13 +76,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [show],
   );
 
-  const meta = toast ? META[toast.type] : null;
+  const tc = useThemeColors();
+  const activeMeta = toast ? meta(tc)[toast.type] : null;
 
   return (
     <ToastContext.Provider value={api}>
       <View style={{ flex: 1 }}>
         {children}
-        {toast && meta && (
+        {toast && activeMeta && (
           <Animated.View
             pointerEvents="box-none"
             style={[
@@ -93,7 +97,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             ]}
           >
             <Pressable style={styles.toast} onPress={hide}>
-              <Ionicons name={meta.icon} size={22} color={meta.color} />
+              <Ionicons name={activeMeta.icon} size={22} color={activeMeta.color} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{toast.title}</Text>
                 {!!toast.message && <Text style={styles.message}>{toast.message}</Text>}
@@ -106,16 +110,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
   wrap: { position: 'absolute', left: spacing(4), right: spacing(4) },
   toast: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(3),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
     shadowColor: '#000',
@@ -124,6 +129,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  title: { fontSize: font(14), fontWeight: '800', color: colors.ink900 },
-  message: { fontSize: font(12), color: colors.ink600, marginTop: 2, lineHeight: 17 },
+  title: { fontSize: font(14), fontWeight: '800', color: tc.ink900 },
+  message: { fontSize: font(12), color: tc.ink600, marginTop: 2, lineHeight: 17 },
 });

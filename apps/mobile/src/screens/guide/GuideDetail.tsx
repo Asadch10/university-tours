@@ -26,22 +26,27 @@ import {
 } from '../../api/guides';
 import { friendlyError, session } from '../../api/auth';
 import { BookTour } from './BookTour';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 const { width } = Dimensions.get('window');
 // Portrait-friendly hero so the whole photo shows (contain) without cropping the head.
 const GALLERY_H = Math.round(Math.min(width * 1.05, 440));
 
 function Stars({ value, size = 14 }: { value: number; size?: number }) {
+  const tc = useThemeColors();
   return (
     <View style={{ flexDirection: 'row', gap: 1 }}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <Ionicons key={n} name={value >= n ? 'star' : 'star-outline'} size={size} color={colors.gold500} />
+        <Ionicons key={n} name={value >= n ? 'star' : 'star-outline'} size={size} color={tc.gold500} />
       ))}
     </View>
   );
 }
 
 export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () => void }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<GuideProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +113,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
         scrollIndicatorInsets={{ right: 1 }}
       >
         {/* Safe-area spacer so the gallery clears the notch */}
-        <View style={{ height: insets.top, backgroundColor: colors.cream }} />
+        <View style={{ height: insets.top, backgroundColor: tc.cream }} />
 
         {/* Gallery — full photo, never cropped */}
         <View style={styles.gallery}>
@@ -139,12 +144,12 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
           <Text style={styles.name}>{preview.name}</Text>
           {!!preview.university && (
             <View style={styles.uniRow}>
-              <Ionicons name="school-outline" size={15} color={colors.ink500} />
+              <Ionicons name="school-outline" size={15} color={tc.ink500} />
               <Text style={styles.uni}>{preview.university}</Text>
             </View>
           )}
           <View style={styles.ratingPill}>
-            <Ionicons name="star" size={14} color={colors.gold500} />
+            <Ionicons name="star" size={14} color={tc.gold500} />
             <Text style={styles.ratingValue}>{preview.rating.toFixed(1)}</Text>
             <Text style={styles.ratingCount}>
               · {preview.reviews} review{preview.reviews === 1 ? '' : 's'}
@@ -158,9 +163,9 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
                 <Ionicons
                   name={s === 'CAMPUS_TOUR' ? 'walk' : s === 'VIDEO_CONSULTATION' ? 'videocam' : 'chatbubbles'}
                   size={13}
-                  color={s === 'CAMPUS_TOUR' ? colors.maroon800 : colors.gold500}
+                  color={s === 'CAMPUS_TOUR' ? tc.maroon800 : tc.gold500}
                 />
-                <Text style={[styles.badgeText, { color: s === 'CAMPUS_TOUR' ? colors.maroon800 : colors.gold500 }]}>
+                <Text style={[styles.badgeText, { color: s === 'CAMPUS_TOUR' ? tc.maroon800 : tc.gold500 }]}>
                   {serviceLabel(s)}
                 </Text>
               </View>
@@ -249,7 +254,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
               {!!g.tip && (
                 <View style={styles.tipCard}>
                   <View style={styles.tipIcon}>
-                    <Ionicons name="bulb" size={16} color={colors.gold500} />
+                    <Ionicons name="bulb" size={16} color={tc.gold500} />
                   </View>
                   <Text style={styles.tipText}>{g.tip}</Text>
                 </View>
@@ -300,14 +305,15 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
 
       {/* Floating back button */}
       <Pressable onPress={onBack} hitSlop={8} style={[styles.backBtn, { top: insets.top + spacing(2) }]}>
-        <Ionicons name="arrow-back" size={22} color={colors.white} />
+        {/* The pill sits on photography; onBrand stays a true white in both themes. */}
+        <Ionicons name="arrow-back" size={22} color={tc.onBrand} />
       </Pressable>
 
       {/* Bottom bar — owners see a note (can't book themselves); everyone else can book. */}
       {isOwner ? (
         <View style={styles.ownerBar}>
           <View style={styles.ownerIcon}>
-            <Ionicons name="eye-outline" size={18} color={colors.maroon800} />
+            <Ionicons name="eye-outline" size={18} color={tc.maroon800} />
           </View>
           <Text style={styles.ownerText} numberOfLines={1}>
             This is your listing — only others can book.
@@ -321,7 +327,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
             <Text style={styles.bookPrice}>{fromPrice(preview.price)}</Text>
           </View>
           <Pressable style={styles.bookBtn} onPress={() => setBooking(true)}>
-            <Ionicons name="calendar" size={15} color={colors.white} />
+            <Ionicons name="calendar" size={15} color={tc.white} />
             <Text style={styles.bookBtnText}>Book a tour</Text>
           </Pressable>
         </View>
@@ -331,6 +337,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={{ marginTop: spacing(7) }}>
       <View style={styles.sectionHead}>
@@ -343,6 +350,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Chips({ items }: { items: string[] }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.chips}>
       {items.map((it) => (
@@ -354,22 +362,23 @@ function Chips({ items }: { items: string[] }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
 
   // Gallery — soft framed backdrop; the photo is shown in full (contain), not cropped.
-  gallery: { height: GALLERY_H, backgroundColor: colors.cream },
-  galleryImg: { width, height: GALLERY_H, backgroundColor: colors.cream },
+  gallery: { height: GALLERY_H, backgroundColor: tc.cream },
+  galleryImg: { width, height: GALLERY_H, backgroundColor: tc.cream },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing(1.5),
     paddingTop: spacing(3),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
   },
-  dot: { height: 6, width: 6, borderRadius: 3, backgroundColor: colors.ink300 },
-  dotActive: { width: 18, backgroundColor: colors.maroon900 },
+  dot: { height: 6, width: 6, borderRadius: 3, backgroundColor: tc.ink300 },
+  dotActive: { width: 18, backgroundColor: tc.maroon900 },
 
   // Floating back button
   backBtn: {
@@ -380,31 +389,31 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.42)',
+    backgroundColor: tc.maroon900,
   },
 
   // Content card
   card: {
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     paddingHorizontal: spacing(5),
     paddingTop: spacing(5),
   },
-  name: { fontSize: font(24), fontWeight: '800', color: colors.ink900, letterSpacing: -0.3 },
+  name: { fontSize: font(24), fontWeight: '800', color: tc.ink900, letterSpacing: -0.3 },
   uniRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(2) },
-  uni: { fontSize: font(14), fontWeight: '600', color: colors.ink600 },
+  uni: { fontSize: font(14), fontWeight: '600', color: tc.ink600 },
   ratingPill: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: spacing(1),
     marginTop: spacing(3),
-    backgroundColor: colors.cream,
+    backgroundColor: tc.cream,
     borderRadius: radius.pill,
     paddingHorizontal: spacing(3),
     paddingVertical: spacing(1.5),
   },
-  ratingValue: { fontSize: font(14), fontWeight: '800', color: colors.ink900 },
-  ratingCount: { fontSize: font(13), color: colors.ink500 },
+  ratingValue: { fontSize: font(14), fontWeight: '800', color: tc.ink900 },
+  ratingCount: { fontSize: font(13), color: tc.ink500 },
 
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2), marginTop: spacing(4) },
   badge: {
@@ -415,17 +424,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(3),
     paddingVertical: 6,
   },
-  badgeMaroon: { backgroundColor: colors.maroon50 },
+  badgeMaroon: { backgroundColor: tc.maroon50 },
   badgeGold: { backgroundColor: '#faf1d8' },
   badgeText: { fontSize: font(12), fontWeight: '700' },
 
   // Sections
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
-  sectionAccent: { width: 3, height: 16, borderRadius: 2, backgroundColor: colors.maroon800 },
-  sectionTitle: { fontSize: font(17), fontWeight: '800', color: colors.ink900 },
-  paragraph: { fontSize: font(15), color: colors.ink600, lineHeight: 23 },
-  muted: { fontSize: font(14), color: colors.ink500 },
-  error: { fontSize: font(14), color: colors.danger, marginTop: spacing(8), textAlign: 'center' },
+  sectionAccent: { width: 3, height: 16, borderRadius: 2, backgroundColor: tc.maroon800 },
+  sectionTitle: { fontSize: font(17), fontWeight: '800', color: tc.ink900 },
+  paragraph: { fontSize: font(15), color: tc.ink600, lineHeight: 23 },
+  muted: { fontSize: font(14), color: tc.ink500 },
+  error: { fontSize: font(14), color: tc.danger, marginTop: spacing(8), textAlign: 'center' },
 
   // Facts grid
   factsGrid: {
@@ -436,25 +445,25 @@ const styles = StyleSheet.create({
   },
   factTile: {
     width: (width - spacing(5) * 2 - spacing(2.5)) / 2,
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.md,
     paddingHorizontal: spacing(3.5),
     paddingVertical: spacing(3.5),
   },
-  factLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: colors.ink500 },
-  factValue: { fontSize: font(15), fontWeight: '700', color: colors.ink900, marginTop: spacing(1.5) },
+  factLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: tc.ink500 },
+  factValue: { fontSize: font(15), fontWeight: '700', color: tc.ink900, marginTop: spacing(1.5) },
 
   // Chips
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
-  chip: { backgroundColor: colors.cream, borderRadius: radius.pill, paddingHorizontal: spacing(3.5), paddingVertical: spacing(2) },
-  chipText: { fontSize: font(13), fontWeight: '600', color: colors.ink900 },
+  chip: { backgroundColor: tc.cream, borderRadius: radius.pill, paddingHorizontal: spacing(3.5), paddingVertical: spacing(2) },
+  chipText: { fontSize: font(13), fontWeight: '600', color: tc.ink900 },
 
   // Bullets
   bullet: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing(2.5), marginBottom: spacing(2) },
-  dotBullet: { height: 6, width: 6, borderRadius: 3, backgroundColor: colors.maroon800, marginTop: 8 },
-  bulletText: { flex: 1, fontSize: font(15), color: colors.ink600, lineHeight: 22 },
+  dotBullet: { height: 6, width: 6, borderRadius: 3, backgroundColor: tc.maroon800, marginTop: 8 },
+  bulletText: { flex: 1, fontSize: font(15), color: tc.ink600, lineHeight: 22 },
 
   // Tip
   tipCard: {
@@ -474,19 +483,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(207,149,38,0.16)',
   },
-  tipText: { flex: 1, fontSize: font(14), color: colors.ink600, lineHeight: 21 },
+  tipText: { flex: 1, fontSize: font(14), color: tc.ink600, lineHeight: 21 },
 
   // Reviews
   reviewCard: {
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     padding: spacing(4),
     marginBottom: spacing(3),
   },
-  reviewText: { fontSize: font(14), color: colors.ink600, lineHeight: 21, fontStyle: 'italic', marginTop: spacing(2) },
-  reviewMeta: { fontSize: font(13), fontWeight: '600', color: colors.ink900, marginTop: spacing(3) },
+  reviewText: { fontSize: font(14), color: tc.ink600, lineHeight: 21, fontStyle: 'italic', marginTop: spacing(2) },
+  reviewMeta: { fontSize: font(13), fontWeight: '600', color: tc.ink900, marginTop: spacing(3) },
 
   // Book bar
   bookBar: {
@@ -496,26 +505,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(5),
     paddingVertical: spacing(2.5),
     borderTopWidth: 1,
-    borderTopColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderTopColor: tc.ink200,
+    backgroundColor: tc.white,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: -3 },
     elevation: 8,
   },
-  bookFrom: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: colors.ink300 },
-  bookPrice: { fontSize: font(19), fontWeight: '800', color: colors.maroon900, marginTop: 1 },
+  bookFrom: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: tc.ink300 },
+  bookPrice: { fontSize: font(19), fontWeight: '800', color: tc.maroon900, marginTop: 1 },
   bookBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(1.5),
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(2.5),
   },
-  bookBtnText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
+  bookBtnText: { color: tc.white, fontSize: font(14), fontWeight: '700' },
 
   // Owner bar (viewing your own listing)
   ownerBar: {
@@ -525,8 +534,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(5),
     paddingVertical: spacing(3.5),
     borderTopWidth: 1,
-    borderTopColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderTopColor: tc.ink200,
+    backgroundColor: tc.white,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -537,9 +546,9 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ownerText: { flex: 1, fontSize: font(13), fontWeight: '700', color: colors.ink900 },
+  ownerText: { flex: 1, fontSize: font(13), fontWeight: '700', color: tc.ink900 },
 });

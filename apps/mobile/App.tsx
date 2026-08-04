@@ -14,7 +14,7 @@ import { RootNavigator, type RootStackParamList } from './src/navigation/RootNav
 import { ToastProvider } from './src/components/Toast';
 import { registerForPush } from './src/api/push';
 import { session } from './src/api/auth';
-import { colors } from './src/theme';
+import { ThemeProvider, useTheme } from './src/theme-context';
 
 // Container ref so a tapped notification can navigate from outside React tree.
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -32,11 +32,11 @@ function routeFromNotification(data: unknown) {
 
 const queryClient = new QueryClient();
 
-// White canvas for every scene (covers screens that don't set their own background).
-const navTheme: Theme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: colors.white },
-};
+/** Scene background for screens that don't set their own — follows the active theme. */
+function useNavTheme(): Theme {
+  const { colors } = useTheme();
+  return { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.ivory } };
+}
 
 // Deep links: the email-verification link can open the app directly, e.g.
 //   ucpt://verify-email?token=…   →  VerifyEmail screen (with route.params.token)
@@ -73,13 +73,25 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <NavigationContainer ref={navigationRef} theme={navTheme} linking={linking}>
-            <RootNavigator />
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <Themed />
+          </ToastProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** Inside ThemeProvider so the nav container and status bar can read the active theme. */
+function Themed() {
+  const { theme } = useTheme();
+  const navTheme = useNavTheme();
+  return (
+    <NavigationContainer ref={navigationRef} theme={navTheme} linking={linking}>
+      <RootNavigator />
+      {/* Light glyphs on the dark canvas, dark glyphs on the light one. */}
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+    </NavigationContainer>
   );
 }

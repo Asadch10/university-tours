@@ -7,11 +7,13 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import Constants from 'expo-constants';
 import { Img } from '../components/Img';
 import { font, colors, radius, spacing } from '../theme';
 import { fetchUniversities, type UniversityPin } from '../api/schools';
@@ -20,6 +22,8 @@ import { SchoolRowSkeleton, GuideCardSkeleton } from '../components/Skeleton';
 import { FadeInView } from '../components/FadeInView';
 import { GuideCard } from './guide/GuideCard';
 import { GuideDetail } from './guide/GuideDetail';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 // Continental-US default region until the schools load / a pin is picked.
 const US_REGION = { latitude: 39.5, longitude: -98.35, latitudeDelta: 45, longitudeDelta: 55 };
@@ -40,7 +44,23 @@ function regionForPins(pins: UniversityPin[]) {
   };
 }
 
+/**
+ * Android renders react-native-maps through the Google Maps SDK, which throws during
+ * native init when no API key is present — that takes the whole app down the moment the
+ * map tab is opened. iOS falls back to Apple Maps and needs no key.
+ *
+ * Set the key in app.json under `expo.android.config.googleMaps.apiKey` (then rebuild:
+ * `npx expo prebuild --clean`). Until then the map degrades to a message instead of
+ * crashing.
+ */
+const MAPS_KEY = (
+  Constants.expoConfig?.android?.config?.googleMaps?.apiKey ?? ''
+).trim();
+const MAPS_AVAILABLE = Platform.OS !== 'android' || (!!MAPS_KEY && !MAPS_KEY.startsWith('$'));
+
 export function ExploreScreen() {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const [universities, setUniversities] = useState<UniversityPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -85,17 +105,17 @@ export function ExploreScreen() {
         <Text style={styles.title}>Explore schools</Text>
         {/* Search */}
         <View style={styles.searchRow}>
-          <Ionicons name="search" size={16} color={colors.ink300} />
+          <Ionicons name="search" size={16} color={tc.ink300} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Search schools or cities…"
-            placeholderTextColor={colors.ink300}
+            placeholderTextColor={tc.ink300}
             style={styles.searchInput}
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={colors.ink300} />
+              <Ionicons name="close-circle" size={16} color={tc.ink300} />
             </Pressable>
           )}
         </View>
@@ -124,6 +144,13 @@ export function ExploreScreen() {
           }
           ListEmptyComponent={<Text style={styles.emptyText}>No schools found</Text>}
         />
+      ) : !MAPS_AVAILABLE ? (
+        <View style={[styles.map, { alignItems: 'center', justifyContent: 'center', padding: spacing(8) }]}>
+          <Ionicons name="map-outline" size={40} color={tc.ink300} />
+          <Text style={[styles.emptyText, { marginTop: spacing(3), textAlign: 'center' }]}>
+            Map needs a Google Maps API key on Android.{'\n'}Browse the list instead.
+          </Text>
+        </View>
       ) : (
         <MapView ref={mapRef} provider={PROVIDER_DEFAULT} style={styles.map} initialRegion={US_REGION}>
           {pinned.map((u) => (
@@ -132,7 +159,7 @@ export function ExploreScreen() {
               coordinate={{ latitude: u.lat as number, longitude: u.lng as number }}
               title={u.name}
               description={`${u.city}${u.state ? `, ${u.state}` : ''}`}
-              pinColor={colors.maroon900}
+              pinColor={tc.maroon900}
               onCalloutPress={() => setSelected(u)}
               onPress={() => setSelected(u)}
             />
@@ -142,7 +169,7 @@ export function ExploreScreen() {
 
       {/* List / Map toggle */}
       <Pressable style={styles.toggle} onPress={() => setView((v) => (v === 'list' ? 'map' : 'list'))}>
-        <Ionicons name={view === 'list' ? 'map' : 'list'} size={16} color={colors.white} />
+        <Ionicons name={view === 'list' ? 'map' : 'list'} size={16} color={tc.white} />
         <Text style={styles.toggleText}>{view === 'list' ? 'Map' : 'List'}</Text>
       </Pressable>
     </SafeAreaView>
@@ -152,6 +179,8 @@ export function ExploreScreen() {
 /* ═══ School list row (memoized for FlatList recycling) ════════════════ */
 
 const SchoolRow = memo(function SchoolRow({ school: u, onPress }: { school: UniversityPin; onPress: () => void }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable style={styles.row} onPress={onPress}>
       {u.image ? (
@@ -170,7 +199,7 @@ const SchoolRow = memo(function SchoolRow({ school: u, onPress }: { school: Univ
           {u.state ? `, ${u.state}` : ''}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.ink300} />
+      <Ionicons name="chevron-forward" size={18} color={tc.ink300} />
     </Pressable>
   );
 });
@@ -186,6 +215,8 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 function SchoolDetail({ school, onBack }: { school: UniversityPin; onBack: () => void }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<TabKey>('about');
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -230,18 +261,18 @@ function SchoolDetail({ school, onBack }: { school: UniversityPin; onBack: () =>
           )}
         </View>
         <Pressable style={[styles.dBackBtn, { top: insets.top + spacing(2) }]} onPress={onBack} hitSlop={8}>
-          <Ionicons name="arrow-back" size={22} color={colors.ink900} />
+          <Ionicons name="arrow-back" size={22} color={tc.ink900} />
         </Pressable>
 
         {/* Info */}
         <View style={styles.dBody}>
           <Text style={styles.dName}>{school.name}</Text>
           <View style={styles.locRow}>
-            <Ionicons name="location-outline" size={14} color={colors.ink500} />
+            <Ionicons name="location-outline" size={14} color={tc.ink500} />
             <Text style={styles.locText}>{loc}</Text>
           </View>
           <View style={styles.dStats}>
-            <Ionicons name="people-outline" size={15} color={colors.maroon800} />
+            <Ionicons name="people-outline" size={15} color={tc.maroon800} />
             <Text style={styles.dStatsText}>
               <Text style={styles.ambStrong}>{guideCount}</Text> verified student guide{guideCount === 1 ? '' : 's'}
             </Text>
@@ -303,39 +334,40 @@ function SchoolDetail({ school, onBack }: { school: UniversityPin; onBack: () =>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   header: { paddingHorizontal: spacing(5), paddingTop: spacing(2), paddingBottom: spacing(3) },
-  title: { fontSize: font(28), fontWeight: '800', color: colors.ink900 },
+  title: { fontSize: font(28), fontWeight: '800', color: tc.ink900 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(2),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     height: 46,
     marginTop: spacing(4),
   },
-  searchInput: { flex: 1, fontSize: font(15), color: colors.ink900 },
+  searchInput: { flex: 1, fontSize: font(15), color: tc.ink900 },
   list: { paddingHorizontal: spacing(5), paddingBottom: spacing(24) },
-  count: { fontSize: font(11), fontWeight: '700', letterSpacing: 0.5, color: colors.ink300, paddingVertical: spacing(3) },
-  emptyText: { fontSize: font(14), color: colors.ink500, textAlign: 'center', paddingVertical: spacing(10) },
+  count: { fontSize: font(11), fontWeight: '700', letterSpacing: 0.5, color: tc.ink300, paddingVertical: spacing(3) },
+  emptyText: { fontSize: font(14), color: tc.ink500, textAlign: 'center', paddingVertical: spacing(10) },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(3.5),
     paddingVertical: spacing(3),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
-  rowImg: { height: 56, width: 56, borderRadius: radius.md, backgroundColor: colors.ink100 },
-  rowImgFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.maroon900 },
-  rowImgLetter: { color: colors.ivory, fontSize: font(20), fontWeight: '800' },
-  rowName: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
-  rowLoc: { fontSize: font(13), color: colors.ink500, marginTop: 2 },
+  rowImg: { height: 56, width: 56, borderRadius: radius.md, backgroundColor: tc.ink100 },
+  rowImgFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: tc.maroon900 },
+  rowImgLetter: { color: tc.ivory, fontSize: font(20), fontWeight: '800' },
+  rowName: { fontSize: font(15), fontWeight: '700', color: tc.ink900 },
+  rowLoc: { fontSize: font(13), color: tc.ink500, marginTop: 2 },
   map: { flex: 1 },
   toggle: {
     position: 'absolute',
@@ -344,7 +376,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(2),
-    backgroundColor: colors.ink900,
+    backgroundColor: tc.ink900,
     borderRadius: radius.pill,
     paddingHorizontal: spacing(5),
     paddingVertical: spacing(3),
@@ -354,14 +386,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
-  toggleText: { color: colors.white, fontSize: font(14), fontWeight: '700' },
+  toggleText: { color: tc.white, fontSize: font(14), fontWeight: '700' },
 
   // ── Full-screen detail ──
-  dSafe: { flex: 1, backgroundColor: colors.white },
-  dHero: { height: 240, backgroundColor: colors.ink100 },
+  dSafe: { flex: 1, backgroundColor: tc.white },
+  dHero: { height: 240, backgroundColor: tc.ink100 },
   dHeroImg: { height: 240, width: '100%' },
-  heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.maroon900 },
-  heroLetter: { color: colors.ivory, fontSize: font(56), fontWeight: '800' },
+  heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: tc.maroon900 },
+  heroLetter: { color: tc.ivory, fontSize: font(56), fontWeight: '800' },
   dBackBtn: {
     position: 'absolute',
     left: spacing(4),
@@ -378,23 +410,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   dBody: { paddingHorizontal: spacing(5), paddingTop: spacing(5) },
-  dName: { fontSize: font(24), fontWeight: '800', color: colors.ink900, letterSpacing: -0.3 },
+  dName: { fontSize: font(24), fontWeight: '800', color: tc.ink900, letterSpacing: -0.3 },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(2) },
-  locText: { fontSize: font(13), color: colors.ink600 },
+  locText: { fontSize: font(13), color: tc.ink600 },
   dStats: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(3) },
-  dStatsText: { fontSize: font(14), color: colors.ink500 },
-  ambStrong: { fontWeight: '800', color: colors.ink900 },
+  dStatsText: { fontSize: font(14), color: tc.ink500 },
+  ambStrong: { fontWeight: '800', color: tc.ink900 },
 
   // Tabs
-  dTabs: { flexDirection: 'row', gap: spacing(6), marginTop: spacing(5), borderBottomWidth: 1, borderBottomColor: colors.ink100 },
+  dTabs: { flexDirection: 'row', gap: spacing(6), marginTop: spacing(5), borderBottomWidth: 1, borderBottomColor: tc.ink100 },
   dTab: { paddingBottom: spacing(3) },
-  dTabText: { fontSize: font(15), fontWeight: '700', color: colors.ink500 },
-  dTabTextOn: { color: colors.maroon900 },
-  dTabUnderline: { position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, borderRadius: 1, backgroundColor: colors.maroon900 },
+  dTabText: { fontSize: font(15), fontWeight: '700', color: tc.ink500 },
+  dTabTextOn: { color: tc.maroon900 },
+  dTabUnderline: { position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, borderRadius: 1, backgroundColor: tc.maroon900 },
 
   // Tab content
-  scoopLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 1.5, color: colors.ink300 },
-  scoop: { fontSize: font(15), color: colors.ink600, lineHeight: 23, marginTop: spacing(2) },
-  emptyState: { fontSize: font(14), color: colors.ink500, paddingVertical: spacing(6), textAlign: 'center' },
-  photoImg: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: colors.ink100 },
+  scoopLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 1.5, color: tc.ink300 },
+  scoop: { fontSize: font(15), color: tc.ink600, lineHeight: 23, marginTop: spacing(2) },
+  emptyState: { fontSize: font(14), color: tc.ink500, paddingVertical: spacing(6), textAlign: 'center' },
+  photoImg: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: tc.ink100 },
 });

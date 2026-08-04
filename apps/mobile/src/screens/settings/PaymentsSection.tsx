@@ -7,10 +7,14 @@ import { friendlyError } from '../../api/auth';
 import { useToast } from '../../components/Toast';
 import { Skeleton } from '../../components/Skeleton';
 import { OutlineButton, GREEN_BG, GREEN_FG } from './kit';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 const brandLabel = (b: string) => b.charAt(0).toUpperCase() + b.slice(1);
 
 export function PaymentsSection() {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const [cards, setCards] = useState<SavedCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -80,7 +84,7 @@ export function PaymentsSection() {
           cards.map((c) => (
             <View key={c.id} style={styles.card}>
               <View style={styles.cardIcon}>
-                <Ionicons name="card" size={20} color={colors.maroon800} />
+                <Ionicons name="card" size={20} color={tc.maroon800} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={styles.cardTitleRow}>
@@ -98,16 +102,16 @@ export function PaymentsSection() {
                 </Text>
                 {!c.isDefault && (
                   <Pressable onPress={() => makeDefault(c.id)} disabled={busyId === c.id} style={styles.makeDefault}>
-                    <Ionicons name="checkmark" size={13} color={colors.maroon800} />
+                    <Ionicons name="checkmark" size={13} color={tc.maroon800} />
                     <Text style={styles.makeDefaultText}>Make default</Text>
                   </Pressable>
                 )}
               </View>
               <Pressable onPress={() => remove(c.id)} disabled={busyId === c.id} hitSlop={8} style={styles.trash}>
                 {busyId === c.id ? (
-                  <ActivityIndicator size="small" color={colors.ink300} />
+                  <ActivityIndicator size="small" color={tc.ink300} />
                 ) : (
-                  <Ionicons name="trash-outline" size={18} color={colors.ink300} />
+                  <Ionicons name="trash-outline" size={18} color={tc.ink300} />
                 )}
               </Pressable>
             </View>
@@ -122,44 +126,45 @@ export function PaymentsSection() {
   );
 }
 
-const styles = StyleSheet.create({
-  intro: { fontSize: font(14), color: colors.ink600, lineHeight: 20, marginTop: spacing(1) },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  intro: { fontSize: font(14), color: tc.ink600, lineHeight: 20, marginTop: spacing(1) },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2), paddingVertical: spacing(6) },
-  loadingText: { fontSize: font(14), color: colors.ink500 },
+  loadingText: { fontSize: font(14), color: tc.ink500 },
   emptyCard: {
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: colors.ink300,
+    borderColor: tc.ink300,
     borderRadius: radius.lg,
     paddingVertical: spacing(6),
     alignItems: 'center',
-    backgroundColor: colors.ivory,
+    backgroundColor: tc.ivory,
   },
-  emptyText: { fontSize: font(14), color: colors.ink500 },
+  emptyText: { fontSize: font(14), color: tc.ink500 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(3),
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     padding: spacing(4),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
   },
   cardIcon: {
     height: 40,
     width: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(2) },
-  cardTitle: { fontSize: font(15), fontWeight: '700', color: colors.ink900 },
+  cardTitle: { fontSize: font(15), fontWeight: '700', color: tc.ink900 },
   defaultPill: { backgroundColor: GREEN_BG, borderRadius: radius.pill, paddingHorizontal: spacing(2), paddingVertical: 2 },
   defaultPillText: { fontSize: font(11), fontWeight: '700', color: GREEN_FG },
-  cardExp: { fontSize: font(13), color: colors.ink500, marginTop: 2 },
+  cardExp: { fontSize: font(13), color: tc.ink500, marginTop: 2 },
   makeDefault: { flexDirection: 'row', alignItems: 'center', gap: spacing(1), marginTop: spacing(2) },
-  makeDefaultText: { fontSize: font(13), fontWeight: '600', color: colors.maroon800 },
+  makeDefaultText: { fontSize: font(13), fontWeight: '600', color: tc.maroon800 },
   trash: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
 });
