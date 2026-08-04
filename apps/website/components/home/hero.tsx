@@ -24,13 +24,14 @@ const DEFAULT_HERO_TITLE = 'Book private campus tours. Things just got personal.
 const DEFAULT_HERO_SUBTITLE =
   'Get the scoop and find the school that fits you best on a private campus tour tailored to you.';
 
-/** Render the heading with the first sentence in ink and the rest in the brand accent. */
+/** Render the heading. Both sentences use the primary foreground — `ink-900` rather
+ *  than a literal white, so it stays correct in the light theme too. */
 function HeroHeading({ title }: { title: string }) {
   const i = title.indexOf('. ');
   if (i === -1) return <>{title}</>;
   return (
     <>
-      {title.slice(0, i + 1)} <span className="text-brand">{title.slice(i + 2)}</span>
+      {title.slice(0, i + 1)} <span className="text-ink-900">{title.slice(i + 2)}</span>
     </>
   );
 }

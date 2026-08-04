@@ -19,7 +19,7 @@ export function ThemeToggle({ className, showLabel = false }: { className?: stri
       aria-label={`Switch to ${isLight ? 'dark' : 'light'} theme`}
       title={`Switch to ${isLight ? 'dark' : 'light'} theme`}
       className={cn(
-        'group inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full text-ink-600 transition-colors duration-200 hover:bg-ink-50 hover:text-brand',
+        'group inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full text-ink-600 transition-colors duration-200 hover:bg-maroon-900 hover:text-ivory',
         showLabel ? 'w-full justify-between px-4 py-3' : 'h-10 w-10 justify-center',
         className,
       )}

@@ -61,7 +61,7 @@ export function AuthShell({
                 className={cn(
                   'pb-2 font-display text-2xl font-bold transition-colors',
                   !isLogin
-                    ? 'border-b-2 border-brand text-brand'
+                    ? 'border-b-2 border-maroon-900 text-brand'
                     : 'text-ink-900 hover:text-ink-600',
                 )}
               >
@@ -72,7 +72,7 @@ export function AuthShell({
                 className={cn(
                   'pb-2 font-display text-2xl font-bold transition-colors',
                   isLogin
-                    ? 'border-b-2 border-brand text-brand'
+                    ? 'border-b-2 border-maroon-900 text-brand'
                     : 'text-ink-900 hover:text-ink-600',
                 )}
               >

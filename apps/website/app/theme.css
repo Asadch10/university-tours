@@ -24,11 +24,11 @@
   --surface-4: 54 46 41;
 
   /* Brand foregrounds + soft fills */
-  --brand: 240 135 155;
-  --brand-soft: 224 104 127;
-  --brand-muted: 138 58 76;
-  --brand-tint: 37 20 26;
-  --brand-tint-strong: 51 25 31;
+  --brand: 240 66 70;        /* #f04246 — #5F0102's hue, 4.77:1 (AA for small text) */
+  --brand-soft: 230 60 64;
+  --brand-muted: 138 40 42;
+  --brand-tint: 42 12 13;
+  --brand-tint-strong: 58 16 17;
 
   /* Maroon — fill scale */
   --maroon-50: 37 20 26;
@@ -39,8 +39,8 @@
   --maroon-500: 168 70 92;
   --maroon-600: 192 48 79;
   --maroon-700: 181 44 72;
-  --maroon-800: 185 46 75;
-  --maroon-900: 163 39 65;
+  --maroon-800: 95 1 2;      /* #5F0102 */
+  --maroon-900: 95 1 2;      /* #5F0102 — button fill */
   --maroon-950: 122 26 50;
 
   /* Gold — contrast scale */
@@ -121,10 +121,10 @@
     0 28px 56px -20px rgba(0, 0, 0, 0.8);
   --shadow-glow: 0 0 0 1px rgba(224, 170, 62, 0.35), 0 0 32px -6px rgba(224, 170, 62, 0.28),
     0 16px 40px -12px rgba(0, 0, 0, 0.7);
-  --shadow-brand-glow: 0 0 0 1px rgba(240, 135, 155, 0.22),
-    0 0 40px -10px rgba(163, 39, 65, 0.55), 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  --shadow-brand-glow: 0 0 0 1px rgba(240, 66, 70, 0.26),
+    0 0 40px -10px rgba(95, 1, 2, 0.80), 0 16px 40px -12px rgba(0, 0, 0, 0.7);
 
-  --grad-maroon: linear-gradient(135deg, #b92e4b 0%, #a32741 55%, #6b1521 100%);
+  --grad-maroon: linear-gradient(135deg, #5F0102 0%, #5F0102 100%);
   --grad-gold: linear-gradient(135deg, #f0cd83 0%, #e0aa3e 100%);
   --grad-radial-fade: radial-gradient(
     60% 60% at 50% 0%,
@@ -159,11 +159,11 @@
   --surface-3: 236 232 227;
   --surface-4: 217 209 200;
 
-  --brand: 107 21 33;
-  --brand-soft: 122 26 50;
-  --brand-muted: 238 163 174;
-  --brand-tint: 253 243 244;
-  --brand-tint-strong: 251 227 230;
+  --brand: 95 1 2;           /* #5F0102 — 13.2:1 on the ivory canvas */
+  --brand-soft: 95 1 2;
+  --brand-muted: 240 160 160;
+  --brand-tint: 253 242 242;
+  --brand-tint-strong: 251 226 226;
 
   --maroon-50: 253 243 244;
   --maroon-100: 251 227 230;
@@ -173,8 +173,8 @@
   --maroon-500: 210 71 98;
   --maroon-600: 189 44 77;
   --maroon-700: 158 32 64;
-  --maroon-800: 122 26 50;
-  --maroon-900: 107 21 33;
+  --maroon-800: 95 1 2;      /* #5F0102 */
+  --maroon-900: 95 1 2;      /* #5F0102 — button fill */
   --maroon-950: 61 10 18;
 
   --gold-50: 253 250 240;
@@ -244,10 +244,10 @@
   --shadow-card: 0 2px 4px rgba(31, 26, 22, 0.04), 0 12px 32px -12px rgba(31, 26, 22, 0.12);
   --shadow-lift: 0 8px 16px rgba(31, 26, 22, 0.06), 0 24px 48px -16px rgba(31, 26, 22, 0.18);
   --shadow-glow: 0 0 0 1px rgba(207, 149, 38, 0.25), 0 12px 32px -8px rgba(122, 26, 50, 0.3);
-  --shadow-brand-glow: 0 0 0 1px rgba(107, 21, 33, 0.18),
-    0 12px 32px -8px rgba(122, 26, 50, 0.35);
+  --shadow-brand-glow: 0 0 0 1px rgba(95, 1, 2, 0.20),
+    0 12px 32px -8px rgba(95, 1, 2, 0.35);
 
-  --grad-maroon: linear-gradient(135deg, #7a1a32 0%, #6b1521 55%, #3d0a12 100%);
+  --grad-maroon: linear-gradient(135deg, #5F0102 0%, #5F0102 100%);
   --grad-gold: linear-gradient(135deg, #eccb72 0%, #cf9526 100%);
   --grad-radial-fade: radial-gradient(
     60% 60% at 50% 0%,
@@ -256,7 +256,7 @@
   );
   --grad-surface-glow: radial-gradient(
       80% 120% at 12% 0%,
-      rgba(122, 26, 50, 0.08) 0%,
+      rgba(95, 1, 2, 0.08) 0%,
       transparent 60%
     ),
     radial-gradient(60% 100% at 92% 8%, rgba(207, 149, 38, 0.08) 0%, transparent 62%);

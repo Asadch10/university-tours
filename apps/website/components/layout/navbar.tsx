@@ -96,8 +96,8 @@ function NavDropdown({
         aria-haspopup="true"
         aria-expanded={open}
         className={cn(
-          'group relative flex items-center gap-1 text-sm font-medium transition-colors duration-150',
-          isActive ? 'text-brand' : 'text-ink-600 hover:text-brand',
+          'group relative flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium transition-colors duration-150',
+          isActive ? 'text-brand' : 'text-ink-600 hover:bg-maroon-900 hover:text-ivory',
         )}
       >
         {label}
@@ -110,7 +110,7 @@ function NavDropdown({
           )}
         />
         {isActive && (
-          <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-brand" />
+          <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-maroon-900" />
         )}
       </button>
 
@@ -198,13 +198,13 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'relative text-sm font-medium transition-colors duration-150',
-                  active ? 'text-brand' : 'text-ink-600 hover:text-brand',
+                  'relative rounded-full px-3 py-1.5 text-sm font-medium transition-colors duration-150',
+                  active ? 'text-brand' : 'text-ink-600 hover:bg-maroon-900 hover:text-ivory',
                 )}
               >
                 {item.label}
                 {active && (
-                  <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-brand" />
+                  <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-maroon-900" />
                 )}
               </Link>
             );
@@ -221,13 +221,13 @@ export function Navbar() {
               <NavDropdown label="Help" items={HELP_ITEMS} pathname={pathname} />
               <Link
                 href="/register"
-                className="text-sm font-medium text-ink-600 transition-colors duration-150 hover:text-brand"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors duration-150 hover:bg-maroon-900 hover:text-ivory"
               >
                 Sign up
               </Link>
               <Link
                 href="/login"
-                className="text-sm font-medium text-ink-600 transition-colors duration-150 hover:text-brand"
+                className="rounded-full px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors duration-150 hover:bg-maroon-900 hover:text-ivory"
               >
                 Log in
               </Link>
@@ -243,7 +243,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-ink-50 lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-maroon-900 hover:text-ivory lg:hidden"
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
           >

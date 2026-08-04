@@ -74,9 +74,11 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="text-brand transition-colors hover:text-brand"
+                  // Same treatment as the buttons: a #5F0102 fill with an ivory glyph.
+                  // The bare icon colour cannot be #5F0102 — it is 1.28:1 on this surface.
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-maroon-900 text-ivory transition-all duration-200 hover:-translate-y-0.5 hover:brightness-125"
                 >
-                  <Icon size={20} />
+                  <Icon size={17} />
                 </a>
               ))}
             </div>
