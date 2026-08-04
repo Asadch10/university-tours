@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Img } from '../../components/Img';
 import { font, colors, radius, spacing } from '../../theme';
-import { fromPrice, serviceLabel, type Guide } from '../../api/guides';
+import { serviceLabel, type Guide } from '../../api/guides';
 import { useStyles, useThemeColors } from '../../theme-context';
 import type { Palette } from '../../theme';
 
@@ -60,10 +60,6 @@ export const GuideCard = memo(function GuideCard({ guide, onPress }: { guide: Gu
           <Text style={styles.rating}>{guide.rating.toFixed(1)}</Text>
           <Text style={styles.reviews}>({guide.reviews})</Text>
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.fromLabel}>FROM</Text>
-          <Text style={styles.price}>{fromPrice(guide.price)}</Text>
-        </View>
       </View>
     </Pressable>
   );
@@ -93,7 +89,8 @@ const makeStyles = (tc: Palette) =>
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // Only the rating lives here now that the price is gone.
+    justifyContent: 'flex-start',
     borderTopWidth: 1,
     borderTopColor: tc.ink100,
     marginTop: spacing(4),
@@ -102,6 +99,4 @@ const makeStyles = (tc: Palette) =>
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
   rating: { fontSize: font(14), fontWeight: '700', color: tc.ink900 },
   reviews: { fontSize: font(13), color: tc.ink500 },
-  fromLabel: { fontSize: font(10), fontWeight: '700', letterSpacing: 0.5, color: tc.ink300 },
-  price: { fontSize: font(18), fontWeight: '800', color: tc.maroon900 },
 });

@@ -28,6 +28,7 @@ import { friendlyError, session } from '../../api/auth';
 import { BookTour } from './BookTour';
 import { useStyles, useThemeColors } from '../../theme-context';
 import type { Palette } from '../../theme';
+import { usePriceBounds, priceFor } from '../../api/pricing';
 
 const { width } = Dimensions.get('window');
 // Portrait-friendly hero so the whole photo shows (contain) without cropping the head.
@@ -45,6 +46,13 @@ function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () => void }) {
+  // Admin-managed pricing; the cheapest 1-hour option across this guide's services.
+  const { bounds: priceBounds } = usePriceBounds();
+  const fromCents = Math.min(
+    ...(preview.services.length ? preview.services : ['CAMPUS_TOUR' as const]).map((sv) =>
+      priceFor(priceBounds, sv, 60),
+    ),
+  );
   const tc = useThemeColors();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -324,7 +332,7 @@ export function GuideDetail({ preview, onBack }: { preview: Guide; onBack: () =>
         <View style={styles.bookBar}>
           <View>
             <Text style={styles.bookFrom}>From</Text>
-            <Text style={styles.bookPrice}>{fromPrice(preview.price)}</Text>
+            <Text style={styles.bookPrice}>{fromPrice(fromCents)}</Text>
           </View>
           <Pressable style={styles.bookBtn} onPress={() => setBooking(true)}>
             <Ionicons name="calendar" size={15} color={tc.white} />
