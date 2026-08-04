@@ -17,18 +17,22 @@ import { bookingsApi } from '../../api/bookings';
 import { authorizeCard } from '../../api/payments';
 import { session, friendlyError } from '../../api/auth';
 import { ApiClientError } from '../../api/client';
+import { SERVICE_LABEL, SERVICE_DESC } from '../../tour-types';
+import { usePriceBounds, priceFor } from '../../api/pricing';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+// Prices are NOT derived from these — each tier is priced per tour type by the admin
+// (Finance → Price & commission) and fetched via usePriceBounds().
 const DURATIONS = [
-  { label: '1 hour', minutes: 60, mult: 1, desc: 'A quick campus overview and answers to your top questions.' },
-  { label: '2 hours', minutes: 120, mult: 2, recommended: true, desc: 'A thorough, personalized tour and deeper campus insights.' },
+  { label: '1 hour', minutes: 60, desc: 'A quick campus overview and answers to your top questions.' },
+  { label: '2 hours', minutes: 120, recommended: true, desc: 'A thorough, personalized tour and deeper campus insights.' },
 ];
 
 const TOUR_META: Record<GuideService, { label: string; icon: keyof typeof Ionicons.glyphMap; desc: string }> = {
-  CAMPUS_TOUR: { label: 'Campus tour', icon: 'walk', desc: 'Explore campus on a personalized in-person tour.' },
-  VIDEO_CONSULTATION: { label: 'Video chat', icon: 'videocam', desc: 'Connect live with a current student from anywhere.' },
-  CONSULTATION: { label: 'Consultancy', icon: 'chatbubbles', desc: 'A focused 1-on-1 advising session.' },
+  CAMPUS_TOUR: { label: SERVICE_LABEL.CAMPUS_TOUR, icon: 'walk', desc: SERVICE_DESC.CAMPUS_TOUR },
+  VIDEO_CONSULTATION: { label: SERVICE_LABEL.VIDEO_CONSULTATION, icon: 'videocam', desc: SERVICE_DESC.VIDEO_CONSULTATION },
+  CONSULTATION: { label: SERVICE_LABEL.CONSULTATION, icon: 'chatbubbles', desc: SERVICE_DESC.CONSULTATION },
 };
 
 const ymd = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -65,6 +69,12 @@ export function BookTour({
   const [children, setChildren] = useState(0);
   const [duration, setDuration] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
+  // Admin-managed pricing per tour type (Finance → Price & commission).
+  const { bounds: priceBounds } = usePriceBounds();
+  // The amount the SERVER actually booked. The backend derives the price itself and
+  // ignores the client's `priceCents`, so the confirmation must quote this, not the
+  // local estimate — they only differ if an admin changed pricing mid-session.
+  const [bookedCents, setBookedCents] = useState<number | null>(null);
 
   // Per-tour-type availability; a type without it keeps open scheduling.
   const typeAvail = availability[tourType];
@@ -82,7 +92,7 @@ export function BookTour({
 
   const guests = adults + children;
   const selectedDuration = DURATIONS.find((d) => d.label === duration) ?? null;
-  const priceCents = Math.round((guide.price * (selectedDuration?.mult ?? 1)) / 100) * 100;
+  const priceCents = priceFor(priceBounds, tourType, selectedDuration?.minutes ?? 60);
   const ready = Boolean(date && time && duration);
   const busy = status === 'submitting' || status === 'paying';
 
@@ -140,6 +150,8 @@ export function BookTour({
       return;
     }
 
+    setBookedCents(res.grossCents);
+
     // Payments off → the request is already live. Payments on → authorize the card.
     if (!res.clientSecret || !res.publishableKey) {
       setStatus('requested');
@@ -196,7 +208,7 @@ export function BookTour({
             {selectedDuration && <SummaryRow label="Duration" value={selectedDuration.label} />}
             <View style={[styles.summaryRow, styles.summaryTotal]}>
               <Text style={styles.summaryLabel}>Total if accepted</Text>
-              <Text style={styles.summaryTotalValue}>{fromPrice(priceCents)}</Text>
+              <Text style={styles.summaryTotalValue}>{fromPrice(bookedCents ?? priceCents)}</Text>
             </View>
           </View>
 
@@ -244,6 +256,8 @@ export function BookTour({
                   <Text style={styles.tourTitle}>{meta.label}</Text>
                   <Text style={styles.tourDesc}>{meta.desc}</Text>
                 </View>
+                {/* 1-hour price for this tour type, shown before a duration is chosen. */}
+                <Text style={styles.durPrice}>from {fromPrice(priceFor(priceBounds, s, 60))}</Text>
                 <Ionicons
                   name={active ? 'radio-button-on' : 'radio-button-off'}
                   size={20}
@@ -369,6 +383,8 @@ export function BookTour({
                       </View>
                       <Text style={styles.tourDesc}>{d.desc}</Text>
                     </View>
+                    {/* Price for this duration at the currently selected tour type. */}
+                    <Text style={styles.durPrice}>{fromPrice(priceFor(priceBounds, tourType, d.minutes))}</Text>
                     <Ionicons
                       name={sel ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
@@ -386,7 +402,7 @@ export function BookTour({
       <View style={styles.bar}>
         <View style={{ flex: 1 }}>
           <Text style={styles.barLabel}>Amount</Text>
-          <Text style={styles.barPrice}>{fromPrice(selectedDuration ? priceCents : guide.price)}</Text>
+          <Text style={styles.barPrice}>{fromPrice(priceCents)}</Text>
         </View>
         <Pressable
           disabled={!ready || busy}
@@ -557,6 +573,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   barLabel: { fontSize: font(10), fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', color: colors.ink300 },
+  durPrice: { fontSize: font(15), fontWeight: '700', color: colors.maroon800, marginRight: spacing(2) },
   barPrice: { fontSize: font(19), fontWeight: '800', color: colors.maroon900, marginTop: 1 },
   barNote: { fontSize: font(12), color: colors.ink500, marginTop: 1 },
   reserveBtn: {

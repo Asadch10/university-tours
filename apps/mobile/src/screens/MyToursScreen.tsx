@@ -29,6 +29,7 @@ import {
 } from '../api/bookings';
 import { friendlyError } from '../api/auth';
 import { BookingCardSkeleton } from '../components/Skeleton';
+import { SERVICE_LABEL } from '../tour-types';
 
 type ViewKey = 'guest' | 'guide';
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
@@ -69,9 +70,9 @@ const STATUS_STYLE: Record<BookingStatus, { label: string; bg: string; fg: strin
 };
 
 function serviceMeta(t: BookingServiceType): { icon: IoniconName; label: string } {
-  if (t === 'VIDEO_CONSULTATION') return { icon: 'videocam', label: 'Video consultation' };
-  if (t === 'CONSULTATION') return { icon: 'chatbubbles', label: 'Consultancy' };
-  return { icon: 'walk', label: 'Campus tour' };
+  if (t === 'VIDEO_CONSULTATION') return { icon: 'videocam', label: SERVICE_LABEL.VIDEO_CONSULTATION };
+  if (t === 'CONSULTATION') return { icon: 'chatbubbles', label: SERVICE_LABEL.CONSULTATION };
+  return { icon: 'walk', label: SERVICE_LABEL.CAMPUS_TOUR };
 }
 
 export function MyToursScreen() {

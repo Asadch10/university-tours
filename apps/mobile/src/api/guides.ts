@@ -3,6 +3,7 @@
 // mirroring apps/website/lib/guides.ts (minus the web-only universities dataset
 // and availability parsing).
 import { api, API_BASE_URL } from './client';
+import { SERVICE_LABEL_SHORT } from '../tour-types';
 
 // API origin (trailing slash stripped) used to absolutize relative "/uploads/…" paths.
 const API_BASE = API_BASE_URL.replace(/\/$/, '');
@@ -138,6 +139,11 @@ function parseAvailability(value: unknown): Availability {
   return out;
 }
 
+/**
+ * Stored listing values -> service enums. The strings below are PERSISTED data, not
+ * display labels — renaming them would drop services from every existing listing.
+ * See src/tour-types.ts.
+ */
 function mapServices(tourTypes: unknown): GuideService[] {
   const t = strArr(tourTypes);
   const out: GuideService[] = [];
@@ -231,11 +237,7 @@ export function fromPrice(cents: number): string {
   return `$${Math.round((cents ?? 0) / 100)}`;
 }
 
-const SERVICE_LABEL: Record<GuideService, string> = {
-  CAMPUS_TOUR: 'In-person',
-  VIDEO_CONSULTATION: 'Video',
-  CONSULTATION: 'Consultancy',
-};
+/** Compact chip label (guide cards / detail). Full names live in SERVICE_LABEL. */
 export function serviceLabel(s: GuideService): string {
-  return SERVICE_LABEL[s];
+  return SERVICE_LABEL_SHORT[s];
 }
