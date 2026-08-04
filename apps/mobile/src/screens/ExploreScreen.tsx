@@ -400,7 +400,7 @@ const makeStyles = (tc: Palette) =>
     height: 40,
     width: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffffe6',
+    backgroundColor: tc.white + 'e6',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

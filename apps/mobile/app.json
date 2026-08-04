@@ -5,17 +5,18 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "ucpt",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "icon": "./assets/logo.png",
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0d0b0a"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ucpt.mobile"
+      "bundleIdentifier": "com.ucpt.mobile",
+      "userInterfaceStyle": "dark"
     },
     "android": {
       "package": "com.ucpt.mobile",
@@ -29,7 +30,13 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "splash": {
+        "image": "./assets/logo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0d0b0a"
+      },
+      "userInterfaceStyle": "dark"
     },
     "plugins": [
       "expo-secure-store",
@@ -63,6 +70,10 @@
         "projectId": "998998d6-11fd-473b-8b90-fa7fa131df46"
       }
     },
-    "owner": "asad133"
+    "owner": "asad133",
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0d0b0a"
+    }
   }
 }
