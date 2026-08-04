@@ -70,7 +70,7 @@ export default function RegisterPage() {
         {status === 'error' && (
           <div
             role="alert"
-            className="flex items-center gap-2.5 rounded-xl border border-maroon-200 bg-maroon-50 px-4 py-3 text-sm text-maroon-900"
+            className="flex items-center gap-2.5 rounded-xl border border-brand-muted bg-brand-tint px-4 py-3 text-sm text-brand"
           >
             <AlertCircle size={16} className="shrink-0" />
             {errorMsg}
@@ -164,7 +164,7 @@ export default function RegisterPage() {
           <label htmlFor="phone" className="mb-2 block text-sm font-bold text-ink-900">
             Phone number
           </label>
-          <div className="flex items-center rounded-lg border border-ink-200 bg-white transition-colors focus-within:border-maroon-800 focus-within:ring-2 focus-within:ring-maroon-800/15">
+          <div className="flex items-center rounded-lg border border-ink-200 bg-surface transition-colors focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15">
             <div className="relative flex items-center gap-1.5 border-r border-ink-200 pl-3 pr-2">
               <select
                 aria-label="Country code"
@@ -203,15 +203,15 @@ export default function RegisterPage() {
             type="checkbox"
             checked={agree}
             onChange={(e) => setAgree(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-brand accent-brand"
           />
           <span>
             I agree to University Campus Private Tours&apos;{' '}
-            <Link href="/terms" className="font-medium text-maroon-900 underline-offset-2 hover:underline">
+            <Link href="/terms" className="font-medium text-brand underline-offset-2 hover:underline">
               Terms of Service
             </Link>{' '}
             and acknowledge the{' '}
-            <Link href="/privacy" className="font-medium text-maroon-900 underline-offset-2 hover:underline">
+            <Link href="/privacy" className="font-medium text-brand underline-offset-2 hover:underline">
               Privacy Policy
             </Link>
             . I understand that University Campus Private Tours is not affiliated with schools to

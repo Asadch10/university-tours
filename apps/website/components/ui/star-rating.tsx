@@ -25,7 +25,7 @@ export function StarRating({
             <Star
               key={i}
               size={size}
-              className={cn(filled ? 'fill-gold-400 text-gold-400' : 'fill-ink-200 text-ink-200')}
+              className={cn(filled ? 'fill-gold-500 text-gold-500' : 'fill-ink-300/60 text-ink-300/60')}
             />
           );
         })}

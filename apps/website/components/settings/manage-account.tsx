@@ -53,7 +53,7 @@ export function ManageAccount() {
           onClick={del}
           className={cn(
             'inline-flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-colors',
-            confirm && !deleting ? 'bg-red-600 text-white hover:bg-red-700' : 'cursor-not-allowed bg-ink-100 text-ink-400',
+            confirm && !deleting ? 'bg-danger-solid text-white hover:bg-red-500' : 'cursor-not-allowed bg-ink-100 text-ink-400',
           )}
         >
           {deleting ? (

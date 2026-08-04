@@ -133,11 +133,13 @@ export default function UsersPage() {
     {
       key: 'userNo',
       header: 'ID',
+      hideOnMobile: true,
       cell: (u) => <span className="font-mono text-xs font-semibold text-brand-900">U-{u.userNo}</span>,
     },
     {
       key: 'user',
       header: 'User',
+      mobilePrimary: true,
       cell: (u) => (
         <div className="flex items-center gap-3">
           <Avatar name={u.name} src={u.avatar} size={38} />

@@ -161,7 +161,7 @@ function Hero() {
         </div>
 
         {/* New Tour Request */}
-        <div className="absolute left-4 top-4 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift sm:flex">
+        <div className="absolute left-4 top-4 hidden items-center gap-3 rounded-2xl bg-surface p-3 pr-5 shadow-lift sm:flex">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-maroon-900 text-white">
             <Bell size={16} />
           </span>
@@ -172,8 +172,8 @@ function Hero() {
         </div>
 
         {/* Payout */}
-        <div className="absolute right-4 top-20 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift sm:flex">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white">
+        <div className="absolute right-4 top-20 hidden items-center gap-3 rounded-2xl bg-surface p-3 pr-5 shadow-lift sm:flex">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-verified-solid text-white">
             <DollarSign size={16} />
           </span>
           <div>
@@ -183,8 +183,8 @@ function Hero() {
         </div>
 
         {/* Tour confirmed */}
-        <div className="absolute bottom-6 left-4 hidden items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lift sm:flex">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white">
+        <div className="absolute bottom-6 left-4 hidden items-center gap-3 rounded-2xl bg-surface p-3 pr-5 shadow-lift sm:flex">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-verified-solid text-white">
             <Check size={16} />
           </span>
           <div>
@@ -194,7 +194,7 @@ function Hero() {
         </div>
 
         {/* Rating */}
-        <div className="absolute bottom-6 right-4 hidden rounded-2xl bg-white px-4 py-3 shadow-lift sm:block">
+        <div className="absolute bottom-6 right-4 hidden rounded-2xl bg-surface px-4 py-3 shadow-lift sm:block">
           <div className="flex gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star key={i} size={14} className="fill-gold-500 text-gold-500" />
@@ -223,7 +223,7 @@ function MeetGuides() {
   return (
     <section className="py-12 sm:py-16">
       <div className="mx-5 sm:mx-7 lg:mx-10">
-        <div className="overflow-hidden rounded-[2rem] bg-black px-6 py-12 sm:px-10 lg:px-12">
+        <div className="overflow-hidden rounded-[2rem] bg-surface-2 ring-1 ring-ink-200/60 shadow-card px-6 py-12 sm:px-10 lg:px-12">
           <div className="grid items-center gap-10 lg:grid-cols-[0.8fr_2fr]">
             {/* Left */}
             <div>
@@ -235,7 +235,7 @@ function MeetGuides() {
               </p>
               <Link
                 href="/register"
-                className="mt-7 inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-semibold text-ink-900 transition-colors hover:bg-white/90"
+                className="mt-7 inline-flex items-center justify-center rounded-xl bg-surface px-6 py-3 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface/90"
               >
                 Become a guide
               </Link>
@@ -321,7 +321,7 @@ function BringSchoolToLife() {
         <h2 className="mx-auto max-w-2xl font-display text-3xl font-bold leading-tight text-ink-900 sm:text-4xl">
           Bring your school to life as a guide
         </h2>
-        <div className="mx-auto mt-7 flex max-w-md items-center gap-2.5 rounded-full border border-ink-200 bg-white px-5 py-3 shadow-sm focus-within:border-maroon-800/40">
+        <div className="mx-auto mt-7 flex max-w-md items-center gap-2.5 rounded-full border border-ink-200 bg-surface px-5 py-3 shadow-sm focus-within:border-brand/40">
           <Search size={16} className="shrink-0 text-ink-400" />
           <input
             value={search}
@@ -337,7 +337,7 @@ function BringSchoolToLife() {
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="Previous schools"
-          className="absolute left-3 top-[36%] z-10 hidden -translate-y-1/2 sm:inline-flex sm:h-11 sm:w-11 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute left-3 top-[36%] z-10 hidden -translate-y-1/2 sm:inline-flex sm:h-11 sm:w-11 items-center justify-center rounded-full border border-ink-200 bg-surface text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronLeft size={20} />
         </button>
@@ -361,7 +361,7 @@ function BringSchoolToLife() {
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="Next schools"
-          className="absolute right-3 top-[36%] z-10 hidden -translate-y-1/2 sm:inline-flex sm:h-11 sm:w-11 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute right-3 top-[36%] z-10 hidden -translate-y-1/2 sm:inline-flex sm:h-11 sm:w-11 items-center justify-center rounded-full border border-ink-200 bg-surface text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronRight size={20} />
         </button>
@@ -425,13 +425,13 @@ function HostingSection() {
                   onClick={() => setActiveStep(i)}
                   className={cn(
                     'flex w-full gap-5 rounded-2xl border-l-2 px-6 py-5 text-left transition-colors',
-                    active ? 'border-maroon-900 bg-ink-50/60' : 'border-transparent hover:bg-ink-50/40',
+                    active ? 'border-brand bg-ink-50/60' : 'border-transparent hover:bg-ink-50/40',
                   )}
                 >
                   <span
                     className={cn(
                       'font-display text-2xl font-bold',
-                      active ? 'text-maroon-900' : 'text-ink-300',
+                      active ? 'text-brand' : 'text-ink-300',
                     )}
                   >
                     {i + 1}

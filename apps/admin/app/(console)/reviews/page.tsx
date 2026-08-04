@@ -153,7 +153,7 @@ function ReviewCard({
   return (
     <div
       className={cn(
-        'flex flex-col rounded-2xl border border-ink-200/70 bg-white p-5 shadow-soft transition-shadow hover:shadow-card',
+        'flex flex-col rounded-2xl border border-ink-200/70 bg-surface p-5 shadow-soft transition-shadow hover:shadow-card',
         r.hidden && 'opacity-60',
       )}
     >

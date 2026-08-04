@@ -4,12 +4,38 @@ import typography from '@tailwindcss/typography';
 /**
  * University Campus Private Tours — Admin Portal design tokens.
  *
- * The console uses a classic professional blue `brand` scale (familiar, highly readable admin look)
- * with a warm gold accent retained for charts, progress, and highlights. The admin layer adds
- * console-tuned tokens — denser shadows and status colors.
+ * The console ships BOTH themes with a toggle, mirroring the public site (see
+ * apps/website/design.md). Every colour resolves to a CSS variable defined twice in
+ * `app/theme.css`:
+ *
+ *   :root   → dark values  (the default, so a no-JS or pre-hydration render is dark)
+ *   .light  → light values (applied by the theme script when the admin opts in)
+ *
+ * Channel triplets (`99 102 241`) rather than hex, so `<alpha-value>` keeps working and
+ * `bg-surface/60` / `ring-brand-500/20` still resolve.
+ *
+ * ── Scales ─────────────────────────────────────────────────────────────────────────
+ *
+ * `ink` and `gold` are CONTRAST scales, not lightness scales: higher = more contrast
+ * against the current canvas. So `text-ink-900` is near-black in light mode and near-white
+ * in dark, and every existing call site stays correct without a `dark:` variant.
+ *
+ * `brand` is BLUE and stays the console's identity. **`brand-500`/`brand-600` are byte
+ * identical in both themes** so the primary button and active nav look exactly as they do
+ * today. The high end (`brand-800`+) is the *text* end and flips: deep indigo on light,
+ * pale indigo on dark. In short: `bg-brand-500` for fills, `text-brand-800` for foregrounds.
  */
+
+const t = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+const scale = (name: string, steps: number[]) =>
+  Object.fromEntries(steps.map((s) => [s, t(`${name}-${s}`)]));
+
+const FULL = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
+  // Dark is the default, so "dark" means "the .light class is absent".
+  darkMode: ['selector', ':root:not(.light)'],
   theme: {
     container: {
       center: true,
@@ -18,53 +44,38 @@ const config: Config = {
     },
     extend: {
       colors: {
-        brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1', // accent — button + active nav
-          600: '#4f46e5', // hover
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
-        },
-        gold: {
-          50: '#fdfaf0',
-          100: '#faf1d6',
-          200: '#f3e1a8',
-          300: '#eccb72',
-          400: '#e3b347',
-          500: '#cf9526', // accent core
-          600: '#b4761d',
-          700: '#90561a',
-          800: '#77451c',
-          900: '#653a1b',
-          950: '#3a1d0c',
-        },
-        ink: {
-          50: '#f7f5f3',
-          100: '#ece8e3',
-          200: '#d9d1c8',
-          300: '#bfb2a4',
-          400: '#9f8e7c',
-          500: '#85725f',
-          600: '#6c5b4b',
-          700: '#57493e',
-          800: '#473d35',
-          900: '#1f1a16', // primary text
-          950: '#14100d',
-        },
-        ivory: '#fbf8f3',
-        cream: '#f6f0e7',
-        verified: '#2f7d57',
-        // Console status palette (kept distinct from brand scales)
-        info: '#2563a8',
-        warn: '#b4761d',
-        danger: '#bd2c4d',
-        success: '#2f7d57',
+        canvas: t('canvas'),
+        'canvas-alt': t('canvas-alt'),
+        surface: t('surface'),
+        'surface-2': t('surface-2'),
+        'surface-3': t('surface-3'),
+        'surface-4': t('surface-4'),
+
+        brand: scale('brand', FULL),
+        gold: scale('gold', FULL),
+        ink: scale('ink', FULL),
+
+        ivory: t('ivory'),
+        cream: t('cream'),
+
+        /* Console status palette (kept distinct from the brand scales). */
+        info: t('info'),
+        warn: t('warn'),
+        danger: t('danger'),
+        success: t('success'),
+        verified: t('verified'),
+
+        /* Solid counterparts, dark enough to carry white text at AA in both themes.
+           One token cannot clear 4.5:1 both as text on the canvas AND as a fill under
+           white text — on a near-black canvas those two requirements multiply to a
+           constant, so the roles have to split. */
+        'info-solid': t('info-solid'),
+        'warn-solid': t('warn-solid'),
+        'danger-solid': t('danger-solid'),
+        'success-solid': t('success-solid'),
+
+        red: { 600: t('red-600') },
+        green: { 600: t('green-600') },
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -79,20 +90,19 @@ const config: Config = {
         display: ['3.5rem', { lineHeight: '1.05', letterSpacing: '-0.025em' }],
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(31,26,22,0.04), 0 4px 16px -4px rgba(31,26,22,0.08)',
-        card: '0 2px 4px rgba(31,26,22,0.04), 0 12px 32px -12px rgba(31,26,22,0.12)',
-        lift: '0 8px 16px rgba(31,26,22,0.06), 0 24px 48px -16px rgba(31,26,22,0.18)',
-        glow: '0 0 0 1px rgba(207,149,38,0.25), 0 12px 32px -8px rgba(99,102,241,0.35)',
-        'ring-focus': '0 0 0 3px rgba(207,149,38,0.30)',
+        soft: 'var(--shadow-soft)',
+        card: 'var(--shadow-card)',
+        lift: 'var(--shadow-lift)',
+        glow: 'var(--shadow-glow)',
+        'ring-focus': 'var(--shadow-ring-focus)',
       },
       borderRadius: {
         '4xl': '2rem',
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(160deg, #6366f1 0%, #4338ca 55%, #312e81 100%)',
-        'gold-sheen': 'linear-gradient(135deg, #eccb72 0%, #cf9526 100%)',
-        'radial-fade':
-          'radial-gradient(60% 60% at 50% 0%, rgba(207,149,38,0.10) 0%, transparent 70%)',
+        'brand-gradient': 'var(--grad-brand)',
+        'gold-sheen': 'var(--grad-gold)',
+        'radial-fade': 'var(--grad-radial-fade)',
       },
       keyframes: {
         'fade-up': {
@@ -113,6 +123,27 @@ const config: Config = {
       },
       transitionTimingFunction: {
         premium: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      /* @tailwindcss/typography injects its own --tw-prose-* variables, which default to
+         the light grey ramp and would be invisible on the dark canvas. */
+      typography: {
+        DEFAULT: {
+          css: {
+            '--tw-prose-body': 'rgb(var(--ink-700))',
+            '--tw-prose-headings': 'rgb(var(--ink-900))',
+            '--tw-prose-links': 'rgb(var(--brand-800))',
+            '--tw-prose-bold': 'rgb(var(--ink-900))',
+            '--tw-prose-counters': 'rgb(var(--ink-500))',
+            '--tw-prose-bullets': 'rgb(var(--ink-300))',
+            '--tw-prose-hr': 'rgb(var(--ink-200))',
+            '--tw-prose-quotes': 'rgb(var(--ink-800))',
+            '--tw-prose-quote-borders': 'rgb(var(--ink-200))',
+            '--tw-prose-code': 'rgb(var(--ink-900))',
+            '--tw-prose-pre-bg': 'rgb(var(--surface-2))',
+            '--tw-prose-th-borders': 'rgb(var(--ink-200))',
+            '--tw-prose-td-borders': 'rgb(var(--ink-100))',
+          },
+        },
       },
     },
   },

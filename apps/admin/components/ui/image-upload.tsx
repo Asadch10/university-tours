@@ -65,7 +65,7 @@ export function ImageUpload({
         )}
 
         {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="absolute inset-0 flex items-center justify-center bg-surface/70 backdrop-blur-sm">
             <Loader2 size={22} className="animate-spin text-brand-600" />
           </div>
         )}
@@ -75,14 +75,14 @@ export function ImageUpload({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="rounded-lg bg-white/90 px-2.5 py-1 text-xs font-semibold text-ink-800 hover:bg-white"
+              className="rounded-lg bg-surface/90 px-2.5 py-1 text-xs font-semibold text-ink-800 hover:bg-surface"
             >
               Replace
             </button>
             <button
               type="button"
               onClick={() => onChange(null)}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/90 text-danger hover:bg-white"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-surface/90 text-danger hover:bg-surface"
               aria-label="Remove image"
             >
               <X size={14} />

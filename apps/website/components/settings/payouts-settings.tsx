@@ -103,7 +103,7 @@ export function PayoutsSettings() {
   if (loading) {
     return (
       <div className="flex max-w-2xl justify-center py-24">
-        <Loader2 className="animate-spin text-maroon-800" size={26} />
+        <Loader2 className="animate-spin text-brand" size={26} />
       </div>
     );
   }
@@ -148,7 +148,7 @@ export function PayoutsSettings() {
 
         {status?.payoutsEnabled ? (
           /* Connected — show the bank on file */
-          <div className="mt-6 rounded-2xl border border-ink-200 bg-white p-5">
+          <div className="mt-6 rounded-2xl border border-ink-200 bg-surface p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-verified/10 text-verified">

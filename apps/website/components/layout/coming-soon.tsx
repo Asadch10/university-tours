@@ -3,7 +3,7 @@ import { ButtonLink } from '@/components/ui/button';
 /** Lightweight on-brand placeholder for account pages that aren't built out yet. */
 export function ComingSoon({ title, description }: { title: string; description: string }) {
   return (
-    <main className="relative min-h-dvh bg-ivory pb-24 pt-[calc(var(--header-h)+4rem)]">
+    <main className="relative min-h-dvh bg-canvas pb-24 pt-[calc(var(--header-h)+4rem)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-radial-fade" aria-hidden />
       <div className="relative mx-auto max-w-lg px-5 text-center">
         <p className="eyebrow mb-3 justify-center">Coming soon</p>

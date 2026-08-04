@@ -1,4 +1,5 @@
 'use client';
+import { PHOTOS } from '@/lib/images';
 
 import { Reveal } from '@/components/ui/reveal';
 import { ButtonLink } from '@/components/ui/button';
@@ -35,6 +36,7 @@ export function GroupToursIntro() {
       <section className="relative h-[72vh] min-h-[520px] overflow-hidden">
         <video
           className="absolute inset-0 h-full w-full object-cover"
+          poster={PHOTOS.groupTours.src}
           autoPlay
           muted
           loop

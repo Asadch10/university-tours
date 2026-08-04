@@ -105,7 +105,7 @@ export default async function UniversityDetailPage({
   const location = u.location ?? '';
 
   return (
-    <div className="bg-white pt-[var(--header-h)]">
+    <div className="bg-surface pt-[var(--header-h)]">
       {/* ── Banner ─────────────────────────────────────────────────────── */}
       <section className="container-page pt-5">
         <nav
@@ -147,7 +147,7 @@ export default async function UniversityDetailPage({
           <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-8">
             <div className="min-w-0">
               {u.state && (
-                <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-ink-800 backdrop-blur">
+                <span className="inline-flex items-center rounded-full bg-surface/90 px-3 py-1 text-xs font-semibold text-ink-800 backdrop-blur">
                   {u.state}
                 </span>
               )}
@@ -162,9 +162,9 @@ export default async function UniversityDetailPage({
             </div>
 
             <div className="flex shrink-0 gap-2.5">
-              <div className="rounded-xl bg-white/90 px-4 py-2.5 text-center backdrop-blur">
+              <div className="rounded-xl bg-surface/90 px-4 py-2.5 text-center backdrop-blur">
                 <p className="inline-flex items-center gap-1.5 text-sm font-bold text-ink-900">
-                  <Users size={14} className="text-maroon-900" /> {ambassadors}
+                  <Users size={14} className="text-brand" /> {ambassadors}
                 </p>
                 <p className="mt-0.5 text-[0.68rem] text-ink-500">student guides</p>
               </div>
@@ -194,7 +194,7 @@ export default async function UniversityDetailPage({
                   {u.tags.map((t) => (
                     <span
                       key={t}
-                      className="rounded-full border border-ink-200 bg-white px-3.5 py-1.5 text-sm text-ink-700"
+                      className="rounded-full border border-ink-200 bg-surface px-3.5 py-1.5 text-sm text-ink-700"
                     >
                       {t}
                     </span>
@@ -208,7 +208,7 @@ export default async function UniversityDetailPage({
             <div className="space-y-6">
               {HIGHLIGHTS.map((h) => (
                 <div key={h.title} className="flex items-start gap-4">
-                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-900">
+                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-tint text-brand">
                     <h.icon size={20} />
                   </span>
                   <div>
@@ -222,13 +222,13 @@ export default async function UniversityDetailPage({
 
           {/* Right: sticky booking card */}
           <div>
-            <div className="rounded-2xl border border-ink-200/70 bg-white p-6 shadow-soft lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
+            <div className="rounded-2xl border border-ink-200/70 bg-surface p-6 shadow-soft lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
               {u.toursFromCents != null ? (
                 <>
                   <p className="text-[0.68rem] font-bold uppercase tracking-[0.15em] text-ink-400">
                     Tours from
                   </p>
-                  <p className="mt-1 font-display text-3xl font-bold text-maroon-900">
+                  <p className="mt-1 font-display text-3xl font-bold text-brand">
                     {formatPrice(u.toursFromCents)}
                   </p>
                 </>
@@ -276,7 +276,7 @@ export default async function UniversityDetailPage({
       </section>
 
       {/* ── Guides ─────────────────────────────────────────────────────── */}
-      <section className="border-t border-ink-100 bg-ivory/60 py-12 sm:py-16">
+      <section className="border-t border-ink-200/70 bg-canvas-alt py-12 sm:py-16">
         <div className="container-page">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -292,7 +292,7 @@ export default async function UniversityDetailPage({
             </div>
             <Link
               href={`/search?q=${encodeURIComponent(u.name)}`}
-              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-maroon-900 hover:underline"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
             >
               Browse all <ArrowRight size={14} />
             </Link>
@@ -307,7 +307,7 @@ export default async function UniversityDetailPage({
               ))}
             </RevealGroup>
           ) : (
-            <p className="mt-8 rounded-2xl border border-dashed border-ink-300 bg-white p-8 text-center text-ink-500">
+            <p className="mt-8 rounded-2xl border border-dashed border-ink-300 bg-surface p-8 text-center text-ink-500">
               New guides are joining {u.name} soon. Check back shortly.
             </p>
           )}
@@ -338,7 +338,7 @@ export default async function UniversityDetailPage({
             </div>
             <Link
               href={`/search?q=${encodeURIComponent(u.name)}`}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-maroon-900 shadow-sm transition-colors hover:bg-ivory"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-ivory px-6 py-3.5 text-sm font-semibold text-maroon-950 shadow-soft transition-colors hover:bg-white"
             >
               Browse {u.name} guides <ArrowRight size={15} />
             </Link>

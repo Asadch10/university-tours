@@ -11,6 +11,7 @@ import type { BookingStatus } from '@/lib/data';
 import { useBookings, useInvoice } from '@/lib/queries';
 import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 import { formatPrice, formatDate, formatDateTime, humanize, paymentStatusMeta, guestHasPaid, paymentCaptured, cn } from '@/lib/utils';
+import { SERVICE_LABEL } from '@/lib/tour-types';
 
 // One-line explanation of what a payment status means in the authorize-then-capture flow.
 const PAYMENT_HINT: Record<string, string> = {
@@ -48,7 +49,7 @@ export default function BookingDetailPage() {
   if (!b) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
+        <div className="rounded-2xl border border-ink-200/70 bg-surface p-10 text-center">
           <p className="font-semibold text-ink-900">Booking not found</p>
           <p className="mt-1 text-sm text-ink-500">It may have been removed, or the link is invalid.</p>
           <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/bookings')}>
@@ -71,12 +72,12 @@ export default function BookingDetailPage() {
     <RequirePermission anyOf={['bookings.view']}>
       <div className="space-y-6">
         {/* Header — summary banner */}
-        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft">
+        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-surface shadow-soft">
           <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="font-display text-2xl font-bold text-ink-900">
-                  {b.service === 'CAMPUS_TOUR' ? 'Campus tour' : humanize(b.service)}
+                  {SERVICE_LABEL[b.service] ?? humanize(b.service)}
                 </h1>
                 <StatusBadge status={b.status as BookingStatus} />
               </div>
@@ -122,7 +123,7 @@ export default function BookingDetailPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
-            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
               <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Booking details</h2>
               <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 <Detail label="Service" value={humanize(b.service)} />
@@ -132,7 +133,7 @@ export default function BookingDetailPage() {
             </section>
 
             {/* Payment — fully dynamic from the stored Stripe payment record */}
-            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-500">
                   <CreditCard size={14} /> Payment
@@ -227,7 +228,7 @@ export default function BookingDetailPage() {
 
           {/* Status — booking + payment as two independent states */}
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
               <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Status</h2>
 
               <div className="mt-4 space-y-4">
@@ -259,7 +260,7 @@ export default function BookingDetailPage() {
             </section>
 
             {/* Review — the guest's review of the guide for this booking */}
-            <section className="mt-6 rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="mt-6 rounded-2xl border border-ink-200/70 bg-surface p-6">
               <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Review</h2>
               {b.review ? (
                 <div className="mt-4">

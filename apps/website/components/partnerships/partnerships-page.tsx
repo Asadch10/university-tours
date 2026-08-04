@@ -118,7 +118,7 @@ function Hero() {
 
 function Features() {
   return (
-    <section className="bg-cream/40 py-20 sm:py-28">
+    <section className="bg-canvas-alt/40 py-20 sm:py-28">
       <div className="container-page">
         <Reveal>
           <h2 className="mx-auto max-w-2xl text-center font-display text-3xl font-bold text-ink-900 sm:text-4xl">
@@ -138,7 +138,7 @@ function Features() {
                   <span key={i}>
                     {part}
                     {f.link && i < arr.length - 1 && (
-                      <Link href={f.link.href} className="font-medium text-maroon-900 hover:underline">
+                      <Link href={f.link.href} className="font-medium text-brand hover:underline">
                         {f.link.label}
                       </Link>
                     )}
@@ -166,7 +166,7 @@ function PickGuide() {
           <p className="mt-6 text-lg text-ink-600">Every student is unique. With us, every tour is too.</p>
           <p className="mt-4 text-lg leading-relaxed text-ink-600">
             Let prospective students book a tour with a{' '}
-            <Link href="/search" className="font-medium text-maroon-900 hover:underline">
+            <Link href="/search" className="font-medium text-brand hover:underline">
               guide they choose
             </Link>{' '}
             based on shared interests, hobbies, or backgrounds. Build trust through authenticity and
@@ -240,7 +240,7 @@ function Impact() {
                     data-card
                     className="relative w-[85vw] max-w-[320px] shrink-0 snap-start rounded-2xl bg-white/[0.04] p-6 ring-1 ring-inset ring-white/10 sm:w-[320px]"
                   >
-                    <Quote size={28} className="absolute right-5 top-5 text-gold-400" />
+                    <Quote size={28} className="absolute right-5 top-5 text-gold-500" />
                     <div className="flex items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={t.avatar} alt={t.name} className="h-10 w-10 rounded-full object-cover" />
@@ -316,10 +316,10 @@ function Faq() {
       </div>
 
       <Reveal>
-        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-4 rounded-3xl bg-ink-900 px-7 py-6 text-white sm:flex-row sm:items-center">
+        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-4 rounded-3xl bg-maroon-gradient px-7 py-6 text-white sm:flex-row sm:items-center">
           <p className="font-display text-lg font-bold">Still have questions?</p>
           <div className="flex gap-3">
-            <Link href="/faq" className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-white/90">
+            <Link href="/faq" className="rounded-xl bg-surface px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface/90">
               Help Center
             </Link>
             <Link href="/contact" className="rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/20">

@@ -49,7 +49,7 @@ export function UserMenu({ user }: { user: AuthUser }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-maroon-gradient font-display text-sm font-bold text-ivory ring-2 ring-transparent transition-all hover:ring-maroon-200 focus-visible:outline-none focus-visible:ring-maroon-300"
+        className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-maroon-gradient font-display text-sm font-bold text-ivory ring-2 ring-transparent transition-all hover:ring-brand-muted focus-visible:outline-none focus-visible:ring-brand-muted"
       >
         {initialsOf(user.name, user.email)}
       </button>
@@ -62,7 +62,7 @@ export function UserMenu({ user }: { user: AuthUser }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-0 top-[calc(100%+0.6rem)] w-60 overflow-hidden rounded-2xl border border-ink-200/70 bg-white py-2 shadow-lift"
+            className="absolute right-0 top-[calc(100%+0.6rem)] w-60 overflow-hidden rounded-2xl border border-ink-200/70 bg-surface py-2 shadow-lift"
           >
             {ACCOUNT_MENU.map((item) => (
               <Link
@@ -70,7 +70,7 @@ export function UserMenu({ user }: { user: AuthUser }) {
                 href={item.href}
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="block px-5 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-maroon-50 hover:text-maroon-900"
+                className="block px-5 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-brand-tint hover:text-brand"
               >
                 {item.label}
               </Link>
@@ -82,7 +82,7 @@ export function UserMenu({ user }: { user: AuthUser }) {
               type="button"
               role="menuitem"
               onClick={handleLogout}
-              className="block w-full px-5 py-2.5 text-left text-sm font-medium text-ink-700 transition-colors hover:bg-maroon-50 hover:text-maroon-900"
+              className="block w-full px-5 py-2.5 text-left text-sm font-medium text-ink-700 transition-colors hover:bg-brand-tint hover:text-brand"
             >
               Log out
             </button>

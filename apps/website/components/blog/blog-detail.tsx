@@ -21,13 +21,13 @@ export function BlogDetail({ post }: { post: BlogPost }) {
   const suggestions = related.length ? related : fallback;
 
   return (
-    <article className="bg-ivory">
+    <article className="bg-canvas">
       {/* Header */}
       <header className="container-page pt-[calc(var(--header-h)+3rem)]">
         <div className="mx-auto max-w-3xl">
           <Link
             href="/blog"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition-colors hover:text-maroon-900"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 transition-colors hover:text-brand"
           >
             <ArrowLeft size={16} /> All posts
           </Link>
@@ -129,7 +129,7 @@ export function BlogDetail({ post }: { post: BlogPost }) {
                       className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
                     />
                   </div>
-                  <h3 className="mt-3 font-display text-lg font-bold leading-snug text-ink-900 transition-colors group-hover:text-maroon-900">
+                  <h3 className="mt-3 font-display text-lg font-bold leading-snug text-ink-900 transition-colors group-hover:text-brand">
                     {p.title}
                   </h3>
                   <p className="mt-1 text-xs text-ink-500">{formatDate(p.date)}</p>

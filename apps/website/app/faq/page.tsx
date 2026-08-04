@@ -59,7 +59,7 @@ export default function FaqPage() {
         <div className="pointer-events-none absolute -right-24 top-10 h-[28rem] w-[28rem] rounded-full bg-gold-500/10 blur-3xl" aria-hidden />
         <div className="container-page relative py-16 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold-200 ring-1 ring-inset ring-white/15 backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-onbrand-accent ring-1 ring-inset ring-white/15 backdrop-blur">
               <LifeBuoy size={14} /> Help center
             </span>
             <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.08] sm:text-5xl">
@@ -86,7 +86,7 @@ export default function FaqPage() {
           </Reveal>
           <Reveal className="mt-10">
             <div className="mb-5 flex justify-center sm:justify-start">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                 <CreditCard size={22} />
               </span>
             </div>
@@ -96,7 +96,7 @@ export default function FaqPage() {
       </section>
 
       {/* For guides */}
-      <section className="bg-cream/60 py-20 sm:py-28">
+      <section className="bg-canvas-alt/60 py-20 sm:py-28">
         <div className="container-page">
           <Reveal>
             <SectionHeading
@@ -108,7 +108,7 @@ export default function FaqPage() {
           </Reveal>
           <Reveal className="mt-10">
             <div className="mb-5 flex justify-center sm:justify-start">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                 <GraduationCap size={22} />
               </span>
             </div>
@@ -130,7 +130,7 @@ export default function FaqPage() {
           </Reveal>
           <Reveal className="mt-10">
             <div className="mb-5 flex justify-center sm:justify-start">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                 <ShieldCheck size={22} />
               </span>
             </div>
@@ -142,10 +142,10 @@ export default function FaqPage() {
       {/* Still need help? */}
       <section className="container-page pb-24">
         <Reveal>
-          <div className="relative overflow-hidden rounded-4xl border border-ink-200/70 bg-white shadow-card">
+          <div className="relative overflow-hidden rounded-4xl border border-ink-200/70 bg-surface shadow-card">
             <div className="grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-[1fr_auto]">
               <div>
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                   <MessageCircle size={26} />
                 </span>
                 <h2 className="mt-5 font-display text-3xl font-semibold text-ink-900 sm:text-4xl">

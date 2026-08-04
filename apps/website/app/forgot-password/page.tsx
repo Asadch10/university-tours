@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           </div>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-maroon-900 hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline"
           >
             <ArrowLeft size={15} /> Back to log in
           </Link>
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
         {status === 'error' && (
           <div
             role="alert"
-            className="flex items-center gap-2.5 rounded-xl border border-maroon-200 bg-maroon-50 px-4 py-3 text-sm text-maroon-900"
+            className="flex items-center gap-2.5 rounded-xl border border-brand-muted bg-brand-tint px-4 py-3 text-sm text-brand"
           >
             <AlertCircle size={16} className="shrink-0" />
             {errorMsg}

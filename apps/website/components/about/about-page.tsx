@@ -71,7 +71,7 @@ const RESOURCES = [
 
 export function AboutPage() {
   return (
-    <div className="bg-ivory">
+    <div className="bg-canvas">
       <Hero />
       <Stats />
       <Mission />
@@ -105,8 +105,8 @@ function Hero() {
       />
       <div className="container-page relative py-20">
         <Reveal>
-          <span className="eyebrow text-gold-300">
-            <span className="h-px w-6 bg-gold-300/60" /> Our story
+          <span className="eyebrow text-onbrand-accent">
+            <span className="h-px w-6 bg-onbrand-accent/60" /> Our story
           </span>
         </Reveal>
         <Reveal delay={0.05}>
@@ -146,12 +146,12 @@ function Hero() {
 
 function Stats() {
   return (
-    <section className="border-b border-ink-100 bg-white py-16 sm:py-20">
+    <section className="border-b border-ink-100 bg-surface py-16 sm:py-20">
       <div className="container-page">
         <RevealGroup className="grid grid-cols-2 gap-x-6 gap-y-12 text-center md:grid-cols-3 lg:grid-cols-6">
           {STATS.map((s) => (
             <Reveal as="div" key={s.label}>
-              <p className="font-display text-4xl font-bold text-maroon-900 sm:text-[2.75rem]">
+              <p className="font-display text-4xl font-bold text-brand sm:text-[2.75rem]">
                 {s.value}
               </p>
               <p className="mt-2 text-sm text-ink-500">{s.label}</p>
@@ -207,7 +207,7 @@ function Mission() {
 
 function ValueBlocks() {
   return (
-    <section className="bg-cream/50 py-20 sm:py-28">
+    <section className="bg-canvas-alt/50 py-20 sm:py-28">
       <div className="container-page space-y-20 sm:space-y-28">
         {VALUE_BLOCKS.map((b, i) => {
           const reversed = i % 2 === 1;
@@ -308,7 +308,7 @@ function StudentExperiences() {
                 aria-hidden
               />
               <div className="absolute inset-x-0 bottom-0 p-5 sm:p-10">
-                <Quote className="text-gold-300" size={28} />
+                <Quote className="text-onbrand-accent" size={28} />
                 <h3 className="mt-2 max-w-xl font-display text-xl font-semibold text-ivory sm:mt-3 sm:text-3xl">
                   {slide.title}
                 </h3>
@@ -320,7 +320,7 @@ function StudentExperiences() {
                 type="button"
                 onClick={() => go(-1)}
                 aria-label="Previous"
-                className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow-md transition-colors hover:bg-white"
+                className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink-800 shadow-md transition-colors hover:bg-surface"
               >
                 <ChevronLeft size={20} />
               </button>
@@ -328,7 +328,7 @@ function StudentExperiences() {
                 type="button"
                 onClick={() => go(1)}
                 aria-label="Next"
-                className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow-md transition-colors hover:bg-white"
+                className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink-800 shadow-md transition-colors hover:bg-surface"
               >
                 <ChevronRight size={20} />
               </button>
@@ -366,7 +366,7 @@ function DiscoverUniversity() {
     { src: img('umich'), cls: 'h-[130px] sm:h-[150px]' },
   ];
   return (
-    <section className="bg-cream/50 py-20 sm:py-28">
+    <section className="bg-canvas-alt/50 py-20 sm:py-28">
       <div className="container-page grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <Reveal>
           <span className="eyebrow">
@@ -449,7 +449,7 @@ function Resources() {
                 />
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-5">
                   <span className="font-display text-lg font-semibold text-ivory">{r.label}</span>
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-ivory ring-1 ring-inset ring-white/30 transition-colors group-hover:bg-white group-hover:text-maroon-900">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-ivory ring-1 ring-inset ring-white/30 transition-colors group-hover:bg-ivory group-hover:text-maroon-950">
                     <ArrowRight size={16} />
                   </span>
                 </div>

@@ -119,7 +119,7 @@ function Stars({ rating }: { rating: number }) {
           className={
             i < rating
               ? 'fill-gold-500 text-gold-500'
-              : 'fill-ink-200 text-ink-200'
+              : 'fill-ink-300/60 text-ink-300/60'
           }
         />
       ))}
@@ -167,7 +167,7 @@ function TxtCard({ card }: { card: TextCard }) {
   return (
     <article
       data-card
-      className="relative flex h-[400px] w-[85vw] max-w-72 shrink-0 snap-start flex-col justify-between overflow-hidden rounded-2xl border border-ink-100 bg-white p-6 shadow-soft sm:w-72"
+      className="relative flex h-[400px] w-[85vw] max-w-72 shrink-0 snap-start flex-col justify-between overflow-hidden rounded-2xl border border-ink-100 bg-surface p-6 shadow-soft sm:w-72"
     >
       {/* Decorative large quote mark */}
       <span
@@ -214,7 +214,7 @@ export function TrustedReviews() {
   }
 
   return (
-    <section className="bg-white py-10 sm:py-12">
+    <section className="bg-surface py-10 sm:py-12">
 
       {/* Heading */}
       <div className="container-page mb-8 text-center">
@@ -253,7 +253,7 @@ export function TrustedReviews() {
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="Previous reviews"
-          className="absolute left-3 top-1/2 z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute left-3 top-1/2 z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-surface text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronLeft size={20} />
         </button>
@@ -279,7 +279,7 @@ export function TrustedReviews() {
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="Next reviews"
-          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute right-3 top-1/2 z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-surface text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronRight size={20} />
         </button>

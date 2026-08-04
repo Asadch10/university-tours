@@ -95,7 +95,7 @@ export function NotificationsMenu() {
       >
         <Bell size={17} />
         {unread > 0 && (
-          <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[0.6rem] font-bold leading-none text-white ring-2 ring-white">
+          <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger-solid px-1 text-[0.6rem] font-bold leading-none text-white ring-2 ring-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -108,7 +108,7 @@ export function NotificationsMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.14 }}
-            className="absolute right-0 z-50 mt-1.5 w-80 overflow-hidden rounded-xl border border-ink-200/70 bg-white shadow-lift"
+            className="absolute right-0 z-50 mt-1.5 w-80 overflow-hidden rounded-xl border border-ink-200/70 bg-surface shadow-lift"
           >
             <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-2.5">
               <p className="text-sm font-semibold text-ink-900">
@@ -151,7 +151,7 @@ export function NotificationsMenu() {
                       </span>
                       <span className="flex shrink-0 flex-col items-end gap-1">
                         <span className="whitespace-nowrap text-2xs text-ink-400">{timeAgo(n.createdAt)}</span>
-                        {isUnread && <span className="h-1.5 w-1.5 rounded-full bg-danger" />}
+                        {isUnread && <span className="h-1.5 w-1.5 rounded-full bg-danger-solid" />}
                       </span>
                     </button>
                   );

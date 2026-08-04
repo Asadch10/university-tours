@@ -1,3 +1,5 @@
+@import './theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,6 +8,10 @@
   :root {
     --header-h: 4.5rem;
   }
+
+  /* `color-scheme` is set per-theme in theme.css. It makes the UA render native widgets
+     (scrollbars, date/time pickers, select popups, spinners) to match — without it the
+     browser paints system chrome for the wrong theme and it punches holes in the page. */
 
   * {
     @apply border-ink-200/60;
@@ -16,19 +22,20 @@
     scroll-padding-top: var(--header-h);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    background-color: theme('colors.canvas');
   }
 
   body {
-    @apply bg-ivory text-ink-900 font-sans antialiased;
+    @apply bg-canvas text-ink-900 font-sans antialiased;
   }
 
   ::selection {
     @apply bg-maroon-900 text-ivory;
   }
 
-  /* Headings inherit their color from the nearest context (ink on light
-     surfaces via <body>, ivory on dark hero/CTA sections) so titles stay
-     legible everywhere. Components that need a specific color set it explicitly. */
+  /* Headings inherit their color from the nearest context (ink on dark surfaces via
+     <body>, ivory on brand-filled hero/CTA sections) so titles stay legible everywhere.
+     Components that need a specific color set it explicitly. */
   h1, h2, h3, h4 {
     @apply font-display font-semibold tracking-[-0.014em];
     color: inherit;
@@ -37,7 +44,83 @@
 
   /* Premium focus ring for keyboard nav (WCAG) */
   :focus-visible {
-    @apply outline-none ring-2 ring-gold-500 ring-offset-2 ring-offset-ivory rounded-sm;
+    @apply outline-none ring-2 ring-gold-500 ring-offset-2 ring-offset-canvas rounded-sm;
+  }
+
+  /* ── Native form controls ───────────────────────────────────────────────
+     Inputs inherit the dark colour scheme so typed text, spinners and dropdown
+     popups never render light-on-light. */
+  input,
+  textarea,
+  select {
+    color-scheme: inherit;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-ink-400;
+  }
+
+  /* Chrome/Safari paint a hard-coded pale background on autofilled fields, which
+     would show as a white block inside every dark form. The inset shadow is the
+     only way to override it. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: theme('colors.ink.900');
+    -webkit-box-shadow: 0 0 0 1000px theme('colors.surface-2') inset;
+    box-shadow: 0 0 0 1000px theme('colors.surface-2') inset;
+    caret-color: theme('colors.ink.900');
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  /* The webkit date/time picker indicator ships as a dark glyph — invert it so it
+     is visible on a dark input. */
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.85);
+    opacity: 0.7;
+    cursor: pointer;
+  }
+
+  /* The glyph ships dark, so it only needs inverting on a dark field. */
+  .light input[type='date']::-webkit-calendar-picker-indicator,
+  .light input[type='time']::-webkit-calendar-picker-indicator,
+  .light input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: none;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator:hover,
+  input[type='time']::-webkit-calendar-picker-indicator:hover,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* ── Scrollbars ─────────────────────────────────────────────────────────
+     Default light scrollbars are the most common give-away in a dark UI. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--ink-200)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full border-[3px] border-solid border-transparent bg-ink-200 bg-clip-content;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-300;
   }
 }
 
@@ -53,7 +136,7 @@
 
   /* Eyebrow / kicker label */
   .eyebrow {
-    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-maroon-800;
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-brand;
   }
 
   /* Gold gradient text accent */
@@ -61,9 +144,10 @@
     @apply bg-gold-sheen bg-clip-text text-transparent;
   }
 
-  /* Frosted card */
+  /* Frosted card. On dark, elevation comes from a lighter surface plus a hairline
+     border — a drop shadow alone reads as nothing. */
   .card-surface {
-    @apply rounded-3xl border border-ink-200/70 bg-white shadow-card;
+    @apply rounded-3xl border border-ink-200/70 bg-surface shadow-card;
   }
 
   /* Subtle grid/paper texture for hero backgrounds. Purely decorative —
@@ -71,9 +155,19 @@
   .bg-grid {
     pointer-events: none;
     background-image:
-      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
     background-size: 56px 56px;
+  }
+
+  /* Top hairline highlight — the cheapest way to make a dark panel read as raised. */
+  .edge-top {
+    @apply relative;
+  }
+
+  .edge-top::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-edge-fade;
   }
 }
 
@@ -86,17 +180,24 @@
   /* Hide scrollbar for carousels */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Photos and light illustrations sit on a near-black canvas; a touch of
+     brightness/contrast trim stops them glaring against the surrounding UI. */
+  .img-dark-fit {
+    filter: var(--img-fit);
+  }
 }
 
-/* ── Leaflet hover popup — strip all default chrome ─────────────────────
-   The university card inside uses inline styles so Tailwind purge doesn't
-   need to see any of these selectors.                                      */
+/* ── Leaflet ────────────────────────────────────────────────────────────
+   The map tiles and all default popup/control chrome ship light. */
 .uni-hover-popup .leaflet-popup-content-wrapper {
   padding: 0 !important;
   border-radius: 14px !important;
   overflow: hidden !important;
   border: none !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18) !important;
+  background: rgb(var(--surface)) !important;
+  color: rgb(var(--ink-900)) !important;
+  box-shadow: var(--shadow-lift) !important;
 }
 .uni-hover-popup .leaflet-popup-content {
   margin: 0 !important;
@@ -104,6 +205,37 @@
 }
 .uni-hover-popup .leaflet-popup-tip-container {
   display: none !important;
+}
+
+/* Tone the raster tiles down to match the canvas. Leaflet ships no dark tile set,
+   so filtering the tile pane is the standard approach. */
+.leaflet-container {
+  background: rgb(var(--canvas)) !important;
+}
+
+:root:not(.light) .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.94) contrast(0.88) saturate(0.7);
+}
+
+.leaflet-control-zoom a,
+.leaflet-bar a {
+  background-color: rgb(var(--surface)) !important;
+  color: rgb(var(--ink-900)) !important;
+  border-color: rgb(var(--ink-200)) !important;
+}
+
+.leaflet-control-zoom a:hover,
+.leaflet-bar a:hover {
+  background-color: rgb(var(--surface-3)) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgb(var(--canvas) / 0.75) !important;
+  color: rgb(var(--ink-400)) !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgb(var(--ink-500)) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -56,7 +56,7 @@ export default async function GuideProfilePage({ params }: { params: Promise<{ i
   const description = g.hostedBy?.trim() || g.intro?.trim() || '';
 
   return (
-    <main className="bg-white pt-[var(--header-h)]">
+    <main className="bg-surface pt-[var(--header-h)]">
       <div className="container-page py-12 sm:py-16">
         <div className="mx-auto max-w-2xl">
           {/* Greeting */}
@@ -73,7 +73,7 @@ export default async function GuideProfilePage({ params }: { params: Promise<{ i
             <div className="min-w-0">
               {g.university && (
                 <p className="inline-flex items-center gap-1.5 text-sm text-ink-500">
-                  <GraduationCap size={15} className="text-maroon-800" /> {g.university}
+                  <GraduationCap size={15} className="text-brand" /> {g.university}
                 </p>
               )}
               {description && (
@@ -96,13 +96,13 @@ export default async function GuideProfilePage({ params }: { params: Promise<{ i
             </div>
 
             {g.reviewList.length === 0 ? (
-              <p className="mt-5 rounded-2xl border border-dashed border-ink-200 bg-white/60 p-8 text-center text-sm text-ink-500">
+              <p className="mt-5 rounded-2xl border border-dashed border-ink-200 bg-surface/60 p-8 text-center text-sm text-ink-500">
                 No reviews yet.
               </p>
             ) : (
               <div className="mt-5 grid gap-4">
                 {g.reviewList.map((r, i) => (
-                  <figure key={i} className="rounded-2xl border border-ink-200/70 bg-white p-6">
+                  <figure key={i} className="rounded-2xl border border-ink-200/70 bg-surface p-6">
                     <StarRating value={r.rating} size={14} />
                     <blockquote className="mt-3 leading-relaxed text-ink-700">“{r.text}”</blockquote>
                     <figcaption className="mt-4 flex items-center gap-3">

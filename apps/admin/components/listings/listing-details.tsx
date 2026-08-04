@@ -1,9 +1,12 @@
 import { Badge } from '@/components/ui/badge';
+import { TOUR_TYPE_SHORT } from '@/lib/tour-types';
 
 /** Tour-type chips shared by the listings table and the listing detail page. */
 const TOUR_TYPE_BADGE: Record<string, { label: string; variant: 'brand' | 'info' }> = {
-  'Campus tour': { label: 'In-person', variant: 'brand' },
-  'Video chat': { label: 'Video', variant: 'info' },
+  // Keys are the STORED listing values — see lib/tour-types.ts. Labels are display only.
+  'Campus tour': { label: TOUR_TYPE_SHORT['Campus tour'], variant: 'brand' },
+  'Video chat': { label: TOUR_TYPE_SHORT['Video chat'], variant: 'info' },
+  Consultancy: { label: TOUR_TYPE_SHORT.Consultancy, variant: 'info' },
 };
 
 export function TourTypeBadges({ tourTypes }: { tourTypes: string[] }) {

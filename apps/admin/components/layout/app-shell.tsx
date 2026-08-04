@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (!ready || !user) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-white">
+      <div className="flex min-h-dvh items-center justify-center bg-surface">
         <div className="animate-pulse">
           <Logo size={112} showWordmark={false} />
         </div>
@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebarW = collapsed ? 'lg:w-[var(--sidebar-w-collapsed)]' : 'lg:w-[var(--sidebar-w)]';
 
   return (
-    <div className="min-h-dvh bg-white">
+    <div className="min-h-dvh bg-surface">
       {/* Desktop sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden overflow-hidden transition-[width] duration-300 ease-premium lg:block ${sidebarW}`}
@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-ink-950/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside

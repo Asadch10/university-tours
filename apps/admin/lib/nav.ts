@@ -130,10 +130,10 @@ export const NAV: NavSection[] = [
       },
       {
         href: '/commission',
-        label: 'Commission',
+        label: 'Price & commission',
         icon: Percent,
         permissions: ['commission.set'],
-        desc: 'Set the single global commission %',
+        desc: 'Per-tour-type pricing and the global commission %',
       },
     ],
   },

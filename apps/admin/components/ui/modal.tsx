@@ -44,7 +44,7 @@ export function Modal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
@@ -55,7 +55,7 @@ export function Modal({
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
-              'relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-ink-200/70 bg-white shadow-lift sm:rounded-3xl',
+              'relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-ink-200/70 bg-surface shadow-lift sm:rounded-3xl',
               maxW,
             )}
           >

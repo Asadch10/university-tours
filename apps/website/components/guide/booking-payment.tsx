@@ -8,6 +8,8 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { Loader2, Lock, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
 import { bookingsApi } from '@/lib/client-api';
+import { stripeAppearanceFor } from '@/lib/stripe-appearance';
+import { useTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 
 // Cache one Stripe.js loader per publishable key across mounts.
@@ -34,8 +36,9 @@ export interface BookingPaymentProps {
 
 export function BookingPayment(props: BookingPaymentProps) {
   const stripePromise = useMemo(() => stripeFor(props.publishableKey), [props.publishableKey]);
+  const { theme } = useTheme();
   return (
-    <div className="mt-6 rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card">
+    <div className="mt-6 rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card">
       <button
         type="button"
         onClick={props.onBack}
@@ -43,19 +46,17 @@ export function BookingPayment(props: BookingPaymentProps) {
       >
         <ArrowLeft size={15} /> Back
       </button>
-      <h3 className="font-display text-xl font-bold text-maroon-900">Confirm and pay</h3>
+      <h3 className="font-display text-xl font-bold text-brand">Confirm and pay</h3>
       <p className="mt-1.5 text-sm text-ink-600">
         You&apos;re authorizing <span className="font-semibold text-ink-900">{formatPrice(props.amountCents)}</span>. Your card
         is only charged once {props.guideName.split(' ')[0]} accepts your {props.tourLabel.toLowerCase()}.
       </p>
       <Elements
+        key={theme}
         stripe={stripePromise}
         options={{
           clientSecret: props.clientSecret,
-          appearance: {
-            theme: 'stripe',
-            variables: { colorPrimary: '#7a1128', borderRadius: '12px', fontFamily: 'inherit' },
-          },
+          appearance: stripeAppearanceFor(theme),
         }}
       >
         <PaymentForm {...props} />

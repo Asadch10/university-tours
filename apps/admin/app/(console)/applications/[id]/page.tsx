@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { timeAgo } from '@/lib/utils';
 import { useGuideApplications, useGuideApplicationActions, type GuideApplication } from '@/lib/queries';
 import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
+import { tourTypeLabel } from '@/lib/tour-types';
 
 // Field key → label, in the order shown (empty values skipped).
 const DETAIL_FIELDS: [string, string][] = [
@@ -102,7 +103,7 @@ export default function ApplicationDetailPage() {
   if (!app) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
+        <div className="rounded-2xl border border-ink-200/70 bg-surface p-10 text-center">
           <p className="font-semibold text-ink-900">Application not found</p>
           <p className="mt-1 text-sm text-ink-500">It may have been removed, or the link is invalid.</p>
           <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/applications')}>
@@ -149,7 +150,7 @@ export default function ApplicationDetailPage() {
     <RequirePermission anyOf={['applications.decide']}>
       <div className="space-y-6">
         {/* Header */}
-        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft">
+        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-surface shadow-soft">
           <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <Avatar name={app.applicant} size={60} ring />
@@ -180,7 +181,7 @@ export default function ApplicationDetailPage() {
         </section>
 
         {/* Photos & identity */}
-        <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+        <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
           <p className="inline-flex items-center gap-2 text-2xs font-semibold uppercase tracking-wider text-ink-500">
             <ImageIcon size={13} /> Photos &amp; identity
           </p>
@@ -219,7 +220,7 @@ export default function ApplicationDetailPage() {
         </section>
 
         {/* Listing */}
-        <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+        <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
           <p className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Listing</p>
           <p className="mt-1.5 text-lg font-semibold text-ink-900">{title}</p>
           {app.intro && <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-600">{app.intro}</p>}
@@ -227,7 +228,8 @@ export default function ApplicationDetailPage() {
             <div className="mt-3 flex flex-wrap gap-1.5">
               {app.tourTypes.map((t) => (
                 <span key={t} className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800">
-                  {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
+                  {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />}{' '}
+                  {tourTypeLabel(t)}
                 </span>
               ))}
             </div>
@@ -236,7 +238,7 @@ export default function ApplicationDetailPage() {
 
         {/* Application answers */}
         {rowsInfo.length > 0 && (
-          <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+          <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
             <p className="mb-4 text-2xs font-semibold uppercase tracking-wider text-ink-500">Application answers</p>
             <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
               {rowsInfo.map(([label, value]) => (
@@ -251,7 +253,7 @@ export default function ApplicationDetailPage() {
 
         {/* Custom (keyless) questionnaire answers */}
         {answers.length > 0 && (
-          <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+          <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
             <p className="mb-4 text-2xs font-semibold uppercase tracking-wider text-ink-500">More questions</p>
             <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
               {answers.map((a) => (

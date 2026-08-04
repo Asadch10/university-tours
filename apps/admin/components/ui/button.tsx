@@ -12,11 +12,11 @@ const buttonVariants = cva(
         primary: 'bg-brand-500 text-white shadow-soft hover:bg-brand-600 hover:shadow-lift',
         gold: 'bg-gold-sheen text-brand-950 shadow-soft hover:shadow-glow',
         outline:
-          'border border-ink-200 bg-white text-ink-800 hover:border-brand-800/40 hover:bg-brand-50/60',
+          'border border-ink-200 bg-surface text-ink-800 hover:border-brand-800/40 hover:bg-brand-50/60',
         ghost: 'text-ink-700 hover:bg-ink-100',
         subtle: 'bg-brand-50 text-brand-900 hover:bg-brand-100',
-        danger: 'bg-danger text-white shadow-soft hover:brightness-95',
-        'danger-outline': 'border border-danger/30 bg-white text-danger hover:bg-danger/5',
+        danger: 'bg-danger-solid text-white shadow-soft hover:brightness-95',
+        'danger-outline': 'border border-danger/30 bg-surface text-danger hover:bg-danger-solid/5',
       },
       size: {
         sm: 'h-9 px-3.5 text-sm',

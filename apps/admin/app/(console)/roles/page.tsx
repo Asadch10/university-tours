@@ -99,7 +99,7 @@ export default function RolesPage() {
         {tab === 'ADMINS' && (
           <Card>
             <CardBody className="space-y-3">
-              <div className="flex items-start gap-2 rounded-xl border border-info/20 bg-info/5 px-4 py-2.5 text-sm text-ink-700">
+              <div className="flex items-start gap-2 rounded-xl border border-info/20 bg-info-solid/5 px-4 py-2.5 text-sm text-ink-700">
                 <ShieldCheck size={16} className="mt-0.5 shrink-0 text-info" />
                 Single-admin mode — all console actions are available to the signed-in admin.
               </div>

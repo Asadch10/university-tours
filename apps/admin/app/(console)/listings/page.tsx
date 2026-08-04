@@ -19,6 +19,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import type { Listing, ListingStatus } from '@/lib/data';
 import { useListings, useListingActions } from '@/lib/queries';
 import { formatDate } from '@/lib/utils';
+import { TOUR_TYPE_LABEL } from '@/lib/tour-types';
 
 type StatusFilter = 'all' | ListingStatus;
 
@@ -98,11 +99,13 @@ export default function ListingsPage() {
     {
       key: 'listingNo',
       header: 'ID',
+      hideOnMobile: true,
       cell: (l) => <span className="font-mono text-xs font-semibold text-brand-900">L-{l.listingNo}</span>,
     },
     {
       key: 'title',
       header: 'Listing',
+      mobilePrimary: true,
       cell: (l) => (
         <div className="min-w-0">
           <p className="truncate font-semibold text-ink-900">{l.title}</p>
@@ -177,7 +180,7 @@ export default function ListingsPage() {
                 variant="ghost"
                 size="icon-sm"
                 aria-label={l.status === 'UNDER_REVIEW' ? 'Approve & publish' : 'Re-publish'}
-                className="text-success hover:bg-success/10"
+                className="text-success hover:bg-success-solid/10"
                 onClick={() => handlePublish(l)}
               >
                 <CheckCircle2 size={15} />
@@ -188,7 +191,7 @@ export default function ListingsPage() {
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Suspend"
-                className="text-danger hover:bg-danger/10"
+                className="text-danger hover:bg-danger-solid/10"
                 onClick={() => handleSuspend(l)}
               >
                 <Ban size={15} />
@@ -218,8 +221,10 @@ export default function ListingsPage() {
               className="sm:w-48"
             >
               <option value="all">All tour types</option>
-              <option value="Campus tour">In-person tour</option>
-              <option value="Video chat">Video chat</option>
+              {/* value = the stored/wire string (frozen); text = display label. */}
+              <option value="Campus tour">{TOUR_TYPE_LABEL['Campus tour']}</option>
+              <option value="Video chat">{TOUR_TYPE_LABEL['Video chat']}</option>
+              <option value="Consultancy">{TOUR_TYPE_LABEL.Consultancy}</option>
             </Select>
             <SearchInput
               value={query}

@@ -24,7 +24,7 @@ function Card({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="relative flex justify-center px-0 pt-6 sm:px-4 sm:pt-14">
-        <div className="flex min-h-[calc(100dvh-var(--header-h)-1.5rem)] w-full max-w-[540px] flex-col bg-white px-5 py-8 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:min-h-[auto] sm:rounded-2xl sm:px-12 sm:py-12">
+        <div className="flex min-h-[calc(100dvh-var(--header-h)-1.5rem)] w-full max-w-[540px] flex-col bg-surface px-5 py-8 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:min-h-[auto] sm:rounded-2xl sm:px-12 sm:py-12">
           {children}
           {/* Brand accent bar (matches the sample layout) */}
           <div className="mt-auto pt-10">
@@ -108,7 +108,7 @@ export function VerifyEmailView() {
     return (
       <Card>
         <div className="flex flex-col items-center py-6 text-center">
-          <Loader2 size={40} className="animate-spin text-maroon-900" />
+          <Loader2 size={40} className="animate-spin text-brand" />
           <h1 className="mt-6 font-display text-2xl font-bold text-ink-900">Verifying your email…</h1>
           <p className="mt-3 text-sm text-ink-600">Hang tight, this only takes a moment.</p>
         </div>
@@ -121,7 +121,7 @@ export function VerifyEmailView() {
     return (
       <Card>
         <div className="flex flex-col py-2">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-green-50 text-green-600">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-verified">
             <CheckCircle2 size={30} />
           </div>
           <h1 className="mt-7 font-display text-3xl font-bold leading-tight text-ink-900">
@@ -149,7 +149,7 @@ export function VerifyEmailView() {
     return (
       <Card>
         <div className="flex flex-col py-2">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-tint text-brand">
             <AlertCircle size={30} />
           </div>
           <h1 className="mt-7 font-display text-3xl font-bold leading-tight text-ink-900">
@@ -167,11 +167,11 @@ export function VerifyEmailView() {
             {resendState === 'sent' ? 'Verification email sent' : 'Send a new link'}
           </button>
           {resendState === 'error' && (
-            <p className="mt-3 text-sm text-maroon-900">Couldn’t resend just now — please try again.</p>
+            <p className="mt-3 text-sm text-brand">Couldn’t resend just now — please try again.</p>
           )}
 
           <p className="mt-6 text-sm text-ink-500">
-            <Link href="/login" className="font-semibold text-maroon-900 hover:underline">
+            <Link href="/login" className="font-semibold text-brand hover:underline">
               Back to log in
             </Link>
           </p>
@@ -184,7 +184,7 @@ export function VerifyEmailView() {
   return (
     <Card>
       <div className="flex flex-col py-2">
-        <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+        <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-tint text-brand">
           <MailCheck size={30} />
         </div>
 
@@ -209,15 +209,15 @@ export function VerifyEmailView() {
               type="button"
               onClick={handleResend}
               disabled={resendState === 'sending'}
-              className="font-semibold text-maroon-900 hover:underline disabled:opacity-60"
+              className="font-semibold text-brand hover:underline disabled:opacity-60"
             >
               {resendState === 'sending' ? 'Resending…' : resendState === 'sent' ? 'Resend again' : 'Resend email'}
             </button>
             {resendState === 'sent' && (
-              <span className="ml-2 font-semibold text-green-600">Sent — check your inbox.</span>
+              <span className="ml-2 font-semibold text-verified">Sent — check your inbox.</span>
             )}
             {resendState === 'error' && (
-              <span className="ml-2 text-maroon-900">Couldn’t resend — try again.</span>
+              <span className="ml-2 text-brand">Couldn’t resend — try again.</span>
             )}
           </p>
           <p>
@@ -225,7 +225,7 @@ export function VerifyEmailView() {
             <button
               type="button"
               onClick={handleFixEmail}
-              className="font-semibold text-maroon-900 hover:underline"
+              className="font-semibold text-brand hover:underline"
             >
               Fix it
             </button>

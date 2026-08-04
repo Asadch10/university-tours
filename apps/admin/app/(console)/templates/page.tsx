@@ -240,7 +240,7 @@ export default function TemplatesPage() {
                 <p className="text-xs font-semibold text-ink-700">Live preview</p>
                 <span className="text-2xs text-ink-400">with sample data</span>
               </div>
-              <div className="overflow-hidden rounded-xl border border-ink-200 bg-white">
+              <div className="overflow-hidden rounded-xl border border-ink-200 bg-surface">
                 <div className="border-b border-ink-100 bg-ink-50/60 px-3 py-2 text-xs">
                   <span className="text-ink-400">Subject:</span>{' '}
                   <span className="font-medium text-ink-800">{renderPreview(subject, active.sampleVars) || '—'}</span>
@@ -250,7 +250,7 @@ export default function TemplatesPage() {
                     title="Email preview"
                     sandbox=""
                     srcDoc={renderPreview(body, active.sampleVars)}
-                    className="h-[28rem] w-full bg-white"
+                    className="h-[28rem] w-full bg-surface"
                   />
                 ) : (
                   <div className="px-4 py-4">

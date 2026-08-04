@@ -16,7 +16,7 @@ const MapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#e8e0d8]">
+      <div className="flex h-full w-full items-center justify-center bg-surface-2">
         <p className="text-sm text-ink-500">Loading map…</p>
       </div>
     ),
@@ -50,17 +50,17 @@ export function ExploreScreen() {
 
   return (
     /* Full viewport height below the fixed header — edge-to-edge, no card. */
-    <div className="relative flex h-[calc(100dvh-var(--header-h))] mt-[var(--header-h)] overflow-hidden bg-white">
+    <div className="relative flex h-[calc(100dvh-var(--header-h))] mt-[var(--header-h)] overflow-hidden bg-surface">
 
       {/* ── Left sidebar ─────────────────────────────────────────────── */}
       <div
-        className={`${view === 'list' ? 'flex' : 'hidden'} w-full shrink-0 flex-col border-r border-ink-100 bg-white lg:flex lg:w-[380px] xl:w-[420px]`}
+        className={`${view === 'list' ? 'flex' : 'hidden'} w-full shrink-0 flex-col border-r border-ink-100 bg-surface lg:flex lg:w-[380px] xl:w-[420px]`}
       >
 
         {/* Search row */}
         <div className="shrink-0 border-b border-ink-100 p-4">
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 transition-[border-color,box-shadow] focus-within:border-maroon-800/60 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.08)]">
+            <div className="flex flex-1 items-center gap-2 rounded-xl border border-ink-200 bg-surface px-3 py-2.5 transition-[border-color,box-shadow] focus-within:border-brand/60 focus-within:shadow-[0_0_0_3px_rgba(240,135,155,0.14)]">
               <Search size={14} className="shrink-0 text-ink-400" />
               <input
                 value={search}
@@ -81,7 +81,7 @@ export function ExploreScreen() {
             </div>
             <button
               type="button"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-800"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-surface text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-800"
               aria-label="Filter schools"
             >
               <SlidersHorizontal size={16} />
@@ -109,7 +109,7 @@ export function ExploreScreen() {
                   type="button"
                   onClick={() => handleSelect(u)}
                   className={`flex w-full items-center gap-3.5 border-b border-ink-50 px-5 py-3.5 text-left transition-colors hover:bg-ink-50 ${
-                    isActive ? 'border-l-[3px] border-l-maroon-900 bg-maroon-50/50 pl-[17px]' : ''
+                    isActive ? 'border-l-[3px] border-l-maroon-900 bg-brand-tint/50 pl-[17px]' : ''
                   }`}
                 >
                   {u.image ? (
@@ -127,7 +127,7 @@ export function ExploreScreen() {
                   <div className="min-w-0">
                     <p
                       className={`truncate text-sm font-semibold leading-snug ${
-                        isActive ? 'text-maroon-900' : 'text-ink-900'
+                        isActive ? 'text-brand' : 'text-ink-900'
                       }`}
                     >
                       {u.name}
@@ -163,7 +163,7 @@ export function ExploreScreen() {
 
         {/* Detail panel */}
         <div
-          className={`absolute inset-y-0 right-0 z-[1100] flex w-full flex-col overflow-y-auto bg-white shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:w-[380px] xl:w-[440px] ${
+          className={`absolute inset-y-0 right-0 z-[1100] flex w-full flex-col overflow-y-auto bg-surface shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:w-[380px] xl:w-[440px] ${
             selected ? 'translate-x-0' : 'translate-x-full'
           }`}
           aria-hidden={!selected}
@@ -202,7 +202,7 @@ export function ExploreScreen() {
                     setView('list');
                   }}
                   aria-label="Close detail panel"
-                  className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow transition-colors hover:bg-white"
+                  className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-ink-800 shadow transition-colors hover:bg-surface"
                 >
                   <X size={15} />
                 </button>
@@ -225,7 +225,7 @@ export function ExploreScreen() {
 
                 <Link
                   href={selected.href}
-                  className="mt-2.5 inline-flex items-center gap-1.5 text-[0.8rem] font-medium text-maroon-900 hover:underline"
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-[0.8rem] font-medium text-brand hover:underline"
                 >
                   Visit official website <ExternalLink size={11} />
                 </Link>
@@ -272,7 +272,7 @@ export function ExploreScreen() {
         <button
           type="button"
           onClick={() => setView((v) => (v === 'list' ? 'map' : 'list'))}
-          className="absolute bottom-5 left-1/2 z-[1050] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors hover:bg-ink-800 lg:hidden"
+          className="absolute bottom-5 left-1/2 z-[1050] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-maroon-gradient px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors hover:brightness-110 lg:hidden"
         >
           {view === 'list' ? (
             <>

@@ -37,7 +37,7 @@ export default function InvoiceDetailPage() {
   if (isError || !inv) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
+        <div className="rounded-2xl border border-ink-200/70 bg-surface p-10 text-center">
           <p className="font-semibold text-ink-900">Invoice not found</p>
           <p className="mt-1 text-sm text-ink-500">It may have been removed, or the link is invalid.</p>
           <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/transactions')}>
@@ -71,7 +71,7 @@ export default function InvoiceDetailPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className="space-y-6">
             {/* Parties */}
-            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
               <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Billed to / paid to</h2>
               <div className="mt-4 grid gap-6 sm:grid-cols-2">
                 <Party label="Guest" name={inv.buyer.name} email={inv.buyer.email} />
@@ -80,7 +80,7 @@ export default function InvoiceDetailPage() {
             </section>
 
             {/* Booking details */}
-            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
               <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Booking</h2>
               <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
                 <Detail label="Service" value={humanize(inv.serviceType)} />
@@ -117,7 +117,7 @@ export default function InvoiceDetailPage() {
 
             {/* Ledger */}
             {inv.ledger.length > 0 && (
-              <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+              <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
                 <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Ledger</h2>
                 <div className="mt-3 divide-y divide-ink-100">
                   {inv.ledger.map((l) => (
@@ -133,7 +133,7 @@ export default function InvoiceDetailPage() {
 
             {/* Refunds */}
             {inv.refunds.length > 0 && (
-              <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+              <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
                 <h2 className="text-2xs font-semibold uppercase tracking-wider text-ink-500">Refunds</h2>
                 <div className="mt-3 divide-y divide-ink-100">
                   {inv.refunds.map((r) => (
@@ -155,7 +155,7 @@ export default function InvoiceDetailPage() {
 
           {/* Payment method card */}
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <section className="rounded-2xl border border-ink-200/70 bg-white p-6">
+            <section className="rounded-2xl border border-ink-200/70 bg-surface p-6">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
                 <CreditCard size={18} />
               </span>

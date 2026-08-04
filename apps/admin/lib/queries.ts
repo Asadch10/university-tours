@@ -8,7 +8,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminApi, type SchoolPayload } from './api';
+import { adminApi, type SchoolPayload, type PriceBoundInput } from './api';
 import type {
   School,
   User,
@@ -552,6 +552,30 @@ export function useCommissionActions() {
       onSuccess: () => {
         // A rate change re-prices pending bookings — refresh everything that shows commission.
         for (const key of ['commission', 'commission-history', 'bookings', 'transactions', 'dashboard', 'guide-balances']) {
+          qc.invalidateQueries({ queryKey: [key] });
+        }
+      },
+    }),
+  };
+}
+
+// ─── Service pricing ──────────────────────────────────────────────────────────
+
+export function usePriceBounds() {
+  return useQuery({ queryKey: ['price-bounds'], queryFn: () => adminApi.priceBounds() });
+}
+
+export function usePricingHistory() {
+  return useQuery({ queryKey: ['pricing-history'], queryFn: () => adminApi.pricingHistory() });
+}
+
+export function usePriceBoundActions() {
+  const qc = useQueryClient();
+  return {
+    set: useMutation({
+      mutationFn: (input: PriceBoundInput) => adminApi.priceBoundsSet(input),
+      onSuccess: () => {
+        for (const key of ['price-bounds', 'pricing-history']) {
           qc.invalidateQueries({ queryKey: [key] });
         }
       },

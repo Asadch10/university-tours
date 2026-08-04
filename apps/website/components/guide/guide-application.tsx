@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { TOUR_TYPE_OPTIONS } from '@/lib/tour-types';
 import { universities } from '@/lib/data';
 import {
   accountApi,
@@ -26,7 +27,7 @@ import {
   type ServiceType,
 } from '@/lib/availability';
 
-const TOUR_TYPE_OPTIONS = ['Campus tour', 'Video chat', 'Consultancy'];
+// Options come from lib/tour-types: `value` is the persisted string, `label` is display.
 
 type Step = 'details' | 'paid' | 'photos';
 
@@ -37,7 +38,7 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 const inp =
-  'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+  'w-full rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';
 const sel = `${inp} cursor-pointer`;
 const area = `${inp} min-h-[110px] resize-y leading-relaxed`;
 
@@ -98,7 +99,7 @@ function CheckboxList({ name, options }: { name: string; options: string[] }) {
     <div className="space-y-1">
       {options.map((o) => (
         <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
-          <input type="checkbox" name={name} value={o} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
+          <input type="checkbox" name={name} value={o} className="h-4 w-4 rounded border-ink-300 text-brand accent-brand" />
           {o}
         </label>
       ))}
@@ -171,7 +172,7 @@ function QuestionInput({
               type="checkbox"
               checked={arr.includes(o)}
               onChange={(e) => onChange(e.target.checked ? [...arr, o] : arr.filter((x) => x !== o))}
-              className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+              className="h-4 w-4 rounded border-ink-300 text-brand accent-brand"
             />
             {o}
           </label>
@@ -483,17 +484,17 @@ export function GuideApplication() {
 
   if (loading) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-white pt-[var(--header-h)]">
-        <Loader2 className="animate-spin text-maroon-800" size={28} />
+      <main className="flex min-h-dvh items-center justify-center bg-surface pt-[var(--header-h)]">
+        <Loader2 className="animate-spin text-brand" size={28} />
       </main>
     );
   }
 
   return (
-    <main className="min-h-dvh bg-white pt-[var(--header-h)]">
+    <main className="min-h-dvh bg-surface pt-[var(--header-h)]">
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 lg:grid-cols-[300px_1fr]">
         {/* Left rail — steps */}
-        <aside className="border-b border-ink-100 bg-ivory/40 px-6 py-10 lg:min-h-[calc(100dvh-var(--header-h))] lg:border-b-0 lg:border-r lg:px-8">
+        <aside className="border-b border-ink-200/70 bg-canvas-alt px-6 py-10 lg:min-h-[calc(100dvh-var(--header-h))] lg:border-b-0 lg:border-r lg:px-8">
           <nav className="space-y-1" aria-label="Application steps">
             {STEPS.map((s) => {
               const on = step === s.key;
@@ -504,7 +505,7 @@ export function GuideApplication() {
                   onClick={() => setStep(s.key)}
                   className={cn(
                     'relative block w-full rounded-lg px-3 py-2.5 text-left text-lg font-medium transition-colors',
-                    on ? 'text-maroon-900' : 'text-ink-400 hover:bg-ink-50 hover:text-ink-700',
+                    on ? 'text-brand' : 'text-ink-400 hover:bg-ink-50 hover:text-ink-700',
                   )}
                 >
                   {on && <span className="absolute inset-y-1.5 left-0 w-1 rounded-full bg-maroon-900" aria-hidden />}
@@ -542,27 +543,27 @@ export function GuideApplication() {
                   <Select name="school" options={universities.map((u) => u.name)} onChange={() => clearErr('school')} />
                 )}
                 <label className="mt-2 flex cursor-pointer select-none items-center gap-2.5 text-sm text-ink-800">
-                  <input type="checkbox" checked={schoolNotListed} onChange={(e) => setSchoolNotListed(e.target.checked)} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
+                  <input type="checkbox" checked={schoolNotListed} onChange={(e) => setSchoolNotListed(e.target.checked)} className="h-4 w-4 rounded border-ink-300 text-brand accent-brand" />
                   My school is not listed, let me type my own
                 </label>
               </Field>
 
-              <Field id="f-tourType" label="Tour type" desc="Select which tours you can host. Campus tours are held in-person on campus, while video chats take place virtually. Hint: select both to increase your likelihood of getting bookings." required error={fieldErrors.tourType}>
+              <Field id="f-tourType" label="Tour type" desc="Select which tours you can host. In-person campus tours are held on campus, while virtual video chats take place online. Hint: select more than one to increase your likelihood of getting bookings." required error={fieldErrors.tourType}>
                 <div className="space-y-1">
                   {TOUR_TYPE_OPTIONS.map((o) => (
-                    <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
+                    <label key={o.value} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
                       <input
                         type="checkbox"
-                        checked={tourTypes.includes(o)}
+                        checked={tourTypes.includes(o.value)}
                         onChange={(e) => {
                           clearErr('tourType');
                           setTourTypes((prev) =>
-                            e.target.checked ? [...prev, o] : prev.filter((t) => t !== o),
+                            e.target.checked ? [...prev, o.value] : prev.filter((t) => t !== o.value),
                           );
                         }}
-                        className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+                        className="h-4 w-4 rounded border-ink-300 text-brand accent-brand"
                       />
-                      {o}
+                      {o.label}
                     </label>
                   ))}
                 </div>
@@ -604,11 +605,11 @@ export function GuideApplication() {
                   type="button"
                   onClick={() => idInput.current?.click()}
                   disabled={uploadingId}
-                  className="flex aspect-square w-full max-w-xs flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex aspect-square w-full max-w-xs flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-brand-muted hover:bg-brand-tint/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {uploadingId ? (
                     <>
-                      <Loader2 size={24} className="animate-spin text-maroon-800" />
+                      <Loader2 size={24} className="animate-spin text-brand" />
                       <span className="text-xs text-ink-400">Uploading…</span>
                     </>
                   ) : idPhoto ? (
@@ -648,9 +649,9 @@ export function GuideApplication() {
 
               <div id="f-agree" className="scroll-mt-28">
                 <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-ink-800">
-                  <input type="checkbox" checked={agree} onChange={(e) => { setAgree(e.target.checked); clearErr('agree'); }} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
+                  <input type="checkbox" checked={agree} onChange={(e) => { setAgree(e.target.checked); clearErr('agree'); }} className="h-4 w-4 rounded border-ink-300 text-brand accent-brand" />
                   By checking the box I agree to the{' '}
-                  <Link href="/terms" className="font-medium text-maroon-800 hover:underline">Independent Contractor Agreement</Link>
+                  <Link href="/terms" className="font-medium text-brand hover:underline">Independent Contractor Agreement</Link>
                 </label>
                 {fieldErrors.agree && <p className="mt-1.5 text-sm font-semibold text-red-600">{fieldErrors.agree}</p>}
               </div>
@@ -697,7 +698,7 @@ export function GuideApplication() {
                           Prepare for tours by thinking back to when you were applying to college and remember all
                           of the things you wanted to know and the questions you had. To help you get started, we
                           put together this{' '}
-                          <Link href="/resources" className="font-medium text-maroon-800 hover:underline">
+                          <Link href="/resources" className="font-medium text-brand hover:underline">
                             list of topics and questions
                           </Link>
                           .
@@ -707,7 +708,7 @@ export function GuideApplication() {
                       )}
                     </p>
                     <label className="mt-4 flex cursor-pointer select-none items-center gap-2.5 text-sm font-medium text-ink-800">
-                      <input type="checkbox" checked={!!paidAgreed[gg.key]} onChange={() => togglePaid(gg.key)} className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900" />
+                      <input type="checkbox" checked={!!paidAgreed[gg.key]} onChange={() => togglePaid(gg.key)} className="h-4 w-4 rounded border-ink-300 text-brand accent-brand" />
                       I understand and agree
                     </label>
                   </div>
@@ -743,7 +744,7 @@ export function GuideApplication() {
                     <button
                       type="button"
                       onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
-                      className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-red-600 shadow-soft transition-opacity hover:bg-white"
+                      className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-surface/90 text-red-600 shadow-soft transition-opacity hover:bg-surface"
                       aria-label="Remove photo"
                     >
                       ✕
@@ -755,11 +756,11 @@ export function GuideApplication() {
                   type="button"
                   onClick={() => photosInput.current?.click()}
                   disabled={uploadingPhotos}
-                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-brand-muted hover:bg-brand-tint/40 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {uploadingPhotos ? (
                     <>
-                      <Loader2 size={22} className="animate-spin text-maroon-800" />
+                      <Loader2 size={22} className="animate-spin text-brand" />
                       <span className="text-xs leading-tight text-ink-400">Uploading…</span>
                     </>
                   ) : (

@@ -46,7 +46,7 @@ export default function ContactDetailPage() {
 
   if (!m) {
     return (
-      <div className="rounded-2xl border border-ink-200/70 bg-white p-10 text-center">
+      <div className="rounded-2xl border border-ink-200/70 bg-surface p-10 text-center">
         <p className="font-semibold text-ink-900">Message not found</p>
         <p className="mt-1 text-sm text-ink-500">It may have been deleted, or the link is invalid.</p>
         <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/contact')}>
@@ -86,7 +86,7 @@ export default function ContactDetailPage() {
     <RequirePermission anyOf={['contact.view']}>
       <div className="space-y-6">
         {/* Header — summary banner */}
-        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white shadow-soft">
+        <section className="overflow-hidden rounded-2xl border border-ink-200/70 bg-surface shadow-soft">
           <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
@@ -110,14 +110,14 @@ export default function ContactDetailPage() {
               <button
                 type="button"
                 onClick={toggleRead}
-                className="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-900 shadow-soft transition-colors hover:bg-ink-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-surface px-4 py-2.5 text-sm font-semibold text-ink-900 shadow-soft transition-colors hover:bg-ink-50"
               >
                 {isNew ? <><CheckCircle2 size={15} /> Mark read</> : <><RotateCcw size={15} /> Mark unread</>}
               </button>
               <button
                 type="button"
                 onClick={del}
-                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-soft transition-colors hover:bg-red-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-surface px-4 py-2.5 text-sm font-semibold text-red-600 shadow-soft transition-colors hover:bg-red-50"
               >
                 <Trash2 size={15} /> Delete
               </button>
@@ -128,13 +128,13 @@ export default function ContactDetailPage() {
         {/* Details */}
         <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
           {/* Message */}
-          <section className="rounded-2xl border border-ink-200/70 bg-white p-6 shadow-soft">
+          <section className="rounded-2xl border border-ink-200/70 bg-surface p-6 shadow-soft">
             <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">Message</p>
             <p className="whitespace-pre-line text-[0.95rem] leading-relaxed text-ink-800">{m.message}</p>
           </section>
 
           {/* Meta */}
-          <aside className="space-y-4 rounded-2xl border border-ink-200/70 bg-white p-6 shadow-soft">
+          <aside className="space-y-4 rounded-2xl border border-ink-200/70 bg-surface p-6 shadow-soft">
             <Meta icon={User} label="Full name" value={m.name} />
             <Meta icon={Mail} label="Email" value={m.email} />
             <Meta icon={Tag} label="Topic" value={m.topic} />

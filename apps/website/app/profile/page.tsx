@@ -24,7 +24,7 @@ import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 
 const inputClasses =
-  'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+  'w-full rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';
 
 function Labeled({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
@@ -139,8 +139,8 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-ivory">
-        <Loader2 className="animate-spin text-maroon-800" size={28} />
+      <main className="flex min-h-dvh items-center justify-center bg-canvas">
+        <Loader2 className="animate-spin text-brand" size={28} />
       </main>
     );
   }
@@ -161,7 +161,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <main className="min-h-dvh bg-ivory/50 pb-20 pt-[calc(var(--header-h)+1.5rem)]">
+    <main className="min-h-dvh bg-canvas pb-20 pt-[calc(var(--header-h)+1.5rem)]">
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
         {/* Page heading */}
         <div className="mb-6">
@@ -172,7 +172,7 @@ export default function ProfilePage() {
         </div>
 
         {/* ── Header banner ───────────────────────────────────────────── */}
-        <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+        <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-card">
           <div className="relative h-32 bg-maroon-gradient sm:h-40">
             <div className="bg-grid absolute inset-0 opacity-20" aria-hidden />
             <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gold-500/15 blur-3xl" aria-hidden />
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => photoInput.current?.click()}
                     aria-label="Change photo"
-                    className="absolute -bottom-1.5 -right-1.5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 bg-white text-maroon-800 shadow-soft transition-colors hover:bg-maroon-50"
+                    className="absolute -bottom-1.5 -right-1.5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-ink-200 bg-surface text-brand shadow-soft transition-colors hover:bg-brand-tint"
                   >
                     <Camera size={16} />
                   </button>
@@ -213,7 +213,7 @@ export default function ProfilePage() {
 
               {reviews.length > 0 && (
                 <div className="pb-1">
-                  <div className="inline-flex items-center gap-3 rounded-2xl border border-ink-200 bg-white px-4 py-2.5 shadow-soft">
+                  <div className="inline-flex items-center gap-3 rounded-2xl border border-ink-200 bg-surface px-4 py-2.5 shadow-soft">
                     <span className="font-display text-2xl font-bold leading-none text-ink-900">
                       {avgRating.toFixed(1)}
                     </span>
@@ -240,9 +240,9 @@ export default function ProfilePage() {
           {/* Main column */}
           <div className="space-y-6">
             {/* Personal information */}
-            <section className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card sm:p-8">
+            <section className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card sm:p-8">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-tint text-brand">
                   <User size={17} />
                 </span>
                 <div>
@@ -275,9 +275,9 @@ export default function ProfilePage() {
             </section>
 
             {/* Bio */}
-            <section className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card sm:p-8">
+            <section className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card sm:p-8">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-tint text-brand">
                   <FileText size={17} />
                 </span>
                 <div>
@@ -315,7 +315,7 @@ export default function ProfilePage() {
           {/* Sidebar */}
           <aside className="space-y-6 lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
             {/* Quick links */}
-            <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+            <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-card">
               <p className="border-b border-ink-100 px-5 py-3.5 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">
                 Quick links
               </p>
@@ -324,16 +324,16 @@ export default function ProfilePage() {
                   <li key={l.href} className="border-b border-ink-100 last:border-b-0">
                     <Link
                       href={l.href}
-                      className="group flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-ivory/60"
+                      className="group flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-surface-2"
                     >
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-50 text-ink-500 transition-colors group-hover:bg-maroon-50 group-hover:text-maroon-800">
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink-50 text-ink-500 transition-colors group-hover:bg-brand-tint group-hover:text-brand">
                         <l.icon size={16} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-semibold text-ink-900">{l.label}</span>
                         <span className="block text-xs text-ink-500">{l.desc}</span>
                       </span>
-                      <ChevronRight size={16} className="shrink-0 text-ink-300 transition-colors group-hover:text-maroon-700" />
+                      <ChevronRight size={16} className="shrink-0 text-ink-300 transition-colors group-hover:text-brand" />
                     </Link>
                   </li>
                 ))}
@@ -350,7 +350,7 @@ export default function ProfilePage() {
           </div>
 
           {reviews.length === 0 ? (
-            <div className="mt-5 rounded-3xl border border-dashed border-ink-200 bg-white/60 p-12 text-center">
+            <div className="mt-5 rounded-3xl border border-dashed border-ink-200 bg-surface/60 p-12 text-center">
               <p className="text-sm font-medium text-ink-600">No reviews yet</p>
               <p className="mt-1 text-xs text-ink-400">
                 Reviews from guests you’ve hosted will appear here.
@@ -359,7 +359,7 @@ export default function ProfilePage() {
           ) : (
             <ul className="mt-5 grid gap-4 sm:grid-cols-2">
               {reviews.map((r) => (
-                <li key={r.id} className="rounded-3xl border border-ink-200/70 bg-white p-5 shadow-card">
+                <li key={r.id} className="rounded-3xl border border-ink-200/70 bg-surface p-5 shadow-card">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={r.buyer?.name ?? 'Guest'} size={36} />

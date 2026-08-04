@@ -40,7 +40,7 @@ export function BlogIndex() {
   }, [filter, query]);
 
   return (
-    <div className="bg-ivory">
+    <div className="bg-canvas">
       {/* Featured + sidebar */}
       <section className="blog-wrap pt-[calc(var(--header-h)+3rem)] pb-16 sm:pb-20">
         <div className="grid gap-10 lg:grid-cols-[1.6fr_1fr] lg:gap-14 xl:gap-20">
@@ -70,7 +70,7 @@ export function BlogIndex() {
                   onClick={() => setFilter(cat)}
                   className={cn(
                     'relative px-3 py-2 text-sm font-semibold transition-colors',
-                    active ? 'text-maroon-900' : 'text-ink-500 hover:text-ink-800',
+                    active ? 'text-brand' : 'text-ink-500 hover:text-ink-800',
                   )}
                 >
                   {cat}
@@ -92,7 +92,7 @@ export function BlogIndex() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search blogs"
-              className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-10 pr-4 text-sm text-ink-900 placeholder:text-ink-400 focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+              className="w-full rounded-full border border-ink-200 bg-surface py-2.5 pl-10 pr-4 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
             />
           </div>
         </div>
@@ -165,7 +165,7 @@ function SidebarItem({ post }: { post: BlogPost }) {
         />
       </div>
       <div className="min-w-0">
-        <h3 className="text-[0.95rem] font-bold leading-snug text-ink-900 transition-colors group-hover:text-maroon-900">
+        <h3 className="text-[0.95rem] font-bold leading-snug text-ink-900 transition-colors group-hover:text-brand">
           {post.title}
         </h3>
         <p className="mt-1 text-xs text-ink-500">{formatDate(post.date)}</p>
@@ -192,7 +192,7 @@ function PostCard({ post }: { post: BlogPost }) {
           <span className="h-1 w-1 rounded-full bg-ink-300" />
           <Badge variant="neutral">{post.category}</Badge>
         </div>
-        <h3 className="mt-2 font-display text-xl font-bold leading-snug text-ink-900 transition-colors group-hover:text-maroon-900">
+        <h3 className="mt-2 font-display text-xl font-bold leading-snug text-ink-900 transition-colors group-hover:text-brand">
           {post.title}
         </h3>
         <p className="mt-2 text-sm leading-relaxed text-ink-600">{post.excerpt}</p>

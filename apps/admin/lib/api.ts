@@ -255,6 +255,10 @@ export const adminApi = {
     request<{ commissionPct: number; affected: number }>('PUT', '/admin/commission', { commissionPct }),
   commissionHistory: () => request<CommissionChangeDto[]>('GET', '/admin/commission/history'),
 
+  priceBounds: () => request<PriceBoundDto[]>('GET', '/admin/price-bounds'),
+  priceBoundsSet: (b: PriceBoundInput) => request<PriceBoundDto>('PUT', '/admin/price-bounds', b),
+  pricingHistory: () => request<PricingChangeDto[]>('GET', '/admin/price-bounds/history'),
+
   settings: () => request<SettingsDto>('GET', '/admin/settings'),
   settingsSet: (b: Record<string, unknown>) => request('PUT', '/admin/settings', b),
 
@@ -638,6 +642,30 @@ export interface SettingsDto {
   refundWindowsJson: Record<string, unknown>;
   requestExpiryHours: number;
   maskingEnabled: boolean;
+}
+
+/** Suggested prices + the min/max a guide may charge, per tour type. */
+export interface PriceBoundDto {
+  serviceType: 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULTATION';
+  minCents: number;
+  maxCents: number;
+  suggested1hCents: number;
+  suggested2hCents: number;
+  /** False when these are defaults that have never been saved by an admin. */
+  configured: boolean;
+}
+
+export type PriceBoundInput = Omit<PriceBoundDto, 'configured'>;
+
+export interface PricingChangeDto {
+  id: string;
+  serviceType: string | null;
+  oldSuggested1hCents: number | null;
+  newSuggested1hCents: number | null;
+  oldSuggested2hCents: number | null;
+  newSuggested2hCents: number | null;
+  actor: string;
+  changedAt: string;
 }
 
 export interface CommissionChangeDto {

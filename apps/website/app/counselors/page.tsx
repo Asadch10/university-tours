@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { SimplePage } from '@/components/simple/simple-page';
-import { universities } from '@/lib/data';
+import { PHOTOS } from '@/lib/images';
 
 export const metadata: Metadata = {
   title: 'For college counselors',
@@ -13,8 +13,8 @@ export default function CounselorsPage() {
       eyebrow="For counselors"
       title="For college counselors"
       intro="Give your students an authentic look at campus life through private, student-led tours — and help them decide with confidence."
-      image={universities[9]?.image ?? ''}
-      imageAlt="A university campus quad"
+      image={PHOTOS.consultation.src}
+      imageAlt={PHOTOS.consultation.alt}
       cta={{ href: '/contact', label: 'Partner with us' }}
       points={[
         { title: 'Personalized visits', body: 'Match students with current guides at the schools on their list.' },

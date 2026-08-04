@@ -166,7 +166,7 @@ const EMAIL_TEMPLATES: EmailTemplateDef[] = [
       pillColor: '#92400e',
       summaryRows: bookingSummaryRowsHtml({
         ref: 'B-16',
-        service: 'Campus tour',
+        service: 'In-person campus tour',
         school: 'UCLA',
         whenText: 'Jul 14, 2026 · 08:30',
         durationText: '1 hour',
@@ -394,7 +394,7 @@ export async function sendPasswordResetEmail(opts: {
 
 export interface BookingEmailSummary {
   ref?: string | null; // human-friendly booking reference, e.g. "B-1"
-  service: string; // "Campus tour" | "Video chat" | "Consultancy"
+  service: string; // "In-person campus tour" | "Virtual video chat" | "Professional consultation"
   whenText: string; // "Aug 15, 2026 · 10:00 AM (ET)"
   durationText?: string | null;
   guests: number;

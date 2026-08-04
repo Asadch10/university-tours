@@ -203,7 +203,7 @@ export default function QuestionnairePage() {
                       setOverIndex(null);
                     }}
                     className={cn(
-                      'flex items-center gap-3 rounded-xl border bg-white p-3 shadow-soft transition-colors',
+                      'flex items-center gap-3 rounded-xl border bg-surface p-3 shadow-soft transition-colors',
                       'cursor-grab active:cursor-grabbing',
                       dragIndex === i ? 'opacity-50' : 'border-ink-200/70',
                       overIndex === i && dragIndex !== null && dragIndex !== i && 'border-brand-500 ring-2 ring-brand-500/20',
@@ -256,7 +256,7 @@ export default function QuestionnairePage() {
                           variant="ghost"
                           size="icon-sm"
                           aria-label="Delete"
-                          className="text-danger hover:bg-danger/10"
+                          className="text-danger hover:bg-danger-solid/10"
                           onClick={() => void removeQuestion(q)}
                         >
                           <Trash2 size={14} />
@@ -296,7 +296,7 @@ function PhotoCountCard({ value, onSave, saving }: { value: number; onSave: (n: 
             How many photos a guide must upload on the “Become a guide” Photos step.
           </p>
         </div>
-        <div className="flex items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <div>
             <label htmlFor="req-photos" className="mb-1 block text-xs font-semibold text-ink-600">
               Required photos

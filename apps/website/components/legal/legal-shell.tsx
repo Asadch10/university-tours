@@ -25,12 +25,12 @@ export function LegalShell({
   children: ReactNode;
 }) {
   return (
-    <main className="bg-white pt-[var(--header-h)]">
+    <main className="bg-surface pt-[var(--header-h)]">
       <div className="container-page py-12 sm:py-16">
         <div className="mx-auto max-w-4xl">
           {/* Eyebrow */}
           <div className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-ink-400">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand-tint text-brand">
               <Icon size={17} aria-hidden />
             </span>
             Legal
@@ -46,11 +46,12 @@ export function LegalShell({
           <div className="relative mt-8 aspect-[21/9] overflow-hidden rounded-3xl border border-ink-100 bg-ink-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={image} alt={imageAlt} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-ink-950/25 via-transparent to-transparent" aria-hidden />
+            <div className="absolute inset-0 bg-gradient-to-t from-canvas/25 via-transparent to-transparent" aria-hidden />
           </div>
 
           {/* Legal copy */}
-          <div className="prose prose-ink mt-12 max-w-none prose-headings:font-display prose-headings:text-ink-900 prose-a:font-medium prose-a:text-maroon-800 hover:prose-a:text-maroon-900">
+          {/* Colours come from the `--tw-prose-*` remap in tailwind.config.ts. */}
+          <div className="prose mt-12 max-w-none prose-headings:font-display prose-headings:text-ink-900 prose-a:font-medium prose-a:text-brand prose-strong:text-ink-900 hover:prose-a:text-brand-soft">
             {children}
           </div>
         </div>

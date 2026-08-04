@@ -4,13 +4,12 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { universities } from '@/lib/data';
+import { PHOTOS } from '@/lib/images';
 
 /* ─── Assets ─────────────────────────────────────────────────────────── */
 
-const HERO_BG =
-  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/c7/c6221e02913f46d88b662b1fede3a3c98bf15c?auto=format&fit=clip&h=2400&w=2400&s=b0d38cccc08ec7ca71c7034a23861467';
-const CAFE_IMG =
-  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/46/a5b16ba0daa36261805b1deeca4a58806334b1?auto=format&crop=edges&fit=crop&h=1200&w=1200&s=aeffcda886463e57f69498e89c4cd9de';
+const HERO_BG = PHOTOS.library.src;
+const CAFE_IMG = PHOTOS.studentsGroup.src;
 const SOCIAL_IMG =
   'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/51/e05564e60b1ec5a1a68e5c2d2f40238b309c23?auto=format&crop=edges&fit=crop&h=800&w=800&s=a0a680149ba1e38fd65e8761a1334d13';
 
@@ -72,7 +71,7 @@ export function ResourcesPage() {
   }
 
   return (
-    <div className="bg-white">
+    <div className="bg-surface">
       {/* Hero */}
       <section className="relative flex min-h-[46vh] items-center overflow-hidden pt-[var(--header-h)] sm:min-h-[58vh]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -96,7 +95,7 @@ export function ResourcesPage() {
             type="button"
             onClick={() => scrollBy(-1)}
             aria-label="Previous"
-            className="absolute left-3 top-[38%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:inline-flex sm:left-5"
+            className="absolute left-3 top-[38%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:inline-flex sm:left-5"
           >
             <ChevronLeft size={20} />
           </button>
@@ -121,7 +120,7 @@ export function ResourcesPage() {
                     className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
                   />
                 </div>
-                <h2 className="mt-5 font-display text-xl font-bold text-ink-900 transition-colors group-hover:text-maroon-900">
+                <h2 className="mt-5 font-display text-xl font-bold text-ink-900 transition-colors group-hover:text-brand">
                   {r.title}
                 </h2>
                 <p className="mt-3 text-[0.95rem] leading-relaxed text-ink-600">{r.body}</p>
@@ -133,7 +132,7 @@ export function ResourcesPage() {
             type="button"
             onClick={() => scrollBy(1)}
             aria-label="Next"
-            className="absolute right-3 top-[38%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:inline-flex sm:right-5"
+            className="absolute right-3 top-[38%] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-700 shadow-lift ring-1 ring-ink-200/60 transition-colors hover:bg-ink-50 sm:inline-flex sm:right-5"
           >
             <ChevronRight size={20} />
           </button>

@@ -61,11 +61,13 @@ export default function ApplicationsPage() {
     {
       key: 'appNo',
       header: 'ID',
+      hideOnMobile: true,
       cell: (a) => <span className="font-mono text-xs font-semibold text-brand-900">ID-{a.appNo}</span>,
     },
     {
       key: 'applicant',
       header: 'Applicant',
+      mobilePrimary: true,
       cell: (a) => (
         <div className="flex items-center gap-3">
           <Avatar name={a.applicant} size={38} />

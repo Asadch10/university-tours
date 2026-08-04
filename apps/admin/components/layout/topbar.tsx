@@ -8,6 +8,7 @@ import { useBreadcrumb } from '@/components/layout/breadcrumb';
 import { Avatar } from '@/components/ui/avatar';
 import { Dropdown } from '@/components/ui/dropdown';
 import { NotificationsMenu } from '@/components/layout/notifications-menu';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export function Topbar({
   collapsed,
@@ -28,7 +29,7 @@ export function Topbar({
   if (!user) return null;
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-ink-200/70 bg-white/90 px-3 backdrop-blur-xl sm:px-5">
+    <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-ink-200/70 bg-surface/90 px-3 backdrop-blur-xl sm:px-5">
       {/* Mobile menu / desktop collapse */}
       <button
         type="button"
@@ -82,6 +83,9 @@ export function Topbar({
           )}
         </ol>
       </nav>
+
+      {/* Theme */}
+      <ThemeToggle />
 
       {/* Notifications */}
       <NotificationsMenu />

@@ -43,7 +43,7 @@ export function PersonalWay() {
   const [active, setActive] = useState(1); // "Choose your own tour guide" open by default
 
   return (
-    <section className="bg-white py-10 sm:py-12">
+    <section className="bg-surface py-10 sm:py-12">
       <div className="container-page">
 
         {/* Heading */}

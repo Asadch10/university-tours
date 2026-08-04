@@ -10,7 +10,7 @@ export function UniversityCard({ u }: { u: University }) {
   return (
     <Link
       href={`/universities/${u.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1"
+      className="group relative flex flex-col overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1"
     >
       {/* Campus banner */}
       <div
@@ -68,7 +68,7 @@ export function UniversityCard({ u }: { u: University }) {
           </div>
           <div className="text-right">
             <p className="text-2xs uppercase tracking-wider text-ink-400">From</p>
-            <p className="font-display text-lg font-semibold text-maroon-900">
+            <p className="font-display text-lg font-semibold text-brand">
               {formatPrice(u.toursFrom)}
             </p>
           </div>

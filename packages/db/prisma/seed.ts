@@ -44,16 +44,20 @@ async function main() {
   console.log('Seeding database…');
 
   // --- Service price bounds ---
-  await prisma.servicePriceBound.upsert({
-    where: { serviceType: ServiceType.CAMPUS_TOUR },
-    update: {},
-    create: { serviceType: ServiceType.CAMPUS_TOUR, minCents: 2000, maxCents: 20000, suggested1hCents: 5000, suggested2hCents: 9000 },
-  });
-  await prisma.servicePriceBound.upsert({
-    where: { serviceType: ServiceType.VIDEO_CONSULTATION },
-    update: {},
-    create: { serviceType: ServiceType.VIDEO_CONSULTATION, minCents: 1500, maxCents: 15000, suggested1hCents: 4000, suggested2hCents: 7000 },
-  });
+  // Suggested prices per tour type. `update: {}` keeps any value an admin has already
+  // set from the console — re-seeding never overwrites a live configuration.
+  const PRICE_BOUNDS = [
+    { serviceType: ServiceType.CAMPUS_TOUR, minCents: 2000, maxCents: 20000, suggested1hCents: 8000, suggested2hCents: 16000 },
+    { serviceType: ServiceType.VIDEO_CONSULTATION, minCents: 1500, maxCents: 15000, suggested1hCents: 5000, suggested2hCents: 10000 },
+    { serviceType: ServiceType.CONSULTATION, minCents: 5000, maxCents: 60000, suggested1hCents: 20000, suggested2hCents: 40000 },
+  ];
+  for (const bound of PRICE_BOUNDS) {
+    await prisma.servicePriceBound.upsert({
+      where: { serviceType: bound.serviceType },
+      update: {},
+      create: bound,
+    });
+  }
 
   // --- Platform settings ---
   await prisma.settings.upsert({

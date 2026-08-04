@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/footer';
 import { ScrollToTop } from '@/components/layout/scroll-to-top';
 import { ChromeGate } from '@/components/layout/site-chrome';
 import { ToastProvider } from '@/lib/toast';
+import { ThemeProvider, THEME_SCRIPT } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -27,8 +28,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     title: 'University Campus Private Tours',
-    description:
-      'Private campus tours and video consultations with verified current students.',
+    description: 'Private campus tours and video consultations with verified current students.',
     siteName: 'University Campus Private Tours',
   },
   twitter: { card: 'summary_large_image' },
@@ -36,8 +36,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={cn(inter.variable, plexMono.variable)}>
-      <body className="min-h-dvh bg-ivory text-ink-900 antialiased" suppressHydrationWarning>
+    // suppressHydrationWarning on <html>: the pre-paint script below mutates its class
+    // list, so the client tree legitimately differs from the server HTML.
+    <html lang="en" className={cn(inter.variable, plexMono.variable)} suppressHydrationWarning>
+      <head>
+        {/* MUST run before first paint, otherwise a light-theme visitor sees a dark flash
+            on every navigation. Inline and synchronous by design. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
+      <body className="min-h-dvh bg-canvas text-ink-900 antialiased" suppressHydrationWarning>
         {/* Run before paint so the browser never restores a page to the footer on reload. */}
         <script
           dangerouslySetInnerHTML={{
@@ -51,15 +58,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        <ToastProvider>
-          <ChromeGate>
-            <Navbar />
-          </ChromeGate>
-          <main id="main">{children}</main>
-          <ChromeGate>
-            <Footer />
-          </ChromeGate>
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <ChromeGate>
+              <Navbar />
+            </ChromeGate>
+            <main id="main">{children}</main>
+            <ChromeGate>
+              <Footer />
+            </ChromeGate>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

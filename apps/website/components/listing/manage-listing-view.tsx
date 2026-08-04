@@ -46,6 +46,7 @@ import {
   type Availability,
   type ServiceType,
 } from '@/lib/availability';
+import { TOUR_TYPE_OPTIONS, tourTypeLabel } from '@/lib/tour-types';
 
 interface GuideListing {
   listingTitle?: string;
@@ -138,8 +139,8 @@ export function ManageListingView() {
 
   if (loading) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-white">
-        <Loader2 className="animate-spin text-maroon-800" size={28} />
+      <main className="flex min-h-dvh items-center justify-center bg-surface">
+        <Loader2 className="animate-spin text-brand" size={28} />
       </main>
     );
   }
@@ -149,7 +150,7 @@ export function ManageListingView() {
   const submitted = !!listing && !isDraft;
 
   return (
-    <main className="min-h-dvh bg-ivory/60 pb-24 pt-[calc(var(--header-h)+2.5rem)]">
+    <main className="min-h-dvh bg-canvas pb-24 pt-[calc(var(--header-h)+2.5rem)]">
       <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
         {/* ── Page header ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -169,14 +170,14 @@ export function ManageListingView() {
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink-900 shadow-soft transition-colors hover:bg-ink-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-ink-200 bg-surface px-4 py-2.5 text-sm font-semibold text-ink-900 shadow-soft transition-colors hover:bg-ink-50"
               >
                 <Pencil size={15} /> Edit
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmOpen(true)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-soft transition-colors hover:bg-red-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-red-200 bg-surface px-4 py-2.5 text-sm font-semibold text-red-600 shadow-soft transition-colors hover:bg-red-50"
               >
                 <Trash2 size={15} /> Delete
               </button>
@@ -207,13 +208,13 @@ export function ManageListingView() {
       {/* ── Delete confirmation ─────────────────────────────────────────── */}
       {confirmOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/40 px-6 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 px-6 backdrop-blur-[2px]"
           role="dialog"
           aria-modal="true"
           onClick={() => !deleting && setConfirmOpen(false)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
@@ -239,7 +240,7 @@ export function ManageListingView() {
                 onClick={del}
                 className={cn(
                   'inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors',
-                  deleting ? 'cursor-not-allowed bg-red-400' : 'bg-red-600 hover:bg-red-700',
+                  deleting ? 'cursor-not-allowed bg-red-400' : 'bg-danger-solid hover:bg-red-500',
                 )}
               >
                 {deleting ? (
@@ -283,7 +284,7 @@ function EmptyState() {
           </p>
           <Link
             href="/become-a-guide"
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-maroon-900 shadow-sm transition-colors hover:bg-ivory"
+            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-ivory px-6 py-3.5 text-sm font-semibold text-maroon-950 shadow-soft transition-colors hover:bg-white"
           >
             Start your listing <ArrowRight size={15} />
           </Link>
@@ -292,7 +293,7 @@ function EmptyState() {
         <div className="flex flex-col justify-center gap-5 border-t border-white/10 p-8 sm:p-10 lg:border-l lg:border-t-0">
           {perks.map((p) => (
             <div key={p.title} className="flex items-start gap-3.5">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-gold-300 ring-1 ring-inset ring-white/15">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-onbrand-accent ring-1 ring-inset ring-white/15">
                 <p.icon size={18} />
               </span>
               <div>
@@ -318,7 +319,7 @@ function DraftState({ listing, onDelete }: { listing: GuideListing; onDelete: ()
   const doneCount = listing.completedStep === 'paid' ? 2 : listing.completedStep === 'details' ? 1 : 0;
 
   return (
-    <section className="rounded-3xl border border-ink-200/70 bg-white p-8 shadow-card sm:p-10">
+    <section className="rounded-3xl border border-ink-200/70 bg-surface p-8 shadow-card sm:p-10">
       <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-xl">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-100 px-3 py-1 text-xs font-semibold text-gold-800 ring-1 ring-inset ring-gold-600/20">
@@ -342,7 +343,7 @@ function DraftState({ listing, onDelete }: { listing: GuideListing; onDelete: ()
                     className={cn(
                       'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
                       done && 'bg-maroon-900 text-white',
-                      current && 'bg-maroon-50 text-maroon-900 ring-2 ring-maroon-900',
+                      current && 'bg-brand-tint text-brand ring-2 ring-brand',
                       !done && !current && 'bg-ink-100 text-ink-400',
                     )}
                   >
@@ -369,7 +370,7 @@ function DraftState({ listing, onDelete }: { listing: GuideListing; onDelete: ()
           <div className="rounded-2xl bg-ink-50 p-4">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span className="text-ink-500">Progress</span>
-              <span className="text-maroon-900">{Math.round((doneCount / steps.length) * 100)}%</span>
+              <span className="text-brand">{Math.round((doneCount / steps.length) * 100)}%</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-200">
               <div
@@ -443,7 +444,7 @@ function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; st
             type="button"
             onClick={() => setI((c) => c - 1)}
             aria-label="Previous photo"
-            className="absolute left-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow-md transition hover:bg-white"
+            className="absolute left-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink-800 shadow-md transition hover:bg-surface"
           >
             <ChevronLeft size={18} />
           </button>
@@ -451,11 +452,11 @@ function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; st
             type="button"
             onClick={() => setI((c) => c + 1)}
             aria-label="Next photo"
-            className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow-md transition hover:bg-white"
+            className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink-800 shadow-md transition hover:bg-surface"
           >
             <ChevronRight size={18} />
           </button>
-          <span className="absolute right-3 top-3 rounded-full bg-ink-900/60 px-2 py-0.5 text-xs font-semibold text-white">
+          <span className="absolute right-3 top-3 rounded-full bg-canvas/80 px-2 py-0.5 text-xs font-semibold text-white">
             {idx + 1} / {count}
           </span>
           <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
@@ -465,7 +466,7 @@ function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; st
                 type="button"
                 onClick={() => setI(k)}
                 aria-label={`Go to photo ${k + 1}`}
-                className={cn('h-1.5 rounded-full transition-all', k === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/60 hover:bg-white/80')}
+                className={cn('h-1.5 rounded-full transition-all', k === idx ? 'w-5 bg-surface' : 'w-1.5 bg-surface/60 hover:bg-surface/80')}
               />
             ))}
           </div>
@@ -478,10 +479,10 @@ function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; st
 /* ═══ Edit modal — inline editing of any listing field ═════════════════ */
 
 const EDIT_INP =
-  'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+  'w-full rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';
 const EDIT_SEL = `${EDIT_INP} cursor-pointer`;
 const EDIT_AREA = `${EDIT_INP} min-h-[100px] resize-y leading-relaxed`;
-const TOUR_TYPE_OPTIONS = ['Campus tour', 'Video chat', 'Consultancy'];
+// TOUR_TYPE_OPTIONS is imported from lib/tour-types (stable value + display label).
 
 function EditField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -527,7 +528,7 @@ function EditQuestionInput({
               type="checkbox"
               checked={arr.includes(o)}
               onChange={(e) => onChange(e.target.checked ? [...arr, o] : arr.filter((x) => x !== o))}
-              className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+              className="h-4 w-4 rounded border-ink-300 text-brand accent-brand"
             />
             {o}
           </label>
@@ -704,18 +705,18 @@ function EditListingModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 px-4 py-6 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 px-4 py-6 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-label="Edit listing"
       onClick={() => !saving && onClose()}
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 bg-white px-6 py-4 sm:px-7">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink-100 bg-surface px-6 py-4 sm:px-7">
           <div>
             <h2 className="font-display text-lg font-semibold text-ink-900">Edit listing</h2>
             <p className="mt-0.5 text-sm text-ink-500">Saving sends your listing back for review.</p>
@@ -747,16 +748,18 @@ function EditListingModal({
           <EditField label="Tour type">
             <div className="space-y-1">
               {TOUR_TYPE_OPTIONS.map((o) => (
-                <label key={o} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
+                <label key={o.value} className="flex cursor-pointer select-none items-center gap-2.5 py-1 text-sm text-ink-800">
                   <input
                     type="checkbox"
-                    checked={tourTypes.includes(o)}
+                    checked={tourTypes.includes(o.value)}
                     onChange={(e) =>
-                      setTourTypes((prev) => (e.target.checked ? [...prev, o] : prev.filter((t) => t !== o)))
+                      setTourTypes((prev) =>
+                        e.target.checked ? [...prev, o.value] : prev.filter((t) => t !== o.value),
+                      )
                     }
-                    className="h-4 w-4 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+                    className="h-4 w-4 rounded border-ink-300 text-brand accent-brand"
                   />
-                  {o}
+                  {o.label}
                 </label>
               ))}
             </div>
@@ -785,7 +788,7 @@ function EditListingModal({
                     type="button"
                     onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
                     aria-label="Remove photo"
-                    className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-red-600 shadow-soft transition-opacity hover:bg-white"
+                    className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-surface/90 text-red-600 shadow-soft transition-opacity hover:bg-surface"
                   >
                     <X size={14} />
                   </button>
@@ -795,10 +798,10 @@ function EditListingModal({
                 type="button"
                 onClick={() => photosInput.current?.click()}
                 disabled={uploadingPhotos}
-                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-ink-300 text-center transition-colors hover:border-brand-muted hover:bg-brand-tint/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {uploadingPhotos ? (
-                  <Loader2 size={20} className="animate-spin text-maroon-800" />
+                  <Loader2 size={20} className="animate-spin text-brand" />
                 ) : (
                   <>
                     <ImagePlus size={20} className="text-ink-400" />
@@ -816,11 +819,11 @@ function EditListingModal({
               type="button"
               onClick={() => idInput.current?.click()}
               disabled={uploadingId}
-              className="flex aspect-[16/10] w-full max-w-xs flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-ink-300 bg-ink-50 text-center transition-colors hover:border-maroon-400 hover:bg-maroon-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex aspect-[16/10] w-full max-w-xs flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-ink-300 bg-ink-50 text-center transition-colors hover:border-brand-muted hover:bg-brand-tint/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {uploadingId ? (
                 <>
-                  <Loader2 size={22} className="animate-spin text-maroon-800" />
+                  <Loader2 size={22} className="animate-spin text-brand" />
                   <span className="text-xs text-ink-400">Uploading…</span>
                 </>
               ) : idPhoto ? (
@@ -837,7 +840,7 @@ function EditListingModal({
               <button
                 type="button"
                 onClick={() => idInput.current?.click()}
-                className="mt-2 text-sm font-semibold text-maroon-800 hover:underline"
+                className="mt-2 text-sm font-semibold text-brand hover:underline"
               >
                 Replace ID photo
               </button>
@@ -847,7 +850,7 @@ function EditListingModal({
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-ink-100 bg-white px-6 py-4 sm:px-7">
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-ink-100 bg-surface px-6 py-4 sm:px-7">
           <button
             type="button"
             disabled={saving}
@@ -916,7 +919,7 @@ const asText = (v: unknown): string =>
 /** A titled white card used for each résumé section. */
 function CvSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card sm:p-7">
+    <section className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card sm:p-7">
       <p className="mb-4 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{title}</p>
       {children}
     </section>
@@ -929,9 +932,10 @@ function TourTypeChips({ types }: { types: string[] }) {
       {types.map((t) => (
         <span
           key={t}
-          className="inline-flex items-center gap-1 rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900"
+          className="inline-flex items-center gap-1 rounded-full bg-brand-tint px-2.5 py-1 text-xs font-medium text-brand"
         >
-          {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />} {t}
+          {t === 'Video chat' ? <Video size={11} /> : t === 'Consultancy' ? <MessageSquare size={11} /> : <MapPin size={11} />}{' '}
+          {tourTypeLabel(t)}
         </span>
       ))}
     </div>
@@ -957,7 +961,7 @@ function ListingResume({ listing, name }: { listing: GuideListing; name: string 
     <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr] xl:grid-cols-[minmax(0,400px)_1fr]">
       {/* ── Left: identity card (sticky on desktop) ── */}
       <aside className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:self-start">
-        <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-card">
+        <section className="overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-card">
           <PhotoSlider photos={photos} status={status} fallbackInitial={(name.trim()[0] ?? 'U').toUpperCase()} />
           <div className="p-6">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{name || 'Your name'}</p>
@@ -995,10 +999,10 @@ function ListingResume({ listing, name }: { listing: GuideListing; name: string 
                 const a = availability[s]!;
                 return (
                   <div key={s}>
-                    <p className="text-sm font-bold text-maroon-900">{TOUR_TYPE_LABELS[s]}</p>
+                    <p className="text-sm font-bold text-brand">{TOUR_TYPE_LABELS[s]}</p>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {a.dates.map((d) => (
-                        <span key={d} className="inline-flex rounded-full bg-maroon-50 px-2.5 py-1 text-xs font-medium text-maroon-900">
+                        <span key={d} className="inline-flex rounded-full bg-brand-tint px-2.5 py-1 text-xs font-medium text-brand">
                           {labelForDate(d)}
                         </span>
                       ))}
@@ -1073,10 +1077,10 @@ function ListingResume({ listing, name }: { listing: GuideListing; name: string 
 function StatusChip({ status }: { status: string }) {
   const cfg =
     status === 'published'
-      ? { label: 'Live', cls: 'bg-emerald-600 text-white' }
+      ? { label: 'Live', cls: 'bg-verified-solid text-white' }
       : status === 'suspended'
-        ? { label: 'Suspended', cls: 'bg-red-600 text-white' }
-        : { label: 'Under review', cls: 'bg-white/95 text-ink-800' };
+        ? { label: 'Suspended', cls: 'bg-danger-solid text-white' }
+        : { label: 'Under review', cls: 'bg-surface/95 text-ink-800' };
   return (
     <span
       className={cn(
@@ -1084,7 +1088,7 @@ function StatusChip({ status }: { status: string }) {
         cfg.cls,
       )}
     >
-      {status === 'published' && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+      {status === 'published' && <span className="h-1.5 w-1.5 rounded-full bg-surface" />}
       {cfg.label}
     </span>
   );
@@ -1112,7 +1116,7 @@ function StatusPanel({
             <p className="mt-0.5 text-[0.82rem] leading-relaxed text-ink-600">
               Your listing was taken off the site by our team. If you think this is a mistake, or
               want to know what to fix,{' '}
-              <Link href="/contact" className="font-semibold text-maroon-900 underline-offset-2 hover:underline">
+              <Link href="/contact" className="font-semibold text-brand underline-offset-2 hover:underline">
                 contact support
               </Link>
               .
@@ -1136,7 +1140,7 @@ function StatusPanel({
         <span
           className={cn(
             'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-            published ? 'bg-emerald-100 text-emerald-700' : 'bg-gold-100 text-gold-800',
+            published ? 'bg-emerald-100 text-emerald-300' : 'bg-gold-100 text-gold-800',
           )}
         >
           {published ? <CheckCircle2 size={16} /> : <Clock size={16} />}

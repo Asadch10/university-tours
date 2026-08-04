@@ -8,6 +8,7 @@ import { Menu, X, ChevronDown, ChevronRight, LogOut } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { UserMenu, ACCOUNT_MENU } from '@/components/layout/user-menu';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuthUser, signOut, initialsOf, updateSessionUser } from '@/lib/auth';
 import { accountApi } from '@/lib/client-api';
 import { cn } from '@/lib/utils';
@@ -23,7 +24,9 @@ const NAV_LINKS = [
 function userLinksFor(hasListing?: boolean) {
   return [
     { href: '/search', label: 'Browse guides' },
-    hasListing ? { href: '/manage-listing', label: 'Manage listing' } : { href: '/become-a-guide', label: 'Become a guide' },
+    hasListing
+      ? { href: '/manage-listing', label: 'Manage listing' }
+      : { href: '/become-a-guide', label: 'Become a guide' },
     { href: '/my-tours', label: 'My tours' },
   ];
 }
@@ -75,15 +78,16 @@ function NavDropdown({
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const isActive = items.some(
-    (i) => pathname === i.href || pathname.startsWith(i.href + '/'),
-  );
+  const isActive = items.some((i) => pathname === i.href || pathname.startsWith(i.href + '/'));
 
   return (
     <div
       ref={ref}
       className="relative"
-      onMouseEnter={() => { cancelClose(); setOpen(true); }}
+      onMouseEnter={() => {
+        cancelClose();
+        setOpen(true);
+      }}
       onMouseLeave={scheduleClose}
     >
       <button
@@ -93,7 +97,7 @@ function NavDropdown({
         aria-expanded={open}
         className={cn(
           'group relative flex items-center gap-1 text-sm font-medium transition-colors duration-150',
-          isActive ? 'text-maroon-900' : 'text-ink-900 hover:text-ink-500',
+          isActive ? 'text-brand' : 'text-ink-600 hover:text-brand',
         )}
       >
         {label}
@@ -101,12 +105,12 @@ function NavDropdown({
           size={14}
           className={cn(
             'mt-0.5 transition-transform duration-200',
-            isActive ? 'text-maroon-900' : 'text-ink-500',
+            isActive ? 'text-brand' : 'text-ink-500',
             open ? 'rotate-180' : '',
           )}
         />
         {isActive && (
-          <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-maroon-900" />
+          <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-brand" />
         )}
       </button>
 
@@ -119,7 +123,7 @@ function NavDropdown({
             transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            className="absolute left-0 top-[calc(100%+0.4rem)] z-50 min-w-[200px] overflow-hidden rounded-2xl border border-ink-200/80 bg-white py-1.5 shadow-lift"
+            className="absolute left-0 top-[calc(100%+0.4rem)] z-50 min-w-[200px] overflow-hidden rounded-2xl border border-ink-200/80 bg-surface py-1.5 shadow-lift"
           >
             {items.map((item) => {
               const active = pathname === item.href;
@@ -130,7 +134,9 @@ function NavDropdown({
                   onClick={() => setOpen(false)}
                   className={cn(
                     'block px-5 py-2.5 text-sm transition-colors hover:bg-ink-50',
-                    active ? 'font-semibold text-ink-900' : 'font-medium text-ink-700 hover:text-ink-900',
+                    active
+                      ? 'font-semibold text-ink-900'
+                      : 'font-medium text-ink-700 hover:text-ink-900',
                   )}
                 >
                   {item.label}
@@ -172,11 +178,13 @@ export function Navbar() {
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [open]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-ink-100 bg-white">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-ink-200/70 bg-surface/85 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/75">
       <nav className="flex h-[var(--header-h)] w-full items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         {/* Logo */}
         <Logo />
@@ -191,49 +199,57 @@ export function Navbar() {
                 href={item.href}
                 className={cn(
                   'relative text-sm font-medium transition-colors duration-150',
-                  active ? 'text-maroon-900' : 'text-ink-900 hover:text-ink-500',
+                  active ? 'text-brand' : 'text-ink-600 hover:text-brand',
                 )}
               >
                 {item.label}
                 {active && (
-                  <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-maroon-900" />
+                  <span className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-brand" />
                 )}
               </Link>
             );
           })}
 
           {user ? (
-            <UserMenu user={user} />
+            <>
+              <ThemeToggle />
+              <UserMenu user={user} />
+            </>
           ) : (
             <>
               <NavDropdown label="About" items={ABOUT_ITEMS} pathname={pathname} />
               <NavDropdown label="Help" items={HELP_ITEMS} pathname={pathname} />
               <Link
                 href="/register"
-                className="text-sm font-medium text-ink-900 transition-colors duration-150 hover:text-ink-500"
+                className="text-sm font-medium text-ink-600 transition-colors duration-150 hover:text-brand"
               >
                 Sign up
               </Link>
               <Link
                 href="/login"
-                className="text-sm font-medium text-ink-900 transition-colors duration-150 hover:text-ink-500"
+                className="text-sm font-medium text-ink-600 transition-colors duration-150 hover:text-brand"
               >
                 Log in
               </Link>
+              <ThemeToggle />
             </>
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-ink-50 lg:hidden"
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* Mobile: toggle sits outside the drawer so it is always one tap away. */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <ThemeToggle />
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-ink-50 lg:hidden"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </nav>
 
       {/* Mobile drawer */}
@@ -246,7 +262,7 @@ export function Navbar() {
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="lg:hidden"
           >
-            <div className="container-page border-t border-ink-100 bg-white pb-6 pt-2">
+            <div className="container-page border-t border-ink-100 bg-surface pb-6 pt-2">
               <ul className="flex flex-col">
                 {(user ? userLinks : NAV_LINKS).map((item) => (
                   <li key={item.href}>

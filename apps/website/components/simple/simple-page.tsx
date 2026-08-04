@@ -27,11 +27,11 @@ export function SimplePage({
   children?: ReactNode;
 }) {
   return (
-    <main className="bg-white pt-[var(--header-h)]">
+    <main className="bg-surface pt-[var(--header-h)]">
       <div className="container-page py-12 sm:py-16">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-maroon-800">{eyebrow}</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">{eyebrow}</span>
             <h1 className="mt-4 font-display text-4xl font-semibold leading-[1.1] text-ink-900 sm:text-5xl">{title}</h1>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-600">{intro}</p>
             {cta && (
@@ -53,7 +53,7 @@ export function SimplePage({
         {points && points.length > 0 && (
           <div className="mt-16 grid gap-6 sm:grid-cols-3">
             {points.map((p) => (
-              <div key={p.title} className="rounded-2xl border border-ink-200/70 bg-white p-6 shadow-soft">
+              <div key={p.title} className="rounded-2xl border border-ink-200/70 bg-surface p-6 shadow-soft">
                 <h3 className="font-display text-lg font-semibold text-ink-900">{p.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-ink-600">{p.body}</p>
               </div>

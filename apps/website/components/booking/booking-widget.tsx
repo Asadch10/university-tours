@@ -77,19 +77,19 @@ export function BookingWidget({ a }: { a: Ambassador }) {
   // ---- Confirmation: booking requested ----
   if (status === 'requested') {
     return (
-      <div className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card">
+      <div className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card">
         <div className="flex flex-col items-center text-center">
           <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-verified/10 text-verified">
             <CalendarCheck size={26} />
           </span>
-          <h3 className="mt-4 font-display text-xl font-bold text-maroon-900">Request sent</h3>
+          <h3 className="mt-4 font-display text-xl font-bold text-brand">Request sent</h3>
           <p className="mt-1.5 text-sm text-ink-600">
             {firstName} has been notified and typically responds {a.responseTime}. You won’t be charged
             until they accept.
           </p>
         </div>
 
-        <dl className="mt-5 space-y-2.5 rounded-2xl bg-cream/60 p-4 text-sm">
+        <dl className="mt-5 space-y-2.5 rounded-2xl bg-canvas-alt/60 p-4 text-sm">
           <div className="flex justify-between gap-4">
             <dt className="text-ink-500">Service</dt>
             <dd className="text-right font-medium text-ink-900">{serviceLabel}</dd>
@@ -104,7 +104,7 @@ export function BookingWidget({ a }: { a: Ambassador }) {
           </div>
           <div className="flex justify-between gap-4 border-t border-ink-200/70 pt-2.5">
             <dt className="text-ink-500">Total if accepted</dt>
-            <dd className="text-right font-semibold text-maroon-900">{formatPrice(price)}</dd>
+            <dd className="text-right font-semibold text-brand">{formatPrice(price)}</dd>
           </div>
         </dl>
 
@@ -118,12 +118,12 @@ export function BookingWidget({ a }: { a: Ambassador }) {
   // ---- Confirmation: message sent ----
   if (status === 'messaged') {
     return (
-      <div className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card">
+      <div className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card">
         <div className="flex flex-col items-center text-center">
-          <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-maroon-50 text-maroon-800">
+          <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-brand-tint text-brand">
             <Send size={24} />
           </span>
-          <h3 className="mt-4 font-display text-xl font-bold text-maroon-900">Message sent</h3>
+          <h3 className="mt-4 font-display text-xl font-bold text-brand">Message sent</h3>
           <p className="mt-1.5 text-sm text-ink-600">
             Your message is on its way to {firstName}. You’ll get a reply {a.responseTime}.
           </p>
@@ -138,15 +138,15 @@ export function BookingWidget({ a }: { a: Ambassador }) {
   // ---- Message composer ----
   if (view === 'message') {
     return (
-      <form onSubmit={sendMessage} className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card">
+      <form onSubmit={sendMessage} className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card">
         <button
           type="button"
           onClick={() => setView('form')}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 transition-colors hover:text-maroon-900"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 transition-colors hover:text-brand"
         >
           <ArrowLeft size={16} /> Back
         </button>
-        <h3 className="mt-3 font-display text-xl font-bold text-maroon-900">Message {firstName}</h3>
+        <h3 className="mt-3 font-display text-xl font-bold text-brand">Message {firstName}</h3>
         <p className="mt-1 text-sm text-ink-600">
           Ask a question before you book — no charge for messaging.
         </p>
@@ -160,7 +160,7 @@ export function BookingWidget({ a }: { a: Ambassador }) {
           rows={5}
           required
           placeholder={`Hi ${firstName}, I'd love to hear about life at ${a.university}…`}
-          className="mt-4 w-full resize-none rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+          className="mt-4 w-full resize-none rounded-2xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
         />
         <Button
           type="submit"
@@ -185,10 +185,10 @@ export function BookingWidget({ a }: { a: Ambassador }) {
 
   // ---- Booking form ----
   return (
-    <form onSubmit={submitRequest} className="rounded-3xl border border-ink-200/70 bg-white p-6 shadow-card">
+    <form onSubmit={submitRequest} className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card">
       <div className="flex items-baseline justify-between">
         <p>
-          <span className="font-display text-3xl font-bold text-maroon-900">{formatPrice(price)}</span>
+          <span className="font-display text-3xl font-bold text-brand">{formatPrice(price)}</span>
           <span className="text-sm text-ink-500"> / session</span>
         </p>
         <span className="inline-flex items-center gap-1.5 text-sm text-ink-500">
@@ -212,13 +212,13 @@ export function BookingWidget({ a }: { a: Ambassador }) {
                 className={cn(
                   'flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-all cursor-pointer',
                   active
-                    ? 'border-maroon-800 bg-maroon-50 text-maroon-900 ring-1 ring-maroon-800/20'
-                    : 'border-ink-200 text-ink-700 hover:border-maroon-800/40',
+                    ? 'border-brand bg-brand-tint text-brand ring-1 ring-brand/20'
+                    : 'border-ink-200 text-ink-700 hover:border-brand/40',
                 )}
               >
-                <Icon size={18} className={active ? 'text-maroon-800' : 'text-ink-400'} />
+                <Icon size={18} className={active ? 'text-brand' : 'text-ink-400'} />
                 <span className="font-medium">{label}</span>
-                {active && <Check size={16} className="ml-auto text-maroon-800" />}
+                {active && <Check size={16} className="ml-auto text-brand" />}
               </button>
             );
           })}
@@ -239,8 +239,8 @@ export function BookingWidget({ a }: { a: Ambassador }) {
                 className={cn(
                   'rounded-xl border px-2 py-2.5 text-center text-sm transition-all cursor-pointer',
                   active
-                    ? 'border-maroon-800 bg-maroon-50 text-maroon-900'
-                    : 'border-ink-200 text-ink-600 hover:border-maroon-800/40',
+                    ? 'border-brand bg-brand-tint text-brand'
+                    : 'border-ink-200 text-ink-600 hover:border-brand/40',
                 )}
               >
                 {d.label}
@@ -261,7 +261,7 @@ export function BookingWidget({ a }: { a: Ambassador }) {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="mt-2 w-full cursor-pointer rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-sm text-ink-900 focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+            className="mt-2 w-full cursor-pointer rounded-xl border border-ink-200 bg-surface px-3 py-2.5 text-sm text-ink-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
           />
         </div>
         <div>
@@ -273,7 +273,7 @@ export function BookingWidget({ a }: { a: Ambassador }) {
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="mt-2 w-full cursor-pointer rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-sm text-ink-900 focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+            className="mt-2 w-full cursor-pointer rounded-xl border border-ink-200 bg-surface px-3 py-2.5 text-sm text-ink-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
           />
         </div>
       </div>

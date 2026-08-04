@@ -9,7 +9,7 @@ export function Accordion({ items }: { items: { q: string; a: string }[] }) {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <div className="mx-auto max-w-3xl divide-y divide-ink-200/70 overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-soft">
+    <div className="mx-auto max-w-3xl divide-y divide-ink-200/70 overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-soft">
       {items.map((item, i) => {
         const isOpen = open === i;
         return (
@@ -18,14 +18,14 @@ export function Accordion({ items }: { items: { q: string; a: string }[] }) {
               type="button"
               onClick={() => setOpen(isOpen ? null : i)}
               aria-expanded={isOpen}
-              className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-maroon-50/40 cursor-pointer"
+              className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-brand-tint/40 cursor-pointer"
             >
               <span className="font-display text-base font-semibold text-ink-900 sm:text-lg">
                 {item.q}
               </span>
               <span
                 className={cn(
-                  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-maroon-50 text-maroon-900 transition-transform duration-300 ease-premium',
+                  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-tint text-brand transition-transform duration-300 ease-premium',
                   isOpen && 'rotate-45 bg-maroon-900 text-ivory',
                 )}
               >

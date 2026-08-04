@@ -34,11 +34,12 @@ import { useConfirm } from '@/components/ui/confirm';
 import { useUserDetail, useUserActions } from '@/lib/queries';
 import type { UserDetailBooking, UserDetailReview } from '@/lib/api';
 import { formatDate, formatPrice, humanize } from '@/lib/utils';
+import { SERVICE_LABEL as SERVICE_TEXT } from '@/lib/tour-types';
 
 const SERVICE_LABEL: Record<string, { label: string; icon: typeof Footprints }> = {
-  CAMPUS_TOUR: { label: 'Campus tour', icon: Footprints },
-  VIDEO_CONSULTATION: { label: 'Video chat', icon: Video },
-  CONSULTATION: { label: 'Consultancy', icon: MessageSquare },
+  CAMPUS_TOUR: { label: SERVICE_TEXT.CAMPUS_TOUR, icon: Footprints },
+  VIDEO_CONSULTATION: { label: SERVICE_TEXT.VIDEO_CONSULTATION, icon: Video },
+  CONSULTATION: { label: SERVICE_TEXT.CONSULTATION, icon: MessageSquare },
 };
 
 export default function UserDetailPage() {
@@ -118,7 +119,7 @@ export default function UserDetailPage() {
       <RequirePermission anyOf={['users.manage']}>
         <div className="space-y-6">
           <BackLink />
-          <div className="rounded-2xl border border-ink-200 bg-white p-10 text-center">
+          <div className="rounded-2xl border border-ink-200 bg-surface p-10 text-center">
             <p className="font-display text-lg font-semibold text-ink-900">User not found</p>
             <p className="mt-1 text-sm text-ink-500">This account may have been removed.</p>
             <Button variant="outline" size="sm" className="mt-5" onClick={() => router.push('/users')}>

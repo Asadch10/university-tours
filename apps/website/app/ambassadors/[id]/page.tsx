@@ -113,7 +113,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
       <section className="bg-maroon-gradient pt-[var(--header-h)] text-ivory">
         <div className="container-page relative py-10">
           <nav className="flex items-center gap-1.5 text-sm text-ivory/60" aria-label="Breadcrumb">
-            <Link href="/search" className="hover:text-gold-200">
+            <Link href="/search" className="hover:text-onbrand-accent">
               Guides
             </Link>
             <ChevronRight size={14} />
@@ -138,7 +138,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
               </div>
               <Link
                 href={`/universities/${a.universitySlug}`}
-                className="mt-1 inline-flex items-center gap-1.5 text-ink-600 hover:text-maroon-900"
+                className="mt-1 inline-flex items-center gap-1.5 text-ink-600 hover:text-brand"
               >
                 <GraduationCap size={16} /> {a.major} · {a.university}
               </Link>
@@ -176,9 +176,9 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
 
           {/* Details grid */}
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-ink-200/70 bg-white p-5">
+            <div className="rounded-2xl border border-ink-200/70 bg-surface p-5">
               <p className="inline-flex items-center gap-2 text-sm font-semibold text-ink-900">
-                <Languages size={16} className="text-maroon-800" /> Languages
+                <Languages size={16} className="text-brand" /> Languages
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {a.languages.map((l) => (
@@ -188,9 +188,9 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-ink-200/70 bg-white p-5">
+            <div className="rounded-2xl border border-ink-200/70 bg-surface p-5">
               <p className="inline-flex items-center gap-2 text-sm font-semibold text-ink-900">
-                <Heart size={16} className="text-maroon-800" /> Interests
+                <Heart size={16} className="text-brand" /> Interests
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {a.interests.map((i) => (
@@ -212,7 +212,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
             </div>
             <div className="mt-5 grid gap-4">
               {SAMPLE_REVIEWS.map((r) => (
-                <figure key={r.name} className="relative rounded-2xl border border-ink-200/70 bg-white p-6">
+                <figure key={r.name} className="relative rounded-2xl border border-ink-200/70 bg-surface p-6">
                   <Quote className="absolute right-5 top-4 text-maroon-50" size={40} aria-hidden />
                   <StarRating value={r.rating} size={14} />
                   <blockquote className="relative mt-3 text-ink-700">“{r.text}”</blockquote>
@@ -233,7 +233,7 @@ export default async function AmbassadorPage({ params }: { params: Promise<{ id:
             {uni && (
               <Link
                 href={`/universities/${uni.slug}`}
-                className="mt-4 flex items-center justify-between rounded-2xl border border-ink-200/70 bg-white p-4 text-sm shadow-soft transition-colors hover:border-maroon-800/30"
+                className="mt-4 flex items-center justify-between rounded-2xl border border-ink-200/70 bg-surface p-4 text-sm shadow-soft transition-colors hover:border-brand/30"
               >
                 <span className="text-ink-600">
                   More guides at <span className="font-semibold text-ink-900">{uni.name}</span>

@@ -56,7 +56,7 @@ export default function ContactPage() {
         <div className="absolute inset-0 bg-blue-950/40" aria-hidden />
         <div className="container-page relative py-16 sm:py-24 lg:py-28">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gold-200 ring-1 ring-inset ring-white/15 backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-onbrand-accent ring-1 ring-inset ring-white/15 backdrop-blur">
               <MessageSquare size={14} /> We’re here to help
             </span>
             <h1 className="mt-6 font-display text-4xl font-semibold leading-[1.08] text-ivory sm:text-5xl lg:text-6xl">
@@ -70,7 +70,7 @@ export default function ContactPage() {
         </div>
         <div className="relative">
           <svg viewBox="0 0 1440 60" className="block w-full" preserveAspectRatio="none" aria-hidden>
-            <path d="M0 60 C 360 10, 1080 10, 1440 60 Z" fill="#fbf8f3" />
+            <path d="M0 60 C 360 10, 1080 10, 1440 60 Z" className="fill-canvas" />
           </svg>
         </div>
       </section>
@@ -93,9 +93,9 @@ export default function ContactPage() {
                   return (
                     <div
                       key={m.title}
-                      className="group flex gap-5 rounded-3xl border border-ink-200/70 bg-white p-6 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift"
+                      className="group flex gap-5 rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift"
                     >
-                      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+                      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                         <Icon size={22} />
                       </span>
                       <div>
@@ -106,12 +106,12 @@ export default function ContactPage() {
                         {m.href ? (
                           <a
                             href={m.href}
-                            className="mt-2 inline-block text-sm font-semibold text-maroon-800 underline-offset-4 hover:underline"
+                            className="mt-2 inline-block text-sm font-semibold text-brand underline-offset-4 hover:underline"
                           >
                             {m.detail}
                           </a>
                         ) : (
-                          <p className="mt-2 text-sm font-semibold text-maroon-800">{m.detail}</p>
+                          <p className="mt-2 text-sm font-semibold text-brand">{m.detail}</p>
                         )}
                       </div>
                     </div>
@@ -120,8 +120,8 @@ export default function ContactPage() {
               </div>
 
               {/* FAQ helper card */}
-              <div className="mt-6 flex items-center gap-5 rounded-3xl border border-ink-200/70 bg-cream/60 p-6">
-                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+              <div className="mt-6 flex items-center gap-5 rounded-3xl border border-ink-200/70 bg-canvas-alt/60 p-6">
+                <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                   <HelpCircle size={22} />
                 </span>
                 <div>
@@ -132,7 +132,7 @@ export default function ContactPage() {
                     Many common questions are already answered on our{' '}
                     <Link
                       href="/faq"
-                      className="font-semibold text-maroon-800 underline-offset-4 hover:underline"
+                      className="font-semibold text-brand underline-offset-4 hover:underline"
                     >
                       FAQ page
                     </Link>
@@ -140,7 +140,7 @@ export default function ContactPage() {
                   </p>
                   <Link
                     href="/faq"
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-maroon-800 underline-offset-4 hover:underline"
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand underline-offset-4 hover:underline"
                   >
                     Visit the FAQ <ArrowRight size={15} />
                   </Link>
@@ -159,8 +159,8 @@ export default function ContactPage() {
       {/* Trust note */}
       <section className="container-page pb-24">
         <Reveal>
-          <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-4xl border border-ink-200/70 bg-white px-8 py-10 text-center shadow-soft">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-900">
+          <div className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-4xl border border-ink-200/70 bg-surface px-8 py-10 text-center shadow-soft">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-tint text-brand">
               <ShieldCheck size={22} />
             </span>
             <p className="text-[0.95rem] leading-relaxed text-ink-600">

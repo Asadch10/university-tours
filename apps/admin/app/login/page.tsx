@@ -53,7 +53,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-ivory">
+    <div className="min-h-dvh bg-canvas">
       <div className="grid min-h-dvh lg:grid-cols-2">
         {/* LEFT — brand showcase */}
         <aside className="relative hidden overflow-hidden bg-brand-gradient lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
               {error && (
-                <div role="alert" className="flex items-center gap-2.5 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
+                <div role="alert" className="flex items-center gap-2.5 rounded-xl border border-danger/30 bg-danger-solid/5 px-4 py-3 text-sm text-danger">
                   <AlertCircle size={17} className="shrink-0" />
                   {error}
                 </div>
@@ -127,7 +127,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@tour.com"
-                    className="w-full rounded-xl border border-ink-200 bg-white py-3 pl-11 pr-4 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/15"
+                    className="w-full rounded-xl border border-ink-200 bg-surface py-3 pl-11 pr-4 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/15"
                   />
                 </div>
               </div>
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-ink-200 bg-white py-3 pl-11 pr-11 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/15"
+                    className="w-full rounded-xl border border-ink-200 bg-surface py-3 pl-11 pr-11 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-800/15"
                   />
                   <button
                     type="button"

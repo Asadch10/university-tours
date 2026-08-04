@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronLeft, ChevronRight, Footprints, Video, MessageSquare } from 'lucide-react';
+import { Search, Footprints, Video, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Calendar, formatDate } from '@/components/ui/calendar';
+import { SERVICE_LABEL } from '@/lib/tour-types';
 import { universities } from '@/lib/data';
 
 type Segment = 'school' | 'date' | 'type' | null;
@@ -12,131 +14,22 @@ const TOUR_OPTIONS = [
   {
     value: 'CAMPUS_TOUR',
     icon: Footprints,
-    label: 'Campus tour',
+    label: SERVICE_LABEL.CAMPUS_TOUR,
     desc: 'Explore campus on a personalized tour tailored to your interests',
   },
   {
     value: 'VIDEO_CONSULTATION',
     icon: Video,
-    label: 'Video chat',
+    label: SERVICE_LABEL.VIDEO_CONSULTATION,
     desc: 'Connect live with a current student and get the scoop from anywhere',
   },
   {
     value: 'CONSULTATION',
     icon: MessageSquare,
-    label: 'Consultancy',
+    label: SERVICE_LABEL.CONSULTATION,
     desc: 'A focused 1-on-1 advising session on admissions, essays, or student life',
   },
 ];
-
-const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-function pad(n: number) {
-  return String(n).padStart(2, '0');
-}
-function iso(y: number, m: number, d: number) {
-  return `${y}-${pad(m + 1)}-${pad(d)}`;
-}
-function formatDate(value: string) {
-  if (!value) return '';
-  const d = new Date(value + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-/* ─── Custom calendar ────────────────────────────────────────────────── */
-
-function Calendar({ value, onSelect }: { value: string; onSelect: (v: string) => void }) {
-  const today = useMemo(() => {
-    const t = new Date();
-    t.setHours(0, 0, 0, 0);
-    return t;
-  }, []);
-
-  const [view, setView] = useState(() => {
-    const base = value ? new Date(value + 'T00:00:00') : today;
-    return new Date(base.getFullYear(), base.getMonth(), 1);
-  });
-
-  const year = view.getFullYear();
-  const month = view.getMonth();
-  const firstWeekday = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const canGoPrev = new Date(year, month, 1) > new Date(today.getFullYear(), today.getMonth(), 1);
-
-  const monthLabel = view.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-  return (
-    <div className="w-[min(340px,calc(100vw-2rem))] rounded-2xl border border-ink-200/80 bg-white p-5 shadow-lift">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          disabled={!canGoPrev}
-          onClick={() => setView(new Date(year, month - 1, 1))}
-          aria-label="Previous month"
-          className={cn(
-            'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors',
-            canGoPrev ? 'text-maroon-800 hover:bg-ink-50' : 'cursor-not-allowed text-ink-200',
-          )}
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <p className="font-display text-lg font-bold text-ink-900">{monthLabel}</p>
-        <button
-          type="button"
-          onClick={() => setView(new Date(year, month + 1, 1))}
-          aria-label="Next month"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-maroon-800 transition-colors hover:bg-ink-50"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
-
-      {/* Day-of-week */}
-      <div className="mt-4 grid grid-cols-7 text-center">
-        {DOW.map((d) => (
-          <span key={d} className="text-sm font-medium text-ink-500">
-            {d}
-          </span>
-        ))}
-      </div>
-
-      {/* Days */}
-      <div className="mt-2 grid grid-cols-7 gap-y-1.5 text-center">
-        {Array.from({ length: firstWeekday }).map((_, i) => (
-          <span key={`blank-${i}`} />
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const dateStr = iso(year, month, day);
-          const cellDate = new Date(year, month, day);
-          const isPast = cellDate < today;
-          const isToday = cellDate.getTime() === today.getTime();
-          const isSelected = value === dateStr;
-          return (
-            <div key={day} className="flex justify-center">
-              <button
-                type="button"
-                disabled={isPast}
-                onClick={() => onSelect(dateStr)}
-                className={cn(
-                  'inline-flex h-9 w-9 items-center justify-center rounded-full text-sm transition-colors',
-                  isPast && 'cursor-not-allowed text-ink-300 line-through',
-                  !isPast && !isSelected && 'text-ink-900 hover:bg-ink-100',
-                  isSelected && 'bg-maroon-900 font-semibold text-white',
-                  isToday && !isSelected && 'font-bold underline',
-                )}
-              >
-                {day}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /* ─── Search bar ─────────────────────────────────────────────────────── */
 
@@ -205,7 +98,7 @@ export function GuideSearchBar({
           transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
           className="flex w-full items-center justify-center sm:w-auto"
         >
-        <div className="flex w-full items-center rounded-full border border-ink-200 bg-white shadow-sm sm:w-auto">
+        <div className="flex w-full items-center rounded-full border border-ink-200 bg-surface shadow-sm sm:w-auto">
           <button
             type="button"
             onClick={() => open('school')}
@@ -250,7 +143,7 @@ export function GuideSearchBar({
           className="relative flex w-full justify-center"
         >
       <div className="relative w-full max-w-3xl">
-        <div className="flex flex-col gap-1 rounded-3xl border border-ink-200 bg-white p-2 shadow-lift sm:flex-row sm:items-center sm:gap-0 sm:rounded-full">
+        <div className="flex flex-col gap-1 rounded-3xl border border-ink-200 bg-surface p-2 shadow-lift sm:flex-row sm:items-center sm:gap-0 sm:rounded-full">
 
           {/* School — wider than the rest */}
           <button
@@ -350,7 +243,7 @@ export function GuideSearchBar({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[400px] origin-top overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:w-[400px]"
+            className="absolute left-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[400px] origin-top overflow-hidden rounded-2xl border border-ink-200/80 bg-surface shadow-lift sm:w-[400px]"
           >
             <div className="max-h-[330px] overflow-y-auto p-2">
               {schoolMatches.length === 0 ? (
@@ -364,7 +257,7 @@ export function GuideSearchBar({
                       setQuery(u.name);
                       setActive('date');
                     }}
-                    className="flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-maroon-50"
+                    className="flex w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-brand-tint"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -418,7 +311,7 @@ export function GuideSearchBar({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[380px] origin-top overflow-hidden rounded-2xl border border-ink-200/80 bg-white shadow-lift sm:right-14 sm:w-[380px]"
+            className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-full max-w-[380px] origin-top overflow-hidden rounded-2xl border border-ink-200/80 bg-surface shadow-lift sm:right-14 sm:w-[380px]"
           >
             <p className="px-6 pb-3 pt-5 text-base font-bold text-ink-900">
               How would you like to tour?
@@ -445,7 +338,7 @@ export function GuideSearchBar({
                   <span
                     className={cn(
                       'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                      selected ? 'border-maroon-900' : 'border-ink-300',
+                      selected ? 'border-brand' : 'border-ink-300',
                     )}
                   >
                     {selected && <span className="h-2.5 w-2.5 rounded-full bg-maroon-900" />}

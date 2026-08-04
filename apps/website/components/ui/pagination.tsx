@@ -24,7 +24,7 @@ export function Pagination({
   const pages = getPageList(currentPage, totalPages);
 
   const arrowClasses =
-    'inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition-colors hover:border-maroon-800/40 hover:bg-maroon-50 hover:text-maroon-900 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-ink-200 disabled:hover:bg-white disabled:hover:text-ink-700 cursor-pointer';
+    'inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-ink-200 bg-surface px-3 text-sm font-medium text-ink-700 transition-colors hover:border-brand/40 hover:bg-brand-tint hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-ink-200 disabled:hover:bg-surface disabled:hover:text-ink-700 cursor-pointer';
 
   return (
     <nav
@@ -61,8 +61,8 @@ export function Pagination({
                 className={cn(
                   'inline-flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors cursor-pointer',
                   p === currentPage
-                    ? 'border-maroon-900 bg-maroon-900 text-ivory shadow-soft'
-                    : 'border-ink-200 bg-white text-ink-700 hover:border-maroon-800/40 hover:bg-maroon-50 hover:text-maroon-900',
+                    ? 'border-brand bg-maroon-900 text-ivory shadow-soft'
+                    : 'border-ink-200 bg-surface text-ink-700 hover:border-brand/40 hover:bg-brand-tint hover:text-brand',
                 )}
               >
                 {p}

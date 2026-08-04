@@ -1,3 +1,5 @@
+@import './theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,10 +18,11 @@
   html {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    background-color: theme('colors.canvas');
   }
 
   body {
-    @apply bg-white text-ink-900 font-sans antialiased;
+    @apply bg-canvas text-ink-900 font-sans antialiased;
   }
 
   ::selection {
@@ -31,9 +34,58 @@
     text-wrap: balance;
   }
 
+  /* ── Native form controls ───────────────────────────────────────────────
+     `color-scheme` is set per-theme in theme.css; inputs inherit it so typed text,
+     spinners and dropdown popups never render light-on-light. */
+  input,
+  textarea,
+  select {
+    color-scheme: inherit;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-ink-400;
+  }
+
+  /* Chrome/Safari paint a hard-coded pale background on autofilled fields, which would
+     show as a white block inside every dark form. The inset shadow is the only override. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: theme('colors.ink.900');
+    -webkit-box-shadow: 0 0 0 1000px theme('colors.surface-2') inset;
+    box-shadow: 0 0 0 1000px theme('colors.surface-2') inset;
+    caret-color: theme('colors.ink.900');
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  /* The webkit date/time glyph ships dark, so it only needs inverting on a dark field. */
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.85);
+    opacity: 0.7;
+    cursor: pointer;
+  }
+
+  .light input[type='date']::-webkit-calendar-picker-indicator,
+  .light input[type='time']::-webkit-calendar-picker-indicator,
+  .light input[type='datetime-local']::-webkit-calendar-picker-indicator {
+    filter: none;
+  }
+
+  /* Default light scrollbars are the most common give-away in a dark console. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--ink-200)) transparent;
+  }
+
   /* Premium focus ring for keyboard nav (WCAG AA) */
   :focus-visible {
-    @apply outline-none ring-2 ring-gold-500 ring-offset-2 ring-offset-ivory rounded-sm;
+    @apply outline-none ring-2 ring-gold-500 ring-offset-2 ring-offset-canvas rounded-sm;
   }
 }
 
@@ -49,14 +101,14 @@
 
   /* Standard console surface */
   .card-surface {
-    @apply rounded-xl border border-ink-200/70 bg-white shadow-soft;
+    @apply rounded-xl border border-ink-200/70 bg-surface shadow-soft;
   }
 
   /* Sidebar paper texture */
   .bg-grid {
     background-image:
-      linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
     background-size: 48px 48px;
   }
 }
@@ -72,7 +124,7 @@
     background-image: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.55),
+      var(--shimmer-sweep),
       transparent
     );
     animation: shimmer 1.6s infinite;

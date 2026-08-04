@@ -51,11 +51,11 @@ export default function LoginPage() {
   // After a successful sign-in, show a full-screen branded loader, then redirect.
   if (status === 'success') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-surface">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.svg" alt="University Campus Private Tours" className="h-24 w-auto animate-pulse" />
         <p className="flex items-center gap-2 text-sm font-medium text-ink-500">
-          <Loader2 size={16} className="animate-spin text-maroon-800" /> Signing you in…
+          <Loader2 size={16} className="animate-spin text-brand" /> Signing you in…
         </p>
       </div>
     );
@@ -67,7 +67,7 @@ export default function LoginPage() {
           {status === 'error' && (
             <div
               role="alert"
-              className="flex items-center gap-2.5 rounded-xl border border-maroon-200 bg-maroon-50 px-4 py-3 text-sm text-maroon-900"
+              className="flex items-center gap-2.5 rounded-xl border border-brand-muted bg-brand-tint px-4 py-3 text-sm text-brand"
             >
               <AlertCircle size={16} className="shrink-0" />
               {errorMsg}

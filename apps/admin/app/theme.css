@@ -1,0 +1,193 @@
+/*
+ * Admin console theme tokens. Imported by globals.css before the Tailwind layers.
+ *
+ *   :root  → DARK (the default; a no-JS or pre-hydration render is already dark)
+ *   .light → LIGHT overrides, applied by the theme script in app/layout.tsx
+ *
+ * Mirrors the website's system (see apps/website/design.md) with one deliberate
+ * difference: the console keeps its **blue** brand scale for buttons and active nav.
+ * `brand-500` is unchanged in both themes so the primary button looks exactly as it
+ * does today.
+ *
+ * Values are space-separated RGB channels so Tailwind's `<alpha-value>` slot keeps
+ * working — `bg-surface/60`, `ring-brand-500/20` etc.
+ *
+ * Every token MUST exist in both blocks. One defined only in :root silently keeps its
+ * dark value in light mode, which is the usual way a themed console ends up with one
+ * unreadable panel.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Elevation — neutral slate-charcoal, cooler than the website's warm canvas
+     because the console's brand is blue rather than maroon. */
+  --canvas: 12 14 18;
+  --canvas-alt: 16 19 24;
+  --surface: 22 26 32;
+  --surface-2: 29 34 42;
+  --surface-3: 38 44 54;
+  --surface-4: 49 57 69;
+
+  /* Brand — BLUE. Fills (buttons, active nav) are identical in both themes. */
+  --brand-50: 24 27 48;
+  --brand-100: 31 35 62;
+  --brand-200: 42 47 86;
+  --brand-300: 58 65 120;
+  --brand-400: 129 140 248;
+  --brand-500: 99 102 241; /* button fill — unchanged */
+  --brand-600: 79 70 229; /* hover — unchanged */
+  --brand-700: 141 149 250;
+  --brand-800: 165 180 252; /* brand TEXT on dark */
+  --brand-900: 199 210 254;
+  --brand-950: 224 231 255;
+
+  /* Gold — contrast scale (high = high contrast against canvas). */
+  --gold-50: 42 32 16;
+  --gold-100: 58 44 20;
+  --gold-200: 87 65 27;
+  --gold-300: 125 93 34;
+  --gold-400: 180 130 42;
+  --gold-500: 224 170 62;
+  --gold-600: 234 189 94;
+  --gold-700: 240 205 131;
+  --gold-800: 245 220 171;
+  --gold-900: 250 234 207;
+  --gold-950: 253 247 234;
+
+  /* Ink — contrast scale (900 = strongest foreground, 50 = faintest surface tint). */
+  --ink-50: 29 34 42;
+  --ink-100: 38 44 54;
+  --ink-200: 51 59 71;
+  --ink-300: 92 102 118;
+  --ink-400: 134 145 162;
+  --ink-500: 162 173 190;
+  --ink-600: 190 199 213;
+  --ink-700: 213 220 230;
+  --ink-800: 232 237 243;
+  --ink-900: 246 248 251;
+  --ink-950: 255 255 255;
+
+  /* Status — readable as text on the canvas. */
+  --info: 91 147 245;
+  --warn: 224 170 62;
+  --danger: 240 113 133;
+  --success: 63 189 127;
+  --verified: 63 189 127;
+
+  /* Solid fills that must carry white text at AA — see the note in the website's
+     theme.css: one token cannot clear 4.5:1 both as text and as a fill on a dark canvas. */
+  --info-solid: 47 106 214;
+  --warn-solid: 146 94 18;
+  --danger-solid: 192 42 48;
+  --success-solid: 31 122 79;
+
+  --red-600: 224 75 81;
+  --green-600: 63 189 127;
+
+  --ivory: 251 248 243;
+  --cream: 246 240 231;
+
+  /* Dark elevation reads through a lighter top edge plus a deep ambient shadow. */
+  --shadow-soft: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5),
+    0 4px 16px -4px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset, 0 2px 6px rgba(0, 0, 0, 0.55),
+    0 16px 40px -16px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 1px 0 0 rgba(255, 255, 255, 0.07) inset, 0 10px 24px rgba(0, 0, 0, 0.6),
+    0 28px 56px -20px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 0 1px rgba(129, 140, 248, 0.35), 0 0 32px -6px rgba(99, 102, 241, 0.35),
+    0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  --shadow-ring-focus: 0 0 0 3px rgba(129, 140, 248, 0.35);
+
+  --grad-brand: linear-gradient(160deg, #6366f1 0%, #4338ca 55%, #1e1b4b 100%);
+  --grad-gold: linear-gradient(135deg, #f0cd83 0%, #e0aa3e 100%);
+  --grad-radial-fade: radial-gradient(
+    60% 60% at 50% 0%,
+    rgba(129, 140, 248, 0.12) 0%,
+    transparent 70%
+  );
+
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --shimmer-sweep: rgba(255, 255, 255, 0.07);
+}
+
+.light {
+  color-scheme: light;
+
+  --canvas: 255 255 255;
+  --canvas-alt: 247 245 243;
+  --surface: 255 255 255;
+  --surface-2: 247 245 243;
+  --surface-3: 236 232 227;
+  --surface-4: 217 209 200;
+
+  --brand-50: 238 242 255;
+  --brand-100: 224 231 255;
+  --brand-200: 199 210 254;
+  --brand-300: 165 180 252;
+  --brand-400: 129 140 248;
+  --brand-500: 99 102 241; /* button fill — unchanged */
+  --brand-600: 79 70 229; /* hover — unchanged */
+  --brand-700: 67 56 202;
+  --brand-800: 55 48 163; /* brand TEXT on light */
+  --brand-900: 49 46 129;
+  --brand-950: 30 27 75;
+
+  --gold-50: 253 250 240;
+  --gold-100: 250 241 214;
+  --gold-200: 243 225 168;
+  --gold-300: 236 203 114;
+  --gold-400: 227 179 71;
+  --gold-500: 207 149 38;
+  --gold-600: 180 118 29;
+  --gold-700: 144 86 26;
+  --gold-800: 119 69 28;
+  --gold-900: 101 58 27;
+  --gold-950: 58 29 12;
+
+  --ink-50: 247 245 243;
+  --ink-100: 236 232 227;
+  --ink-200: 217 209 200;
+  --ink-300: 191 178 164;
+  --ink-400: 133 118 100;
+  --ink-500: 133 114 95;
+  --ink-600: 108 91 75;
+  --ink-700: 87 73 62;
+  --ink-800: 71 61 53;
+  --ink-900: 31 26 22;
+  --ink-950: 20 16 13;
+
+  --info: 37 99 168;
+  --warn: 146 94 18;
+  --danger: 189 44 77;
+  --success: 47 125 87;
+  --verified: 47 125 87;
+
+  --info-solid: 37 99 168;
+  --warn-solid: 146 94 18;
+  --danger-solid: 189 44 77;
+  --success-solid: 47 125 87;
+
+  --red-600: 220 38 38;
+  --green-600: 22 163 74;
+
+  --ivory: 251 248 243;
+  --cream: 246 240 231;
+
+  --shadow-soft: 0 1px 2px rgba(31, 26, 22, 0.04), 0 4px 16px -4px rgba(31, 26, 22, 0.08);
+  --shadow-card: 0 2px 4px rgba(31, 26, 22, 0.04), 0 12px 32px -12px rgba(31, 26, 22, 0.12);
+  --shadow-lift: 0 8px 16px rgba(31, 26, 22, 0.06), 0 24px 48px -16px rgba(31, 26, 22, 0.18);
+  --shadow-glow: 0 0 0 1px rgba(207, 149, 38, 0.25), 0 12px 32px -8px rgba(99, 102, 241, 0.35);
+  --shadow-ring-focus: 0 0 0 3px rgba(207, 149, 38, 0.3);
+
+  --grad-brand: linear-gradient(160deg, #6366f1 0%, #4338ca 55%, #312e81 100%);
+  --grad-gold: linear-gradient(135deg, #eccb72 0%, #cf9526 100%);
+  --grad-radial-fade: radial-gradient(
+    60% 60% at 50% 0%,
+    rgba(207, 149, 38, 0.1) 0%,
+    transparent 70%
+  );
+
+  --grid-line: rgba(31, 26, 22, 0.05);
+  --shimmer-sweep: rgba(255, 255, 255, 0.55);
+}

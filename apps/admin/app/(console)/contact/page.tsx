@@ -95,7 +95,7 @@ function MessageCard({ message: m, onOpen }: { message: ContactMessage; onOpen: 
       type="button"
       onClick={onOpen}
       className={cn(
-        'flex flex-col rounded-2xl border bg-white p-5 text-left shadow-soft transition-shadow hover:shadow-card',
+        'flex flex-col rounded-2xl border bg-surface p-5 text-left shadow-soft transition-shadow hover:shadow-card',
         isNew ? 'border-brand-200' : 'border-ink-200/70',
       )}
     >

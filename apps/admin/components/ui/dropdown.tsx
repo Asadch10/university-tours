@@ -53,7 +53,7 @@ export function Dropdown({
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
             role="menu"
             className={cn(
-              'absolute z-50 mt-1.5 min-w-[12rem] overflow-hidden rounded-xl border border-ink-200/70 bg-white p-1 shadow-lift',
+              'absolute z-50 mt-1.5 min-w-[12rem] overflow-hidden rounded-xl border border-ink-200/70 bg-surface p-1 shadow-lift',
               align === 'right' ? 'right-0' : 'left-0',
             )}
           >
@@ -73,7 +73,7 @@ export function Dropdown({
                   className={cn(
                     'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors disabled:opacity-40',
                     item.tone === 'danger'
-                      ? 'text-danger hover:bg-danger/5'
+                      ? 'text-danger hover:bg-danger-solid/5'
                       : 'text-ink-700 hover:bg-ink-100',
                   )}
                 >

@@ -106,7 +106,7 @@ export function PopularSchools() {
   }
 
   return (
-    <section className="bg-white py-10 sm:py-12">
+    <section className="bg-surface py-10 sm:py-12">
 
       {/* Heading */}
       <div className="container-page mb-8 text-center">
@@ -115,7 +115,7 @@ export function PopularSchools() {
         </h2>
         <p className="mt-3 text-[0.9rem] text-ink-600">
           Explore all schools{' '}
-          <Link href="/universities" className="text-maroon-900 underline-offset-2 hover:underline">
+          <Link href="/universities" className="text-brand underline-offset-2 hover:underline">
             here
           </Link>
         </p>
@@ -129,7 +129,7 @@ export function PopularSchools() {
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="Previous schools"
-          className="absolute left-3 top-[140px] z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute left-3 top-[140px] z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-surface text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronLeft size={20} />
         </button>
@@ -169,7 +169,7 @@ export function PopularSchools() {
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="Next schools"
-          className="absolute right-3 top-[140px] z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-white text-ink-700 shadow-md transition-shadow hover:shadow-lift"
+          className="absolute right-3 top-[140px] z-10 -translate-y-1/2 inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-ink-200 bg-surface text-ink-700 shadow-md transition-shadow hover:shadow-lift"
         >
           <ChevronRight size={20} />
         </button>

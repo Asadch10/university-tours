@@ -14,7 +14,7 @@ const MapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#e8e0d8]">
+      <div className="flex h-full w-full items-center justify-center bg-surface-2">
         <p className="text-sm text-ink-500">Loading map…</p>
       </div>
     ),
@@ -44,7 +44,7 @@ export function ExploreMap() {
   }
 
   return (
-    <section className="bg-white py-10 sm:py-12">
+    <section className="bg-surface py-10 sm:py-12">
 
       {/* Heading — centred, constrained */}
       <div className="container-page mb-8 text-center">
@@ -58,7 +58,7 @@ export function ExploreMap() {
 
       {/* ── Mobile search bar — shown above map on phones only ──────────── */}
       <div className="mx-4 mb-3 sm:hidden">
-        <div className="flex items-center gap-2 rounded-2xl border border-ink-200 bg-white px-3 py-2.5 shadow-soft focus-within:border-maroon-800/60 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.08)]">
+        <div className="flex items-center gap-2 rounded-2xl border border-ink-200 bg-surface px-3 py-2.5 shadow-soft focus-within:border-brand/60 focus-within:shadow-[0_0_0_3px_rgba(240,135,155,0.14)]">
           <Search size={14} className="shrink-0 text-ink-400" />
           <input
             value={search}
@@ -84,13 +84,13 @@ export function ExploreMap() {
         <div className="flex h-[55vh] min-h-[360px] overflow-hidden rounded-3xl border border-ink-200/60 shadow-card sm:h-[620px] lg:h-[680px]">
 
           {/* ── Left sidebar — hidden on phones so the map fills the card ── */}
-          <div className="hidden w-[280px] shrink-0 flex-col border-r border-ink-100 bg-white sm:flex lg:w-[360px] xl:w-[420px]">
+          <div className="hidden w-[280px] shrink-0 flex-col border-r border-ink-100 bg-surface sm:flex lg:w-[360px] xl:w-[420px]">
 
             {/* Search row */}
             <div className="shrink-0 border-b border-ink-100 p-4">
               <div className="flex items-center gap-2">
                 {/* Input */}
-                <div className="flex flex-1 items-center gap-2 rounded-xl border border-ink-200 bg-white px-3 py-2.5 transition-[border-color,box-shadow] focus-within:border-maroon-800/60 focus-within:shadow-[0_0_0_3px_rgba(107,21,33,0.08)]">
+                <div className="flex flex-1 items-center gap-2 rounded-xl border border-ink-200 bg-surface px-3 py-2.5 transition-[border-color,box-shadow] focus-within:border-brand/60 focus-within:shadow-[0_0_0_3px_rgba(240,135,155,0.14)]">
                   <Search size={14} className="shrink-0 text-ink-400" />
                   <input
                     value={search}
@@ -112,7 +112,7 @@ export function ExploreMap() {
                 {/* Filter button */}
                 <button
                   type="button"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-800"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-surface text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-800"
                   aria-label="Filter schools"
                 >
                   <SlidersHorizontal size={16} />
@@ -141,7 +141,7 @@ export function ExploreMap() {
                       onClick={() => handleSelect(u)}
                       className={`flex w-full items-center gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-ink-50 ${
                         isActive
-                          ? 'border-l-[3px] border-maroon-900 bg-maroon-50/50 pl-[17px]'
+                          ? 'border-l-[3px] border-brand bg-brand-tint/50 pl-[17px]'
                           : ''
                       }`}
                     >
@@ -160,7 +160,7 @@ export function ExploreMap() {
                       <div className="min-w-0">
                         <p
                           className={`truncate text-sm font-semibold leading-snug ${
-                            isActive ? 'text-maroon-900' : 'text-ink-900'
+                            isActive ? 'text-brand' : 'text-ink-900'
                           }`}
                         >
                           {u.name}
@@ -199,7 +199,7 @@ export function ExploreMap() {
             {/* ── Detail panel — slides in from right on pin / list click ──
                 z-[1100] keeps it above the Leaflet zoom control + tiles. */}
             <div
-              className={`absolute inset-y-0 right-0 z-[1100] flex w-full max-w-[420px] flex-col overflow-y-auto bg-white shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              className={`absolute inset-y-0 right-0 z-[1100] flex w-full max-w-[420px] flex-col overflow-y-auto bg-surface shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 selected ? 'translate-x-0' : 'translate-x-full'
               }`}
               aria-hidden={!selected}
@@ -235,7 +235,7 @@ export function ExploreMap() {
                       type="button"
                       onClick={() => setSelected(null)}
                       aria-label="Close detail panel"
-                      className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink-800 shadow transition-colors hover:bg-white"
+                      className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-ink-800 shadow transition-colors hover:bg-surface"
                     >
                       <X size={15} />
                     </button>
@@ -261,7 +261,7 @@ export function ExploreMap() {
                     {/* Official website link */}
                     <Link
                       href={selected.href}
-                      className="mt-2.5 inline-flex items-center gap-1.5 text-[0.8rem] font-medium text-maroon-900 hover:underline"
+                      className="mt-2.5 inline-flex items-center gap-1.5 text-[0.8rem] font-medium text-brand hover:underline"
                     >
                       Visit official website <ExternalLink size={11} />
                     </Link>

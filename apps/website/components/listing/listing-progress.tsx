@@ -28,9 +28,9 @@ export interface ProgressStep {
 export type ProgressTone = 'gold' | 'emerald' | 'red';
 
 const TONE = {
-  gold: { dot: 'bg-gold-600 text-white', ring: 'ring-gold-600', pulse: 'bg-gold-600', line: 'bg-gold-500' },
-  emerald: { dot: 'bg-emerald-600 text-white', ring: 'ring-emerald-600', pulse: 'bg-emerald-600', line: 'bg-emerald-400' },
-  red: { dot: 'bg-red-600 text-white', ring: 'ring-red-600', pulse: 'bg-red-600', line: 'bg-red-400' },
+  gold: { dot: 'bg-gold-500 text-maroon-950', ring: 'ring-gold-600', pulse: 'bg-gold-600', line: 'bg-gold-500' },
+  emerald: { dot: 'bg-verified-solid text-white', ring: 'ring-verified-solid', pulse: 'bg-verified-solid', line: 'bg-emerald-400' },
+  red: { dot: 'bg-danger-solid text-white', ring: 'ring-danger-solid', pulse: 'bg-danger-solid', line: 'bg-red-400' },
 } as const;
 
 /** How complete the journey is, 0–1 (active steps count as half). */
@@ -74,7 +74,7 @@ export function ListingProgress({
               className={cn(
                 'relative z-10 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full sm:mx-auto',
                 s.state === 'done' && t.dot,
-                s.state === 'active' && cn('bg-white ring-2', t.ring),
+                s.state === 'active' && cn('bg-surface ring-2', t.ring),
                 s.state === 'pending' && 'bg-ink-200',
               )}
             >

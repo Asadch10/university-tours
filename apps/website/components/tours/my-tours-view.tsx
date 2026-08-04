@@ -10,6 +10,7 @@ import { cn, formatPrice } from '@/lib/utils';
 import { bookingsApi, friendlyError, tokenStore, type BookingDto, type BookingStatus } from '@/lib/client-api';
 import { StarRating } from '@/components/ui/star-rating';
 import { useToast } from '@/lib/toast';
+import { SERVICE_LABEL } from '@/lib/tour-types';
 
 type View = 'guest' | 'guide';
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
@@ -63,9 +64,9 @@ function fmtDate(iso: string) {
 }
 
 function serviceMeta(t: BookingDto['serviceType']) {
-  if (t === 'VIDEO_CONSULTATION') return { Icon: Video, label: 'Video consultation' };
-  if (t === 'CONSULTATION') return { Icon: MessageSquare, label: 'Consultancy' };
-  return { Icon: Footprints, label: 'Campus tour' };
+  if (t === 'VIDEO_CONSULTATION') return { Icon: Video, label: SERVICE_LABEL.VIDEO_CONSULTATION };
+  if (t === 'CONSULTATION') return { Icon: MessageSquare, label: SERVICE_LABEL.CONSULTATION };
+  return { Icon: Footprints, label: SERVICE_LABEL.CAMPUS_TOUR };
 }
 
 function fmtDuration(mins: number | null) {
@@ -128,10 +129,10 @@ export function MyToursView() {
   }
 
   return (
-    <main className="min-h-dvh bg-white pt-[var(--header-h)]">
+    <main className="min-h-dvh bg-surface pt-[var(--header-h)]">
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 lg:grid-cols-[300px_1fr]">
         {/* Left rail — title + perspective switch */}
-        <aside className="border-b border-ink-100 bg-ivory/40 px-6 py-10 lg:min-h-[calc(100dvh-var(--header-h))] lg:border-b-0 lg:border-r lg:px-8">
+        <aside className="border-b border-ink-200/70 bg-canvas-alt px-6 py-10 lg:min-h-[calc(100dvh-var(--header-h))] lg:border-b-0 lg:border-r lg:px-8">
           <h1 className="font-display text-3xl font-semibold text-ink-900">My tours</h1>
 
           <nav className="mt-8 space-y-1" aria-label="Tours perspective">
@@ -147,7 +148,7 @@ export function MyToursView() {
                   }}
                   className={cn(
                     'relative block w-full rounded-lg px-3 py-2.5 text-left text-lg font-medium transition-colors',
-                    on ? 'text-maroon-900' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-800',
+                    on ? 'text-brand' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-800',
                   )}
                 >
                   {on && <span className="absolute inset-y-1.5 left-0 w-1 rounded-full bg-maroon-900" aria-hidden />}
@@ -171,7 +172,7 @@ export function MyToursView() {
                   aria-current={on ? 'page' : undefined}
                   className={cn(
                     'relative -mb-px whitespace-nowrap pb-3 pt-1 text-base font-semibold transition-colors',
-                    on ? 'text-maroon-900' : 'text-ink-500 hover:text-ink-800',
+                    on ? 'text-brand' : 'text-ink-500 hover:text-ink-800',
                   )}
                 >
                   {t.label} ({loading ? '…' : grouped[t.key].length})
@@ -184,11 +185,11 @@ export function MyToursView() {
           {/* Content */}
           {loading ? (
             <div className="flex justify-center py-24">
-              <Loader2 className="animate-spin text-maroon-800" size={26} />
+              <Loader2 className="animate-spin text-brand" size={26} />
             </div>
           ) : active.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-800">
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                 <CalendarRange size={26} />
               </span>
               <p className="text-lg font-semibold text-ink-900">No tours yet</p>
@@ -210,16 +211,16 @@ export function MyToursView() {
                     <button
                       type="button"
                       onClick={() => setSelected(b)}
-                      className="flex w-full items-center gap-4 rounded-2xl border border-ink-200/70 bg-white p-4 text-left shadow-soft transition-colors hover:border-maroon-800/40 hover:bg-ink-50/50"
+                      className="flex w-full items-center gap-4 rounded-2xl border border-ink-200/70 bg-surface p-4 text-left shadow-soft transition-colors hover:border-brand/40 hover:bg-ink-50/50"
                     >
-                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-tint text-brand">
                         <Icon size={20} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-ink-900">
                           {b.listing?.title ?? b.listingTitle ?? serviceLabel}
                         </p>
-                        <p className="font-mono text-xs font-semibold text-maroon-800">{bookingRef(b.bookingNo)}</p>
+                        <p className="font-mono text-xs font-semibold text-brand">{bookingRef(b.bookingNo)}</p>
                         <p className="truncate text-sm text-ink-500">
                           {other ? `${otherLabel} ${other}` : ''}
                           {(b.listing?.school?.name ?? b.schoolName)
@@ -360,25 +361,25 @@ function BookingDetail({
   const showConfirmedLink = b.status === 'CONFIRMED' && needsLink && !!b.videoLink;
 
   return (
-    <main className="min-h-dvh bg-white pt-[var(--header-h)]">
+    <main className="min-h-dvh bg-surface pt-[var(--header-h)]">
       <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
         <button
           type="button"
           onClick={onBack}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-maroon-900 transition-colors hover:text-maroon-700"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand transition-colors hover:text-brand"
         >
           <ArrowLeft size={16} /> Back to My tours
         </button>
 
-        <div className="overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-soft">
+        <div className="overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-soft">
           {/* Header */}
           <div className="flex items-start gap-4 border-b border-ink-100 p-6">
-            <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-maroon-50 text-maroon-800">
+            <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-tint text-brand">
               <Icon size={26} />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[0.7rem] font-bold uppercase tracking-[0.12em] text-ink-400">
-                {serviceLabel} · <span className="font-mono text-maroon-800">{bookingRef(b.bookingNo)}</span>
+                {serviceLabel} · <span className="font-mono text-brand">{bookingRef(b.bookingNo)}</span>
               </p>
               <h1 className="mt-0.5 font-display text-2xl font-semibold text-ink-900">{title}</h1>
             </div>
@@ -430,9 +431,9 @@ function BookingDetail({
 
             {/* Meeting link input — guide confirming an online booking */}
             {canAcceptDecline && needsLink && (
-              <div className="rounded-2xl border border-ink-200 bg-ivory/40 p-4">
+              <div className="rounded-2xl border border-ink-200 bg-surface-2/60 p-4">
                 <label htmlFor="meetingLink" className="inline-flex items-center gap-2 text-sm font-semibold text-ink-900">
-                  <Link2 size={16} className="text-maroon-800" /> Meeting link (Google Meet or Zoom)
+                  <Link2 size={16} className="text-brand" /> Meeting link (Google Meet or Zoom)
                 </label>
                 <input
                   id="meetingLink"
@@ -441,7 +442,7 @@ function BookingDetail({
                   value={meetingLink}
                   onChange={(e) => setMeetingLink(e.target.value)}
                   placeholder="https://meet.google.com/abc-defg-hij"
-                  className="mt-2 w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+                  className="mt-2 w-full rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
                 />
                 <p className="mt-2 text-xs text-ink-500">
                   Create the meeting for the scheduled time, paste the link here, then confirm. {otherFirst} gets it by
@@ -474,9 +475,9 @@ function BookingDetail({
                 const existing = localReview ?? b.review;
                 if (existing) {
                   return (
-                    <div className="rounded-2xl border border-ink-200 bg-ivory/40 p-4">
+                    <div className="rounded-2xl border border-ink-200 bg-surface-2/60 p-4">
                       <p className="inline-flex items-center gap-2 text-sm font-semibold text-ink-900">
-                        <Star size={16} className="fill-gold-400 text-gold-400" />
+                        <Star size={16} className="fill-gold-500 text-gold-500" />
                         {isGuide ? `${otherFirst}’s review` : 'Your review'}
                       </p>
                       <div className="mt-3">
@@ -496,7 +497,7 @@ function BookingDetail({
                   );
                 }
                 return (
-                  <div className="rounded-2xl border border-ink-200 bg-ivory/40 p-4">
+                  <div className="rounded-2xl border border-ink-200 bg-surface-2/60 p-4">
                     <p className="text-sm font-semibold text-ink-900">Leave a review for {otherFirst}</p>
                     <div className="mt-3 flex gap-1.5">
                       {[1, 2, 3, 4, 5].map((n) => (
@@ -513,8 +514,8 @@ function BookingDetail({
                             size={30}
                             className={cn(
                               (hoverRating || rating) >= n
-                                ? 'fill-gold-400 text-gold-400'
-                                : 'fill-ink-200 text-ink-200',
+                                ? 'fill-gold-500 text-gold-500'
+                                : 'fill-ink-300/60 text-ink-300/60',
                             )}
                           />
                         </button>
@@ -524,7 +525,7 @@ function BookingDetail({
                       value={reviewText}
                       onChange={(e) => setReviewText(e.target.value)}
                       placeholder={`Share how your ${serviceLabel.toLowerCase()} with ${otherFirst} went…`}
-                      className="mt-3 min-h-[90px] w-full resize-y rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+                      className="mt-3 min-h-[90px] w-full resize-y rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
                     />
                     <button
                       type="button"

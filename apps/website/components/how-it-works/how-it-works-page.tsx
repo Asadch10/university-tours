@@ -15,6 +15,7 @@ import {
 import { Reveal, RevealGroup } from '@/components/ui/reveal';
 import { cn } from '@/lib/utils';
 import { universities } from '@/lib/data';
+import { PHOTOS } from '@/lib/images';
 
 const img = (slug: string) => universities.find((u) => u.slug === slug)?.image ?? universities[0]!.image;
 
@@ -22,7 +23,7 @@ const img = (slug: string) => universities.find((u) => u.slug === slug)?.image ?
 
 const PROCESS = {
   book: {
-    image: img('harvard'),
+    image: PHOTOS.studentsGroup.src,
     alt: 'A family choosing a student guide on a laptop',
     steps: [
       {
@@ -103,7 +104,7 @@ const FAQ_GROUPS = [
 
 export function HowItWorksPage() {
   return (
-    <div className="bg-ivory pt-[var(--header-h)]">
+    <div className="bg-canvas pt-[var(--header-h)]">
       <Process />
       <Benefits />
       <Faq />
@@ -124,7 +125,7 @@ function Process() {
   }
 
   return (
-    <section className="bg-cream/50 py-16 sm:py-24">
+    <section className="bg-canvas-alt/50 py-16 sm:py-24">
       <div className="container-page">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">
@@ -137,7 +138,7 @@ function Process() {
 
         {/* Tabs */}
         <div className="mt-8 flex justify-center">
-          <div className="inline-flex rounded-full border border-ink-200 bg-white p-1 shadow-sm">
+          <div className="inline-flex rounded-full border border-ink-200 bg-surface p-1 shadow-sm">
             {(['book', 'host'] as const).map((t) => (
               <button
                 key={t}
@@ -173,10 +174,10 @@ function Process() {
                   onClick={() => setActiveStep(i)}
                   className={cn(
                     'flex w-full gap-5 rounded-2xl border-l-2 px-6 py-5 text-left transition-colors',
-                    active ? 'border-maroon-900 bg-white shadow-soft' : 'border-ink-200 hover:bg-white/60',
+                    active ? 'border-brand bg-surface shadow-soft' : 'border-ink-200 hover:bg-surface/60',
                   )}
                 >
-                  <span className={cn('font-display text-2xl font-bold', active ? 'text-maroon-900' : 'text-ink-300')}>
+                  <span className={cn('font-display text-2xl font-bold', active ? 'text-brand' : 'text-ink-300')}>
                     {i + 1}
                   </span>
                   <div>
@@ -201,7 +202,7 @@ function Process() {
 
 function Benefits() {
   return (
-    <section className="bg-cream/50 py-16 sm:py-24">
+    <section className="bg-canvas-alt/50 py-16 sm:py-24">
       <div className="container-page">
         <Reveal className="mx-auto max-w-2xl text-center">
           <span className="eyebrow justify-center">
@@ -215,8 +216,8 @@ function Benefits() {
         <RevealGroup className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map(({ icon: Icon, title, body }) => (
             <Reveal as="div" key={title}>
-              <div className="flex h-full flex-col rounded-2xl border border-ink-200/70 bg-white p-6 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-maroon-50 text-maroon-900">
+              <div className="flex h-full flex-col rounded-2xl border border-ink-200/70 bg-surface p-6 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-tint text-brand">
                   <Icon size={20} />
                 </span>
                 <h3 className="mt-4 font-display text-base font-semibold text-ink-900">{title}</h3>
@@ -247,7 +248,7 @@ function Faq() {
         <div className="mx-auto mt-12 max-w-3xl space-y-10">
           {FAQ_GROUPS.map((group, gi) => (
             <Reveal as="div" key={group.category}>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-maroon-800">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-brand">
                 {group.category}
               </p>
               {group.items.map((item, i) => {

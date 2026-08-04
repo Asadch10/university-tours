@@ -8,6 +8,21 @@ import { useEffect, useRef } from 'react';
    bundler (the map is client-only via `ssr: false`). This keeps `next build`
    working regardless of how the deploy environment installs dependencies. */
 
+/**
+ * Reads a theme token off the document root as a real `rgb()` string.
+ *
+ * Markers and the hover popup are handed to Leaflet as plain colour strings / an HTML
+ * string, so neither Tailwind classes nor `var(--token)` inheritance reach them — the
+ * value has to be resolved at the moment the marker is drawn. Because both themes define
+ * every token, this stays correct after a theme switch as long as markers are redrawn
+ * (they are, via the `selectedId` effect below).
+ */
+function css(token: string): string {
+  if (typeof window === 'undefined') return '#000';
+  const v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  return v ? `rgb(${v})` : '#000';
+}
+
 const LEAFLET_VERSION = '1.9.4';
 const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
 const LEAFLET_JS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
@@ -109,8 +124,8 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
 
       const marker = L.circleMarker([lat, lng], {
         radius: 9,
-        color: '#fff',
-        fillColor: '#2563EB',
+        color: css('--canvas'),
+        fillColor: css('--blue-400'),
         fillOpacity: 1,
         weight: 2.5,
       });
@@ -133,9 +148,9 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
           />`
               : ''
           }
-          <div style="padding:10px 14px 14px;background:#fff;">
-            <p style="margin:0;font-weight:700;font-size:13.5px;color:#1f1a16;line-height:1.3;">${u.name}</p>
-            <p style="margin:5px 0 0;font-size:12px;color:#85725f;">${u.city}, ${u.state}</p>
+          <div style="padding:10px 14px 14px;background:${css('--surface')};">
+            <p style="margin:0;font-weight:700;font-size:13.5px;color:${css('--ink-900')};line-height:1.3;">${u.name}</p>
+            <p style="margin:5px 0 0;font-size:12px;color:${css('--ink-500')};">${u.city}, ${u.state}</p>
           </div>
         </div>`,
       );
@@ -232,8 +247,8 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
     markersRef.current.forEach((marker, id) => {
       const active = id === selectedId;
       marker.setStyle({
-        fillColor: active ? '#6b1521' : '#2563EB',
-        color: '#fff',
+        fillColor: active ? css('--brand') : css('--blue-400'),
+        color: css('--canvas'),
         radius: active ? 12 : 9,
       });
       if (active) marker.bringToFront();

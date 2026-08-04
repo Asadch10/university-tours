@@ -34,17 +34,17 @@ function GuideCard({ g }: { g: Guide }) {
           loading="lazy"
           className="h-full w-full object-cover"
         />
-        <span className="pointer-events-none absolute left-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-800 opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100">
+        <span className="pointer-events-none absolute left-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-800 opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100">
           <ChevronLeft size={16} />
         </span>
-        <span className="pointer-events-none absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-800 opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100">
+        <span className="pointer-events-none absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-800 opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100">
           <ChevronRight size={16} />
         </span>
         <div className="pointer-events-none absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
           {[0, 1, 2].map((d) => (
             <span
               key={d}
-              className={cn('h-1.5 w-1.5 rounded-full', d === 0 ? 'bg-white' : 'bg-white/55')}
+              className={cn('h-1.5 w-1.5 rounded-full', d === 0 ? 'bg-surface' : 'bg-surface/55')}
             />
           ))}
         </div>
@@ -86,7 +86,7 @@ function FilterPill({
         'rounded-xl border px-4 py-3.5 text-sm font-medium transition-colors',
         selected
           ? 'border-ink-900 bg-ink-100 text-ink-900'
-          : 'border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
+          : 'border-ink-200 bg-surface text-ink-700 hover:bg-ink-50',
       )}
     >
       {label}
@@ -99,12 +99,15 @@ function FilterPill({
 export function SearchResults({
   initialQuery = '',
   initialService = '',
+  initialDate = '',
 }: {
   initialQuery?: string;
   initialService?: string;
+  /** `YYYY-MM-DD` carried over from the homepage hero search. */
+  initialDate?: string;
 }) {
   const [query, setQuery] = useState(initialQuery);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(initialDate);
   const [service, setService] = useState(initialService);
   const [sort, setSort] = useState<Sort>('recommended');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -230,7 +233,7 @@ export function SearchResults({
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink-200 bg-white px-5 py-2.5 text-sm font-medium text-ink-900 shadow-sm transition-colors hover:bg-ink-50"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink-200 bg-surface px-5 py-2.5 text-sm font-medium text-ink-900 shadow-sm transition-colors hover:bg-ink-50"
             >
               <SlidersHorizontal size={15} /> Filters
               {activeFilterCount > 0 && (
@@ -253,7 +256,7 @@ export function SearchResults({
             {query && (
               <>
                 {' '}
-                for <span className="text-maroon-900">“{query}”</span>
+                for <span className="text-brand">“{query}”</span>
               </>
             )}
           </p>
@@ -261,7 +264,7 @@ export function SearchResults({
             value={sort}
             onChange={(e) => setSort(e.target.value as Sort)}
             aria-label="Sort by"
-            className="cursor-pointer rounded-full border border-ink-200 bg-white px-4 py-2 text-sm text-ink-800 focus:border-maroon-800 focus:outline-none"
+            className="cursor-pointer rounded-full border border-ink-200 bg-surface px-4 py-2 text-sm text-ink-800 focus:border-brand focus:outline-none"
           >
             <option value="recommended">Recommended</option>
             <option value="rating">Top rated</option>
@@ -285,7 +288,7 @@ export function SearchResults({
             />
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-white/60 px-6 py-20 text-center">
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-surface/60 px-6 py-20 text-center">
             <SearchX size={40} className="text-ink-300" />
             <h3 className="mt-4 font-display text-xl font-semibold text-ink-900">No guides match</h3>
             <p className="mt-2 max-w-sm text-sm text-ink-500">
@@ -307,13 +310,13 @@ export function SearchResults({
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           {/* Scrim */}
           <div
-            className="absolute inset-0 bg-ink-900/50"
+            className="absolute inset-0 bg-canvas/80"
             onClick={() => setFiltersOpen(false)}
             aria-hidden
           />
 
           {/* Panel */}
-          <div className="relative flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-lift">
+          <div className="relative flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-surface shadow-lift">
             {/* Header */}
             <div className="relative flex shrink-0 items-center justify-center border-b border-ink-100 px-6 py-5">
               <h2 className="font-display text-lg font-bold text-ink-900">Filters</h2>

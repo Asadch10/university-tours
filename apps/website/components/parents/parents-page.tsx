@@ -9,7 +9,7 @@ const SPLIT_2 = 'https://d3m810mf773mim.cloudfront.net/static/parents-split-2.av
 
 export function ParentsPage() {
   return (
-    <div className="bg-white pt-[var(--header-h)]">
+    <div className="bg-surface pt-[var(--header-h)]">
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative h-[62vh] min-h-[420px] overflow-hidden sm:h-[68vh] sm:min-h-[460px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}

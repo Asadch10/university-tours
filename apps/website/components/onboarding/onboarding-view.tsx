@@ -17,7 +17,7 @@ const OPTIONS = [
 ];
 
 const inputClasses =
-  'w-full rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+  'w-full rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';
 
 type Step = 'intent' | 'schools';
 
@@ -131,12 +131,12 @@ export function OnboardingView() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={hero} alt="" className="h-full w-full object-cover" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-ink-950/75 via-maroon-950/65 to-maroon-950/85" />
+        <div className="absolute inset-0 bg-gradient-to-b from-canvas/75 via-maroon-950/65 to-maroon-950/85" />
         <div className="bg-grid absolute inset-0 opacity-20" aria-hidden />
       </div>
 
       <div className="relative mx-auto flex min-h-dvh max-w-md items-center px-5 py-16">
-        <div className="w-full overflow-hidden rounded-3xl bg-white shadow-lift">
+        <div className="w-full overflow-hidden rounded-3xl bg-surface shadow-lift">
           {step === 'intent' ? (
             <>
               {/* Hero */}
@@ -145,7 +145,7 @@ export function OnboardingView() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={hero} alt="" className="h-full w-full object-cover" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-ink-950/70 to-ink-950/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-canvas/70 to-canvas/20" />
                 <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
                   <h1 className="font-display text-2xl font-bold leading-tight text-white sm:text-3xl">
                     Welcome to University Campus Private Tours{firstName ? `, ${firstName}` : ''}
@@ -166,10 +166,10 @@ export function OnboardingView() {
                         onClick={() => setSelected(o.key)}
                         className={cn(
                           'flex w-full items-center gap-3 rounded-2xl border px-5 py-4 text-left transition-colors',
-                          active ? 'border-maroon-800 bg-maroon-50/50 ring-1 ring-inset ring-maroon-800' : 'border-ink-200 bg-white hover:border-maroon-300',
+                          active ? 'border-brand bg-brand-tint/50 ring-1 ring-inset ring-brand' : 'border-ink-200 bg-surface hover:border-brand-muted',
                         )}
                       >
-                        <span className={cn('inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', active ? 'border-maroon-800' : 'border-ink-300')}>
+                        <span className={cn('inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', active ? 'border-brand' : 'border-ink-300')}>
                           {active && <span className="h-2.5 w-2.5 rounded-full bg-maroon-800" />}
                         </span>
                         <span className="text-sm font-medium text-ink-900">{o.label}</span>
@@ -229,13 +229,13 @@ export function OnboardingView() {
                 {schools.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {schools.map((s) => (
-                      <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-maroon-50 py-1.5 pl-3 pr-1.5 text-sm font-medium text-maroon-900 ring-1 ring-inset ring-maroon-100">
+                      <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-brand-tint py-1.5 pl-3 pr-1.5 text-sm font-medium text-brand ring-1 ring-inset ring-brand-muted">
                         {s}
                         <button
                           type="button"
                           onClick={() => setSchools((arr) => arr.filter((x) => x !== s))}
                           aria-label={`Remove ${s}`}
-                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-maroon-700 transition-colors hover:bg-maroon-200/60"
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-brand transition-colors hover:bg-maroon-200/60"
                         >
                           <X size={13} />
                         </button>

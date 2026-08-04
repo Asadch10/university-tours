@@ -10,7 +10,7 @@ export function AmbassadorCard({ a }: { a: Ambassador }) {
   return (
     <Link
       href={`/ambassadors/${a.id}`}
-      className="group flex flex-col rounded-3xl border border-ink-200/70 bg-white p-5 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1"
+      className="group flex flex-col rounded-3xl border border-ink-200/70 bg-surface p-5 shadow-soft transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift focus-visible:-translate-y-1"
     >
       <div className="flex items-start gap-4">
         <Avatar name={a.name} src={a.avatar} size={56} />
@@ -48,7 +48,7 @@ export function AmbassadorCard({ a }: { a: Ambassador }) {
         <StarRating value={a.rating} count={a.reviews} size={14} />
         <div className="text-right">
           <p className="text-2xs uppercase tracking-wider text-ink-400">From</p>
-          <p className="font-display text-lg font-semibold text-maroon-900">{formatPrice(a.priceFrom)}</p>
+          <p className="font-display text-lg font-semibold text-brand">{formatPrice(a.priceFrom)}</p>
         </div>
       </div>
     </Link>

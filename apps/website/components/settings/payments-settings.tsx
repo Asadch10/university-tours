@@ -6,6 +6,8 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { CreditCard, Loader2, Trash2, Plus, Check, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { paymentMethodsApi, friendlyError, type SavedCard } from '@/lib/client-api';
+import { stripeAppearanceFor } from '@/lib/stripe-appearance';
+import { useTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 
 // Cache one Stripe.js loader per publishable key.
@@ -104,8 +106,8 @@ export function PaymentsSettings() {
           </p>
         ) : (
           cards.map((c) => (
-            <div key={c.id} className="flex items-center gap-4 rounded-2xl border border-ink-200 bg-white p-4">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-maroon-50 text-maroon-800">
+            <div key={c.id} className="flex items-center gap-4 rounded-2xl border border-ink-200 bg-surface p-4">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-tint text-brand">
                 <CreditCard size={20} />
               </span>
               <div className="min-w-0 flex-1">
@@ -126,7 +128,7 @@ export function PaymentsSettings() {
                   type="button"
                   disabled={busyId === c.id}
                   onClick={() => makeDefault(c.id)}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-maroon-800 hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline disabled:opacity-50"
                 >
                   <Check size={14} /> Make default
                 </button>
@@ -180,19 +182,18 @@ function AddCardForm({
   onCancel: () => void;
 }) {
   const stripePromise = useMemo(() => stripeFor(publishableKey), [publishableKey]);
+  const { theme } = useTheme();
   return (
-    <div className="mt-6 rounded-2xl border border-ink-200 bg-white p-5">
+    <div className="mt-6 rounded-2xl border border-ink-200 bg-surface p-5">
       <p className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-ink-900">
-        <Lock size={14} className="text-maroon-800" /> Add a card
+        <Lock size={14} className="text-brand" /> Add a card
       </p>
       <Elements
+        key={theme}
         stripe={stripePromise}
         options={{
           clientSecret,
-          appearance: {
-            theme: 'stripe',
-            variables: { colorPrimary: '#7a1128', borderRadius: '12px', fontFamily: 'inherit' },
-          },
+          appearance: stripeAppearanceFor(theme),
         }}
       >
         <SetupForm onSaved={onSaved} onCancel={onCancel} />

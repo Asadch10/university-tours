@@ -10,13 +10,17 @@ export const metadata: Metadata = {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; service?: string }>;
+  searchParams: Promise<{ q?: string; service?: string; date?: string }>;
 }) {
-  const { q, service } = await searchParams;
+  const { q, service, date } = await searchParams;
 
   return (
     <div className="pt-[var(--header-h)]">
-      <SearchResults initialQuery={q ?? ''} initialService={service ?? ''} />
+      <SearchResults
+        initialQuery={q ?? ''}
+        initialService={service ?? ''}
+        initialDate={date ?? ''}
+      />
     </div>
   );
 }

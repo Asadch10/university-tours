@@ -25,7 +25,8 @@ export function Avatar({
     <span
       className={cn(
         'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-maroon-gradient font-display font-semibold text-ivory',
-        ring && 'ring-2 ring-ivory ring-offset-2 ring-offset-transparent',
+        // The ring separates stacked avatars, so it tracks the page behind them.
+        ring && 'ring-2 ring-canvas ring-offset-2 ring-offset-transparent',
         className,
       )}
       style={{ width: size, height: size, fontSize: size * 0.36 }}

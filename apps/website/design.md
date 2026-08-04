@@ -1,17 +1,75 @@
 # University Campus Private Tours — Website Design System
 
 High-fidelity design system and page spec for the public website (`apps/website`, Next.js 15 App
-Router). Brand is derived from the collegiate crest logo: deep maroon + gold + warm ivory.
+Router). Brand is derived from the collegiate crest logo: deep maroon + gold, rendered on a warm
+near-black canvas.
+
+**The website ships both themes with a visitor-facing toggle.** Dark is the default; the choice
+persists in `localStorage` under `ucpt-theme`. The admin panel and mobile app are still light and
+are intentionally untouched.
+
+### How theming works
+
+Every colour token resolves to a CSS variable defined twice in [`app/theme.css`](app/theme.css):
+`:root` holds the **dark** values and `.light` the **light** ones. Because dark is the default, the
+server HTML and any no-JS render are already correct without a class.
+
+- `lib/theme.tsx` — `ThemeProvider`, `useTheme()`, and `THEME_SCRIPT`.
+- `THEME_SCRIPT` runs **inline and synchronously in `<head>`** (`app/layout.tsx`). It must stay
+  there: anything async lets a light-theme visitor see a dark flash on every navigation.
+- `components/ui/theme-toggle.tsx` — the switch, mounted in the navbar (desktop + mobile).
+- **You almost never need a `dark:` variant.** The scales below are contrast-ordered, so
+  `text-ink-900` / `bg-surface` / `border-ink-200` are already right in both themes. `dark:` is
+  wired to `:root:not(.light)` if you genuinely need it.
+
+**Adding a token: define it in BOTH blocks.** One present only in `:root` silently keeps its dark
+value in light mode. `scripts`-free check: the audit in the PR description compares key parity and
+contrast for both themes.
+
+Values that are **not** Tailwind-reachable must be switched at runtime instead:
+`lib/stripe-appearance.ts` (iframe — and `<Elements>` needs `key={theme}` to remount),
+`components/home/map-view.tsx` (Leaflet markers + popup HTML string, via a `css()` token reader),
+and the Leaflet/`color-scheme`/autofill/scrollbar rules in `globals.css`.
 
 ## 1. Brand foundations
 
 | Token | Value | Use |
 | ----- | ----- | --- |
-| Primary | `maroon-900 #6b1521` / `maroon-800 #7a1a32` | Headers, primary buttons, crest |
-| Accent | `gold-500 #cf9526` (gradient `bg-gold-sheen`) | Premium accents, highlight text, secondary CTA |
-| Canvas | `ivory #fbf8f3`, `cream #f6f0e7` | Page + alternating section backgrounds |
-| Text | `ink-900 #1f1a16` / `ink-600` / `ink-500` | Headings / body / muted |
-| Success | `verified #2f7d57` | Verified badges, checkmarks |
+| Canvas | `canvas #0d0b0a` / `canvas-alt #131010` | Page base + alternating section bands |
+| Surfaces | `surface #1a1614` → `surface-2 #221d1a` → `surface-3 #2b2521` → `surface-4 #362e29` | Cards/navbar → inputs → hover fills → pressed |
+| Brand text | `brand #f0879b`, `brand-soft #e0687f` | Brand-coloured text, borders, rings, eyebrows |
+| Brand fill | `maroon-900 #a32741` / `maroon-800 #b92e4b` (gradient `bg-maroon-gradient`) | Primary buttons, filled brand bands |
+| Brand tint | `brand-tint #25141a` | Soft brand-tinted fills and hovers |
+| Accent | `gold-500 #e0aa3e` (gradient `bg-gold-sheen`) | Premium accents, highlight text, secondary CTA |
+| Text | `ink-900 #f7f3ef` / `ink-600 #c2b8ae` / `ink-500 #a89c92` / `ink-400 #8d8177` | Headings / body / muted / meta |
+| Hairlines | `ink-200 #3a322c` / `ink-100 #2b2521` | Borders, dividers |
+| Success | `verified #3fbd7f` | Verified badges, checkmarks |
+| Light-on-dark | `ivory #fbf8f3`, `white` | **Only** on brand-filled bands and over photography |
+
+### Reading the scales
+
+`ink` is a **contrast scale, not a lightness scale**: `ink-900` is always the highest-contrast
+foreground against the canvas (so it is a warm white here) and `ink-50` the lowest (a near-black
+surface tint). The same rule applies to `gold`. This is what let every existing `text-ink-900` /
+`border-ink-200` call site stay correct through the dark conversion.
+
+`maroon` remains a **fill scale** — deep enough to carry white text. It is *not* readable as text
+on the canvas, so brand-coloured foregrounds use the `brand` tokens instead. In short:
+**`bg-maroon-*` for fills, `text-brand` / `border-brand` / `ring-brand` for foregrounds.**
+
+### Rules
+
+- Never use `bg-white` or `bg-ivory` for a surface — use `bg-surface*`. Those two are reserved for
+  deliberate light-on-dark accents (a light CTA on a maroon band, glass over a photo).
+- Elevation on dark comes from a **lighter surface + hairline border**, not from a drop shadow.
+  The `shadow-soft/card/lift` tokens carry an inset top highlight for exactly this reason.
+- Semantic colours (`red`, `blue`, `emerald`) are tuned so the mid ramp works both as text on the
+  canvas *and* as a solid fill under white text. `red-700` and `gold-600+` are the **light** ends —
+  use them for text on a tint, never as a fill under white text.
+- Anything rendered outside Tailwind's reach needs theming by hand: Stripe Elements
+  (`lib/stripe-appearance.ts`), Leaflet tiles/popups (`globals.css`), and any HTML built as a
+  string. `globals.css` also sets `color-scheme: dark` plus autofill, scrollbar and date-picker
+  overrides, which otherwise render as light system chrome.
 
 **Type:** Playfair Display (`font-display`) for headings, Inter (`font-sans`) for body — the "Classic
 Elegant" premium pairing. Loaded via `next/font` (no layout shift).

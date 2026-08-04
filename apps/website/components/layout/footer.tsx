@@ -57,7 +57,7 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-ink-100 bg-white">
+    <footer className="border-t border-ink-100 bg-surface">
       <div className="container-page py-14 sm:py-16">
         <div className="grid gap-12 lg:grid-cols-[1.2fr_3.4fr]">
 
@@ -74,7 +74,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="text-maroon-900 transition-colors hover:text-maroon-800"
+                  className="text-brand transition-colors hover:text-brand"
                 >
                   <Icon size={20} />
                 </a>

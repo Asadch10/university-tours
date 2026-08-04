@@ -16,7 +16,7 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="group rounded-xl border border-ink-200/70 bg-white p-4 shadow-soft transition-shadow hover:shadow-card">
+    <div className="group rounded-xl border border-ink-200/70 bg-surface p-4 shadow-soft transition-shadow hover:shadow-card">
       <div className="flex items-start justify-between">
         <p className="text-sm font-medium text-ink-500">{label}</p>
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">

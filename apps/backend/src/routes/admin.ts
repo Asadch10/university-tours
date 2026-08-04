@@ -155,12 +155,37 @@ adminRouter.put('/settings', requirePermission('appconfig.manage'), asyncHandler
   res.json(await svc.updateSettings(req.body as { refundWindowsJson?: unknown; requestExpiryHours?: number; maskingEnabled?: boolean }, req.user!.id));
 }));
 
+// ─── Service pricing ──────────────────────────────────────────────────────────
+// Suggested 1h/2h prices and the min/max a guide may set, per tour type. Surfaced in
+// the admin console alongside commission on the Price & commission page.
+
 adminRouter.get('/price-bounds', requirePermission('commission.set'), asyncHandler(async (_req, res) => {
   res.json(await svc.getPriceBounds());
 }));
 
+adminRouter.get('/price-bounds/history', requirePermission('commission.set'), asyncHandler(async (_req, res) => {
+  res.json(await svc.getPricingHistory());
+}));
+
 adminRouter.put('/price-bounds', requirePermission('commission.set'), asyncHandler(async (req, res) => {
-  res.json(await svc.setPriceBounds(req.body as { serviceType: string; minCents: number; maxCents: number; suggested1hCents: number; suggested2hCents: number }));
+  const body = req.body as {
+    serviceType?: string;
+    minCents?: number;
+    maxCents?: number;
+    suggested1hCents?: number;
+    suggested2hCents?: number;
+  };
+  const required = ['serviceType', 'minCents', 'maxCents', 'suggested1hCents', 'suggested2hCents'] as const;
+  for (const key of required) {
+    if (body[key] === undefined) throw new HttpError(400, 'validation_error', `${key} is required`);
+  }
+  // Range/consistency checks live in the service so they apply to every caller.
+  res.json(
+    await svc.setPriceBounds(
+      body as { serviceType: string; minCents: number; maxCents: number; suggested1hCents: number; suggested2hCents: number },
+      req.user!.id,
+    ),
+  );
 }));
 
 // ─── Transactions & payouts ───────────────────────────────────────────────────

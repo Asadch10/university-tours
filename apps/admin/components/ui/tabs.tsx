@@ -37,7 +37,7 @@ export function Tabs({
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all',
               active
-                ? 'bg-white text-brand-900 shadow-sm'
+                ? 'bg-surface text-brand-900 shadow-sm'
                 : 'text-ink-600 hover:text-ink-900',
             )}
           >

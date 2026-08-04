@@ -9,7 +9,7 @@ export function FaqSection({ items }: { items: { q: string; a: string }[] }) {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section className="bg-white py-10 sm:py-12">
+    <section className="bg-surface py-10 sm:py-12">
       <div className="container-page">
 
         {/* Heading */}

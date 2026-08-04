@@ -7,7 +7,7 @@ export function Skeleton({ className }: { className?: string }) {
 /** Placeholder rows for a loading table. */
 export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink-200/70 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-ink-200/70 bg-surface">
       <div className="border-b border-ink-200/60 bg-ink-50/50 px-5 py-3">
         <Skeleton className="h-4 w-32" />
       </div>
@@ -30,7 +30,7 @@ export function StatGridSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-ink-200/70 bg-white p-5">
+        <div key={i} className="rounded-2xl border border-ink-200/70 bg-surface p-5">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="mt-3 h-8 w-32" />
           <Skeleton className="mt-3 h-3 w-20" />

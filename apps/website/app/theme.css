@@ -1,0 +1,272 @@
+/*
+ * Theme token values. Imported by globals.css before the Tailwind layers.
+ *
+ *   :root  → DARK (the default; a no-JS or pre-hydration render is already dark)
+ *   .light → LIGHT overrides, applied by the theme script in app/layout.tsx
+ *
+ * Values are space-separated RGB channels so Tailwind's `<alpha-value>` slot works —
+ * see the `t()` helper in tailwind.config.ts.
+ *
+ * Every token MUST be defined in both blocks. A token present in :root but missing from
+ * .light silently keeps its dark value in light mode, which is the main way a themed site
+ * ends up with one unreadable component.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Elevation */
+  --canvas: 13 11 10;
+  --canvas-alt: 19 16 16;
+  --surface: 26 22 20;
+  --surface-2: 34 29 26;
+  --surface-3: 43 37 33;
+  --surface-4: 54 46 41;
+
+  /* Brand foregrounds + soft fills */
+  --brand: 240 135 155;
+  --brand-soft: 224 104 127;
+  --brand-muted: 138 58 76;
+  --brand-tint: 37 20 26;
+  --brand-tint-strong: 51 25 31;
+
+  /* Maroon — fill scale */
+  --maroon-50: 37 20 26;
+  --maroon-100: 51 25 31;
+  --maroon-200: 69 33 41;
+  --maroon-300: 94 43 54;
+  --maroon-400: 126 58 73;
+  --maroon-500: 168 70 92;
+  --maroon-600: 192 48 79;
+  --maroon-700: 181 44 72;
+  --maroon-800: 185 46 75;
+  --maroon-900: 163 39 65;
+  --maroon-950: 122 26 50;
+
+  /* Gold — contrast scale */
+  --gold-50: 42 32 16;
+  --gold-100: 58 44 20;
+  --gold-200: 87 65 27;
+  --gold-300: 125 93 34;
+  --gold-400: 180 130 42;
+  --gold-500: 224 170 62;
+  --gold-600: 234 189 94;
+  --gold-700: 240 205 131;
+  --gold-800: 245 220 171;
+  --gold-900: 250 234 207;
+  --gold-950: 253 247 234;
+
+  /* Ink — contrast scale */
+  --ink-50: 34 29 26;
+  --ink-100: 43 37 33;
+  --ink-200: 58 50 44;
+  --ink-300: 99 88 80;
+  --ink-400: 141 129 119;
+  --ink-500: 168 156 146;
+  --ink-600: 194 184 174;
+  --ink-700: 216 208 200;
+  --ink-800: 235 229 223;
+  --ink-900: 247 243 239;
+  --ink-950: 255 253 251;
+
+  /* Semantic */
+  --verified: 63 189 127;
+  /* *-solid are FILL counterparts, dark enough to carry white text at AA. A single token
+     cannot do both jobs: on a near-black canvas contrast(white,X) * contrast(X,canvas) is
+     a constant 10.5, so clearing 4.5:1 in both roles is arithmetically impossible. */
+  --verified-solid: 31 122 79;
+  --danger-solid: 192 42 48;
+
+  --red-50: 42 19 21;
+  --red-100: 58 24 26;
+  --red-200: 85 32 31;
+  --red-300: 140 47 49;
+  --red-400: 178 57 61;
+  --red-500: 212 63 69;
+  --red-600: 224 75 81;
+  --red-700: 236 100 105;
+  --red-800: 242 140 143;
+  --red-900: 247 180 182;
+
+  --blue-50: 16 26 46;
+  --blue-100: 22 35 61;
+  --blue-200: 29 49 87;
+  --blue-300: 42 74 128;
+  --blue-400: 91 147 245;
+  --blue-500: 59 124 232;
+  --blue-600: 47 106 214;
+  --blue-700: 74 131 232;
+  --blue-800: 122 168 240;
+  --blue-900: 168 198 245;
+  --blue-950: 11 18 32;
+
+  --emerald-50: 15 36 25;
+  --emerald-100: 21 49 35;
+  --emerald-200: 28 69 49;
+  --emerald-300: 78 207 148;
+  --emerald-400: 63 189 127;
+  --emerald-500: 42 168 108;
+  --emerald-600: 31 143 91;
+  --emerald-700: 40 160 104;
+  --emerald-800: 142 229 187;
+  --emerald-900: 188 240 215;
+
+  /* Elevation reads through a lighter top edge plus a deep ambient shadow —
+     a light-theme drop shadow alone is invisible on a near-black canvas. */
+  --shadow-soft: 0 1px 0 0 rgba(255, 247, 240, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.5),
+    0 4px 16px -4px rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 0 0 rgba(255, 247, 240, 0.05) inset, 0 2px 6px rgba(0, 0, 0, 0.55),
+    0 16px 40px -16px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 1px 0 0 rgba(255, 247, 240, 0.07) inset, 0 10px 24px rgba(0, 0, 0, 0.6),
+    0 28px 56px -20px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 0 1px rgba(224, 170, 62, 0.35), 0 0 32px -6px rgba(224, 170, 62, 0.28),
+    0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  --shadow-brand-glow: 0 0 0 1px rgba(240, 135, 155, 0.22),
+    0 0 40px -10px rgba(163, 39, 65, 0.55), 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+
+  --grad-maroon: linear-gradient(135deg, #b92e4b 0%, #a32741 55%, #6b1521 100%);
+  --grad-gold: linear-gradient(135deg, #f0cd83 0%, #e0aa3e 100%);
+  --grad-radial-fade: radial-gradient(
+    60% 60% at 50% 0%,
+    rgba(224, 170, 62, 0.1) 0%,
+    transparent 70%
+  );
+  --grad-surface-glow: radial-gradient(
+      80% 120% at 12% 0%,
+      rgba(163, 39, 65, 0.2) 0%,
+      transparent 60%
+    ),
+    radial-gradient(60% 100% at 92% 8%, rgba(224, 170, 62, 0.1) 0%, transparent 62%);
+  --grad-edge-fade: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 247, 240, 0.14) 50%,
+    transparent 100%
+  );
+
+  /* Decorative grid texture + how much to trim photography. */
+  --grid-line: rgba(255, 247, 240, 0.035);
+  --img-fit: brightness(0.92) contrast(1.04) saturate(1.02);
+}
+
+.light {
+  color-scheme: light;
+
+  --canvas: 251 248 243;
+  --canvas-alt: 246 240 231;
+  --surface: 255 255 255;
+  --surface-2: 247 245 243;
+  --surface-3: 236 232 227;
+  --surface-4: 217 209 200;
+
+  --brand: 107 21 33;
+  --brand-soft: 122 26 50;
+  --brand-muted: 238 163 174;
+  --brand-tint: 253 243 244;
+  --brand-tint-strong: 251 227 230;
+
+  --maroon-50: 253 243 244;
+  --maroon-100: 251 227 230;
+  --maroon-200: 246 203 209;
+  --maroon-300: 238 163 174;
+  --maroon-400: 226 113 133;
+  --maroon-500: 210 71 98;
+  --maroon-600: 189 44 77;
+  --maroon-700: 158 32 64;
+  --maroon-800: 122 26 50;
+  --maroon-900: 107 21 33;
+  --maroon-950: 61 10 18;
+
+  --gold-50: 253 250 240;
+  --gold-100: 250 241 214;
+  --gold-200: 243 225 168;
+  --gold-300: 236 203 114;
+  --gold-400: 227 179 71;
+  --gold-500: 207 149 38;
+  --gold-600: 180 118 29;
+  --gold-700: 144 86 26;
+  --gold-800: 119 69 28;
+  --gold-900: 101 58 27;
+  --gold-950: 58 29 12;
+
+  --ink-50: 247 245 243;
+  --ink-100: 236 232 227;
+  --ink-200: 217 209 200;
+  --ink-300: 191 178 164;
+  --ink-400: 138 122 104;
+  --ink-500: 133 114 95;
+  --ink-600: 108 91 75;
+  --ink-700: 87 73 62;
+  --ink-800: 71 61 53;
+  --ink-900: 31 26 22;
+  --ink-950: 20 16 13;
+
+  --verified: 47 125 87;
+  --verified-solid: 47 125 87;
+  --danger-solid: 220 38 38;
+
+  --red-50: 254 242 242;
+  --red-100: 254 226 226;
+  --red-200: 254 202 202;
+  --red-300: 252 165 165;
+  --red-400: 248 113 113;
+  /* red-500 is only ever the destructive hover — it deepens in light, lightens in dark. */
+  --red-500: 185 28 28;
+  --red-600: 220 38 38;
+  --red-700: 185 28 28;
+  --red-800: 153 27 27;
+  --red-900: 127 29 29;
+
+  --blue-50: 239 246 255;
+  --blue-100: 219 234 254;
+  --blue-200: 191 219 254;
+  --blue-300: 147 197 253;
+  --blue-400: 37 99 235;
+  --blue-500: 59 130 246;
+  --blue-600: 37 99 235;
+  --blue-700: 29 78 216;
+  --blue-800: 30 64 175;
+  --blue-900: 30 58 138;
+  --blue-950: 23 37 84;
+
+  --emerald-50: 236 253 245;
+  --emerald-100: 209 250 229;
+  --emerald-200: 167 243 208;
+  --emerald-300: 4 120 87;
+  --emerald-400: 52 211 153;
+  --emerald-500: 16 185 129;
+  --emerald-600: 4 120 87;
+  --emerald-700: 4 120 87;
+  --emerald-800: 6 95 70;
+  --emerald-900: 6 78 59;
+
+  --shadow-soft: 0 1px 2px rgba(31, 26, 22, 0.04), 0 4px 16px -4px rgba(31, 26, 22, 0.08);
+  --shadow-card: 0 2px 4px rgba(31, 26, 22, 0.04), 0 12px 32px -12px rgba(31, 26, 22, 0.12);
+  --shadow-lift: 0 8px 16px rgba(31, 26, 22, 0.06), 0 24px 48px -16px rgba(31, 26, 22, 0.18);
+  --shadow-glow: 0 0 0 1px rgba(207, 149, 38, 0.25), 0 12px 32px -8px rgba(122, 26, 50, 0.3);
+  --shadow-brand-glow: 0 0 0 1px rgba(107, 21, 33, 0.18),
+    0 12px 32px -8px rgba(122, 26, 50, 0.35);
+
+  --grad-maroon: linear-gradient(135deg, #7a1a32 0%, #6b1521 55%, #3d0a12 100%);
+  --grad-gold: linear-gradient(135deg, #eccb72 0%, #cf9526 100%);
+  --grad-radial-fade: radial-gradient(
+    60% 60% at 50% 0%,
+    rgba(207, 149, 38, 0.1) 0%,
+    transparent 70%
+  );
+  --grad-surface-glow: radial-gradient(
+      80% 120% at 12% 0%,
+      rgba(122, 26, 50, 0.08) 0%,
+      transparent 60%
+    ),
+    radial-gradient(60% 100% at 92% 8%, rgba(207, 149, 38, 0.08) 0%, transparent 62%);
+  --grad-edge-fade: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(31, 26, 22, 0.12) 50%,
+    transparent 100%
+  );
+
+  --grid-line: rgba(31, 26, 22, 0.05);
+  --img-fit: none;
+}

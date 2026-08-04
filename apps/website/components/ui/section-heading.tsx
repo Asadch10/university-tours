@@ -26,8 +26,8 @@ export function SectionHeading({
       )}
     >
       {eyebrow && (
-        <span className={cn('eyebrow', light && 'text-gold-300')}>
-          <span className={cn('h-px w-6', light ? 'bg-gold-300/60' : 'bg-maroon-800/40')} />
+        <span className={cn('eyebrow', light && 'text-onbrand-accent')}>
+          <span className={cn('h-px w-6', light ? 'bg-onbrand-accent/60' : 'bg-maroon-800/40')} />
           {eyebrow}
         </span>
       )}

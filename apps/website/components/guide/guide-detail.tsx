@@ -8,6 +8,8 @@ import {
   Footprints, Video, Minus, Plus, MessageSquare, Loader2, CalendarCheck, ArrowLeft, Eye,
 } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
+import { SERVICE_LABEL } from '@/lib/tour-types';
+import { usePriceBounds, priceFor } from '@/lib/pricing';
 import type { GuideProfile } from '@/lib/guides';
 import { ymd } from '@/lib/availability';
 import {
@@ -26,7 +28,7 @@ function initials(name: string) {
 
 export function GuideDetail({ g }: { g: GuideProfile }) {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
+    <div className="min-h-screen overflow-x-hidden bg-surface">
       <div className="container-page pt-[calc(var(--header-h)+1.5rem)] pb-20 sm:pt-[calc(var(--header-h)+2rem)] sm:pb-24">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12 xl:gap-14">
           {/* Gallery — top-left */}
@@ -108,7 +110,7 @@ function Gallery({ g }: { g: GuideProfile }) {
           type="button"
           onClick={() => go(-1)}
           aria-label="Previous photo"
-          className="absolute left-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-800 shadow-lift transition-colors hover:bg-ink-50"
+          className="absolute left-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-800 shadow-lift transition-colors hover:bg-ink-50"
         >
           <ChevronLeft size={20} />
         </button>
@@ -116,16 +118,16 @@ function Gallery({ g }: { g: GuideProfile }) {
           type="button"
           onClick={() => go(1)}
           aria-label="Next photo"
-          className="absolute right-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-ink-800 shadow-lift transition-colors hover:bg-ink-50"
+          className="absolute right-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-800 shadow-lift transition-colors hover:bg-ink-50"
         >
           <ChevronRight size={20} />
         </button>
 
         <div className="absolute bottom-3 right-3 flex gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-ink-800 shadow-md">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-sm font-semibold text-ink-800 shadow-md">
             <Share size={15} /> Share
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-ink-800 shadow-md">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-sm font-semibold text-ink-800 shadow-md">
             <Maximize2 size={15} /> Expand
           </span>
         </div>
@@ -141,7 +143,7 @@ function Gallery({ g }: { g: GuideProfile }) {
             aria-label={`View photo ${i + 1}`}
             className={cn(
               'h-16 w-20 shrink-0 overflow-hidden rounded-xl ring-2 transition',
-              i === active ? 'ring-maroon-800' : 'ring-transparent hover:ring-ink-200',
+              i === active ? 'ring-brand' : 'ring-transparent hover:ring-ink-200',
             )}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -209,9 +211,9 @@ function AboutMe({ g }: { g: GuideProfile }) {
 
 function TourType({ g }: { g: GuideProfile }) {
   const items = [
-    { label: 'Campus tour', active: g.services.includes('CAMPUS_TOUR') },
-    { label: 'Video chat', active: g.services.includes('VIDEO_CONSULTATION') },
-    { label: 'Consultancy', active: g.services.includes('CONSULTATION') },
+    { label: SERVICE_LABEL.CAMPUS_TOUR, active: g.services.includes('CAMPUS_TOUR') },
+    { label: SERVICE_LABEL.VIDEO_CONSULTATION, active: g.services.includes('VIDEO_CONSULTATION') },
+    { label: SERVICE_LABEL.CONSULTATION, active: g.services.includes('CONSULTATION') },
   ];
   return (
     <section className="mt-10">
@@ -219,7 +221,7 @@ function TourType({ g }: { g: GuideProfile }) {
       <ul className="mt-4 space-y-2.5">
         {items.map((it) => (
           <li key={it.label} className="flex items-center gap-2.5">
-            <Check size={18} className={it.active ? 'text-blue-600' : 'text-ink-300'} />
+            <Check size={18} className={it.active ? 'text-blue-400' : 'text-ink-300'} />
             <span className={it.active ? 'font-medium text-ink-900' : 'text-ink-400 line-through'}>
               {it.label}
             </span>
@@ -254,7 +256,7 @@ function Checklist({
       <ul className={cn('mt-4 gap-x-10 gap-y-2.5', columns ? 'grid sm:grid-cols-2' : 'space-y-2.5')}>
         {items.map((it) => (
           <li key={it.label} className="flex items-center gap-2.5">
-            <Check size={18} className={it.active ? 'text-blue-600' : 'text-ink-300'} />
+            <Check size={18} className={it.active ? 'text-blue-400' : 'text-ink-300'} />
             <span className={it.active ? 'font-medium text-ink-900' : 'text-ink-400 line-through'}>
               {it.label}
             </span>
@@ -309,7 +311,7 @@ function Reviews({ g }: { g: GuideProfile }) {
                 <span>{r.date}</span>
                 <span className="flex gap-0.5">
                   {Array.from({ length: r.rating }).map((_, k) => (
-                    <Star key={k} size={13} className="fill-blue-600 text-blue-600" />
+                    <Star key={k} size={13} className="fill-blue-600 text-blue-400" />
                   ))}
                 </span>
               </figcaption>
@@ -337,7 +339,7 @@ function HostedBy({ g }: { g: GuideProfile }) {
           <p className="text-justify leading-relaxed text-ink-700 sm:text-left">{g.hostedBy}</p>
           <Link
             href={`/u/${g.id}`}
-            className="mt-3 inline-block font-semibold text-maroon-800 hover:text-maroon-900 hover:underline"
+            className="mt-3 inline-block font-semibold text-brand hover:text-brand hover:underline"
           >
             View profile
           </Link>
@@ -352,21 +354,22 @@ function HostedBy({ g }: { g: GuideProfile }) {
 type Panel = 'tour' | 'guests' | 'date' | 'time' | 'duration' | null;
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+// Prices are NOT derived from these — each tier is priced per tour type by the admin
+// (Finance → Price & commission) and fetched via usePriceBounds().
 const DURATIONS = [
-  { label: '1 hour', minutes: 60, mult: 1, desc: 'Good for a quick campus overview and answers to your top questions.' },
+  { label: '1 hour', minutes: 60, desc: 'Good for a quick campus overview and answers to your top questions.' },
   {
     label: '2 hours',
     minutes: 120,
-    mult: 2,
     recommended: true,
     desc: 'Perfect for a more thorough, personalized tour and deeper campus insights.',
   },
 ];
 
 const TOUR_LABELS: Record<BookingServiceType, string> = {
-  CAMPUS_TOUR: 'Campus tour',
-  VIDEO_CONSULTATION: 'Video chat',
-  CONSULTATION: 'Consultancy',
+  CAMPUS_TOUR: SERVICE_LABEL.CAMPUS_TOUR,
+  VIDEO_CONSULTATION: SERVICE_LABEL.VIDEO_CONSULTATION,
+  CONSULTATION: SERVICE_LABEL.CONSULTATION,
 };
 
 function timeSlots() {
@@ -392,13 +395,15 @@ function BookingCard({ g }: { g: GuideProfile }) {
   const [date, setDate] = useState<{ y: number; m: number; d: number } | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [duration, setDuration] = useState<string | null>(null);
+  // Admin-managed pricing per tour type (Finance → Price & commission).
+  const { bounds: priceBounds } = usePriceBounds();
   // All booking fields (Tour type, Date, Time, Guests, Duration, Reserve) are shown
   // together by default — no step-by-step reveal. Reserve stays disabled until the
   // required picks are made.
   const [tourPicked, setTourPicked] = useState(true);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'paying' | 'requested'>('idle');
   // Set when the backend returns a Stripe client secret — drives the payment step.
-  const [pay, setPay] = useState<{ bookingId: string; clientSecret: string; publishableKey: string } | null>(null);
+  const [pay, setPay] = useState<{ bookingId: string; clientSecret: string; publishableKey: string; amountCents: number } | null>(null);
   // A guide viewing their OWN listing can see it (like everyone else) but can't book
   // themselves. Read after mount to avoid a hydration mismatch (token is client-side).
   const [isOwner, setIsOwner] = useState(false);
@@ -449,7 +454,8 @@ function BookingCard({ g }: { g: GuideProfile }) {
   const guestLabel = `${guests} guest${guests > 1 ? 's' : ''}`;
   const tourLabel = TOUR_LABELS[tourType];
   const selectedDuration = DURATIONS.find((d) => d.label === duration) ?? null;
-  const priceCents = Math.round((g.price * (selectedDuration?.mult ?? 1)) / 100) * 100;
+  // Quoted from the admin-managed price per tour type + duration tier.
+  const priceCents = priceFor(priceBounds, tourType, selectedDuration?.minutes ?? 60);
   const dateLabel = date
     ? new Date(date.y, date.m, date.d).toLocaleDateString('en-US', {
         month: 'short',
@@ -494,7 +500,15 @@ function BookingCard({ g }: { g: GuideProfile }) {
       });
       // Payments on → collect card in the payment step. Off → request is already live.
       if (res.clientSecret && res.publishableKey) {
-        setPay({ bookingId: res.id, clientSecret: res.clientSecret, publishableKey: res.publishableKey });
+        // Show the server's price, not the local quote — the PaymentIntent is created
+        // from `grossCents`, so this is exactly what Stripe will charge. They only differ
+        // if an admin changed pricing after this page loaded.
+        setPay({
+          bookingId: res.id,
+          clientSecret: res.clientSecret,
+          publishableKey: res.publishableKey,
+          amountCents: res.grossCents,
+        });
         setStatus('paying');
       } else {
         setStatus('requested');
@@ -515,7 +529,7 @@ function BookingCard({ g }: { g: GuideProfile }) {
         bookingId={pay.bookingId}
         clientSecret={pay.clientSecret}
         publishableKey={pay.publishableKey}
-        amountCents={priceCents}
+        amountCents={pay.amountCents}
         guideName={g.name}
         tourLabel={tourLabel}
         onPaid={() => {
@@ -534,16 +548,16 @@ function BookingCard({ g }: { g: GuideProfile }) {
   if (status === 'requested') {
     const firstName = g.name.split(' ')[0];
     return (
-      <div className="mt-6 rounded-3xl border border-ink-200/70 bg-white p-6 text-center shadow-card">
+      <div className="mt-6 rounded-3xl border border-ink-200/70 bg-surface p-6 text-center shadow-card">
         <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-verified/10 text-verified">
           <CalendarCheck size={26} />
         </span>
-        <h3 className="mt-4 font-display text-xl font-bold text-maroon-900">Request sent</h3>
+        <h3 className="mt-4 font-display text-xl font-bold text-brand">Request sent</h3>
         <p className="mt-1.5 text-sm text-ink-600">
           {firstName} has been notified and will confirm your {tourLabel.toLowerCase()}. You won’t be
           charged until they accept.
         </p>
-        <dl className="mt-5 space-y-2.5 rounded-2xl bg-cream/60 p-4 text-left text-sm">
+        <dl className="mt-5 space-y-2.5 rounded-2xl bg-canvas-alt/60 p-4 text-left text-sm">
           {[
             ['Tour type', tourLabel],
             ['When', `${dateLabel}${time ? ` · ${time}` : ''}`],
@@ -557,7 +571,7 @@ function BookingCard({ g }: { g: GuideProfile }) {
           ))}
           <div className="flex justify-between gap-4 border-t border-ink-200/70 pt-2.5">
             <dt className="text-ink-500">Total if accepted</dt>
-            <dd className="text-right font-semibold text-maroon-900">{formatPrice(priceCents)}</dd>
+            <dd className="text-right font-semibold text-brand">{formatPrice(priceCents)}</dd>
           </div>
         </dl>
         <div className="mt-5 grid gap-2">
@@ -582,8 +596,8 @@ function BookingCard({ g }: { g: GuideProfile }) {
   // ---- Own listing — visible to all, but the owner can't book themselves ----
   if (isOwner) {
     return (
-      <div className="mt-6 rounded-3xl border border-ink-200/70 bg-white p-6 text-center shadow-card">
-        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-maroon-50 text-maroon-800">
+      <div className="mt-6 rounded-3xl border border-ink-200/70 bg-surface p-6 text-center shadow-card">
+        <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-brand-tint text-brand">
           <Eye size={26} />
         </span>
         <h3 className="mt-4 font-display text-xl font-bold text-ink-900">This is your listing</h3>
@@ -614,7 +628,8 @@ function BookingCard({ g }: { g: GuideProfile }) {
                 <OptionRow
                   icon={<Footprints size={20} />}
                   iconClass="bg-blue-600 text-white"
-                  title="Campus tour"
+                  title={SERVICE_LABEL.CAMPUS_TOUR}
+                  price={formatPrice(priceFor(priceBounds, 'CAMPUS_TOUR', 60))}
                   desc="Explore campus on a personalized tour tailored to your interests"
                   selected={tourType === 'CAMPUS_TOUR'}
                   onClick={() => changeTourType('CAMPUS_TOUR')}
@@ -624,7 +639,8 @@ function BookingCard({ g }: { g: GuideProfile }) {
                 <OptionRow
                   icon={<Video size={20} />}
                   iconClass="bg-ink-100 text-ink-700"
-                  title="Video chat"
+                  title={SERVICE_LABEL.VIDEO_CONSULTATION}
+                  price={formatPrice(priceFor(priceBounds, 'VIDEO_CONSULTATION', 60))}
                   desc="Connect live with a current student and get the scoop from anywhere"
                   selected={tourType === 'VIDEO_CONSULTATION'}
                   onClick={() => changeTourType('VIDEO_CONSULTATION')}
@@ -634,7 +650,8 @@ function BookingCard({ g }: { g: GuideProfile }) {
                 <OptionRow
                   icon={<MessageSquare size={20} />}
                   iconClass="bg-gold-500 text-white"
-                  title="Consultancy"
+                  title={SERVICE_LABEL.CONSULTATION}
+                  price={formatPrice(priceFor(priceBounds, 'CONSULTATION', 60))}
                   desc="A focused 1-on-1 advising session on admissions, essays, or student life"
                   selected={tourType === 'CONSULTATION'}
                   onClick={() => changeTourType('CONSULTATION')}
@@ -652,11 +669,11 @@ function BookingCard({ g }: { g: GuideProfile }) {
           {open === 'date' && (
             <DropPanel>
               <div className="mb-3 flex items-center justify-between">
-                <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month" className="text-blue-600">
+                <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month" className="text-blue-400">
                   <ChevronLeft size={20} />
                 </button>
                 <span className="font-bold text-ink-900">{monthLabel}</span>
-                <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month" className="text-blue-600">
+                <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month" className="text-blue-400">
                   <ChevronRight size={20} />
                 </button>
               </div>
@@ -688,7 +705,7 @@ function BookingCard({ g }: { g: GuideProfile }) {
                         'mx-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors',
                         selectable && 'hover:bg-ink-100',
                         !selectable && 'cursor-not-allowed text-ink-300',
-                        selectable && !isSel && hasAvail && 'font-semibold text-maroon-900',
+                        selectable && !isSel && hasAvail && 'font-semibold text-brand',
                         isSel && 'bg-maroon-900 text-ivory hover:bg-maroon-900',
                       )}
                     >
@@ -757,7 +774,7 @@ function BookingCard({ g }: { g: GuideProfile }) {
                 <Counter label="Adults" sub="Age 18+" value={adults} min={1} onChange={setAdults} />
                 <Counter label="Children" sub="Age 2–17" value={children} min={0} onChange={setChildren} />
                 <p className="mt-4 text-sm text-ink-600">Planning a group tour with 5 or more guests?</p>
-                <Link href="/group-tours" className="text-sm font-medium text-blue-600 underline">
+                <Link href="/group-tours" className="text-sm font-medium text-blue-400 underline">
                   Learn more
                 </Link>
                 <div className="mt-3 text-right">
@@ -791,21 +808,27 @@ function BookingCard({ g }: { g: GuideProfile }) {
                           <p className="flex items-center gap-2 font-bold text-ink-900">
                             {d.label}
                             {d.recommended && (
-                              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-600">
+                              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-400">
                                 Recommended
                               </span>
                             )}
                           </p>
                           <p className="mt-0.5 text-sm text-ink-600">{d.desc}</p>
                         </div>
-                        <span
-                          className={cn(
-                            'mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                            sel ? 'border-blue-600 bg-blue-600 text-white' : 'border-ink-300',
-                          )}
-                        >
-                          {sel && <Check size={12} />}
-                        </span>
+                        <div className="mt-0.5 flex shrink-0 items-center gap-3">
+                          {/* Price for this duration at the currently selected tour type. */}
+                          <span className="font-semibold text-brand">
+                            {formatPrice(priceFor(priceBounds, tourType, d.minutes))}
+                          </span>
+                          <span
+                            className={cn(
+                              'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
+                              sel ? 'border-blue-600 bg-blue-600 text-white' : 'border-ink-300',
+                            )}
+                          >
+                            {sel && <Check size={12} />}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
@@ -876,7 +899,7 @@ function Trigger({
 
 function DropPanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-30 rounded-2xl border border-ink-200 bg-white p-4 shadow-lift">
+    <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-30 rounded-2xl border border-ink-200 bg-surface p-4 shadow-lift">
       {children}
     </div>
   );
@@ -887,6 +910,7 @@ function OptionRow({
   iconClass,
   title,
   desc,
+  price,
   selected,
   onClick,
 }: {
@@ -894,6 +918,8 @@ function OptionRow({
   iconClass: string;
   title: string;
   desc: string;
+  /** "from" price for this tour type, shown before a duration is picked. */
+  price?: string;
   selected: boolean;
   onClick: () => void;
 }) {
@@ -911,6 +937,11 @@ function OptionRow({
         <span className="block font-bold text-ink-900">{title}</span>
         <span className="block text-sm text-ink-600">{desc}</span>
       </span>
+      {price && (
+        <span className="mt-0.5 shrink-0 whitespace-nowrap text-sm font-semibold text-brand">
+          from {price}
+        </span>
+      )}
       <span
         className={cn(
           'mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',

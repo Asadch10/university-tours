@@ -64,7 +64,7 @@ const FAQS = [
 
 export function ReferPage() {
   return (
-    <div className="bg-ivory">
+    <div className="bg-canvas">
       <Intro />
       <HowItWorks />
       <Faq />
@@ -110,7 +110,7 @@ function Intro() {
 
 function HowItWorks() {
   return (
-    <section className="bg-ink-900 py-20 text-white sm:py-28">
+    <section className="bg-maroon-gradient py-20 text-white sm:py-28">
       <div className="container-page">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-bold sm:text-4xl">How referrals work</h2>
@@ -192,12 +192,12 @@ function Faq() {
       </div>
 
       <Reveal>
-        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-4 rounded-3xl bg-ink-900 px-7 py-6 text-white sm:flex-row sm:items-center">
+        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-4 rounded-3xl bg-maroon-gradient px-7 py-6 text-white sm:flex-row sm:items-center">
           <p className="font-display text-lg font-bold">Still have questions?</p>
           <div className="flex gap-3">
             <Link
               href="/faq"
-              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-white/90"
+              className="rounded-xl bg-surface px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface/90"
             >
               Help Center
             </Link>

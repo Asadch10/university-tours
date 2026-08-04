@@ -53,7 +53,7 @@ export function UniversityExplorer() {
         <div ref={topRef} className="scroll-mt-[calc(var(--header-h)+1.5rem)]" />
 
         {/* Filters: name search + USA state selector */}
-        <div className="flex flex-col gap-3 rounded-3xl border border-ink-200/70 bg-white p-4 shadow-soft sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+        <div className="flex flex-col gap-3 rounded-3xl border border-ink-200/70 bg-surface p-4 shadow-soft sm:flex-row sm:items-center sm:gap-4 sm:p-5">
           <div className="relative flex-1">
             <Search
               size={18}
@@ -69,7 +69,7 @@ export function UniversityExplorer() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by university name or city…"
-              className="w-full rounded-2xl border border-ink-200 bg-ivory/60 py-3 pl-11 pr-4 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+              className="w-full rounded-2xl border border-ink-200 bg-surface-2 py-3 pl-11 pr-4 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/15"
             />
           </div>
 
@@ -86,7 +86,7 @@ export function UniversityExplorer() {
               id="uni-state"
               value={stateFilter}
               onChange={(e) => setStateFilter(e.target.value)}
-              className="w-full cursor-pointer appearance-none rounded-2xl border border-ink-200 bg-ivory/60 py-3 pl-11 pr-9 text-sm text-ink-900 transition-colors focus:border-maroon-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-maroon-800/15"
+              className="w-full cursor-pointer appearance-none rounded-2xl border border-ink-200 bg-surface-2 py-3 pl-11 pr-9 text-sm text-ink-900 transition-colors focus:border-brand focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/15"
             >
               <option value="">All states</option>
               {STATES.map((s) => (
@@ -117,13 +117,13 @@ export function UniversityExplorer() {
           {stateFilter && (
             <>
               {' '}
-              in <span className="font-semibold text-maroon-900">{stateFilter}</span>
+              in <span className="font-semibold text-brand">{stateFilter}</span>
             </>
           )}
           {query && (
             <>
               {' '}
-              for <span className="font-semibold text-maroon-900">“{query}”</span>
+              for <span className="font-semibold text-brand">“{query}”</span>
             </>
           )}
         </p>
@@ -137,7 +137,7 @@ export function UniversityExplorer() {
             ))}
           </RevealGroup>
         ) : (
-          <div className="mt-8 flex flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-white/60 px-6 py-20 text-center">
+          <div className="mt-8 flex flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-surface/60 px-6 py-20 text-center">
             <SearchX size={40} className="text-ink-300" />
             <h3 className="mt-4 font-display text-xl font-semibold text-ink-900">
               No universities match

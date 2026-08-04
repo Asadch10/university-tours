@@ -112,7 +112,7 @@ export default function ListingDetailPage() {
     return (
       <RequirePermission anyOf={['listings.moderate']}>
         <div className="space-y-6">
-          <div className="rounded-2xl border border-ink-200 bg-white p-10 text-center">
+          <div className="rounded-2xl border border-ink-200 bg-surface p-10 text-center">
             <p className="font-display text-lg font-semibold text-ink-900">Listing not found</p>
             <p className="mt-1 text-sm text-ink-500">
               It may have been deleted by the guide on the website.

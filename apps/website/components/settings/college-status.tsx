@@ -58,10 +58,10 @@ export function CollegeStatus({ profile }: { profile?: MyProfileDto | null }) {
               onClick={() => setSelected(o.key)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-2xl border px-5 py-4 text-left transition-colors',
-                active ? 'border-maroon-800 bg-maroon-50/50 ring-1 ring-inset ring-maroon-800' : 'border-ink-200 bg-white hover:border-maroon-300',
+                active ? 'border-brand bg-brand-tint/50 ring-1 ring-inset ring-brand' : 'border-ink-200 bg-surface hover:border-brand-muted',
               )}
             >
-              <span className={cn('inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', active ? 'border-maroon-800' : 'border-ink-300')}>
+              <span className={cn('inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', active ? 'border-brand' : 'border-ink-300')}>
                 {active && <span className="h-2.5 w-2.5 rounded-full bg-maroon-800" />}
               </span>
               <span className="text-sm font-medium text-ink-900">{o.label}</span>

@@ -16,7 +16,7 @@ const TOPICS = [
 ] as const;
 
 const fieldClass =
-  'w-full rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+  'w-full rounded-xl border border-ink-200 bg-surface px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';
 
 const labelClass = 'mb-1.5 block text-sm font-semibold text-ink-800';
 
@@ -56,7 +56,7 @@ export function ContactForm() {
       <div
         role="status"
         aria-live="polite"
-        className="flex h-full flex-col items-center justify-center rounded-4xl border border-ink-200/70 bg-white p-8 text-center shadow-soft sm:p-12"
+        className="flex h-full flex-col items-center justify-center rounded-4xl border border-ink-200/70 bg-surface p-8 text-center shadow-soft sm:p-12"
       >
         <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-verified/10 text-verified">
           <CheckCircle2 size={32} />
@@ -87,7 +87,7 @@ export function ContactForm() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="rounded-4xl border border-ink-200/70 bg-white p-6 shadow-soft sm:p-8"
+      className="rounded-4xl border border-ink-200/70 bg-surface p-6 shadow-soft sm:p-8"
     >
       <fieldset disabled={sending} className="space-y-5">
         <legend className="sr-only">Contact form</legend>

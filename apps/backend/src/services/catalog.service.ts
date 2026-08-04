@@ -1,5 +1,6 @@
 import { prisma } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
+import { getPriceBounds as adminGetPriceBounds } from './admin.service.js';
 
 // ─── Schools ──────────────────────────────────────────────────────────────────
 
@@ -154,8 +155,16 @@ export async function searchGuides(opts: {
 
 // ─── Price bounds (public read for UI validation) ─────────────────────────────
 
+/**
+ * Public pricing for the guest booking widget.
+ *
+ * Delegates to the admin service so the guest-facing prices are exactly what the console
+ * shows — including the defaults it fills in for a service type with no row yet. Querying
+ * the table directly here would silently omit CONSULTATION on any database seeded before
+ * that tour type existed, leaving the booking widget with no price for it.
+ */
 export async function getPriceBounds() {
-  return prisma.servicePriceBound.findMany();
+  return adminGetPriceBounds();
 }
 
 // ─── Public questionnaire (become-a-guide extra questions, admin-managed) ──────

@@ -28,7 +28,7 @@ const FAQS = [
 
 export function VirtualToursPage() {
   return (
-    <div className="bg-white pt-[var(--header-h)]">
+    <div className="bg-surface pt-[var(--header-h)]">
       <Hero />
       <Bento />
       <Faq />
@@ -62,7 +62,7 @@ function Hero() {
               e.preventDefault();
               router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
             }}
-            className="mt-8 flex max-w-md items-center gap-2.5 rounded-full border border-ink-200 bg-white px-5 py-3.5 shadow-sm transition-colors focus-within:border-maroon-800/40"
+            className="mt-8 flex max-w-md items-center gap-2.5 rounded-full border border-ink-200 bg-surface px-5 py-3.5 shadow-sm transition-colors focus-within:border-brand/40"
           >
             <Search size={17} className="shrink-0 text-ink-400" />
             <input
@@ -113,7 +113,7 @@ function BentoCard({ image, label, className }: { image: string; label: string; 
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }}
         aria-hidden
       />
-      <span className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-inset ring-white/30 backdrop-blur transition-colors group-hover:bg-white group-hover:text-ink-900">
+      <span className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-inset ring-white/30 backdrop-blur transition-colors group-hover:bg-ivory group-hover:text-canvas">
         <ArrowUpRight size={16} />
       </span>
       <span className="absolute bottom-4 left-4 font-display text-lg font-semibold text-white">
@@ -127,7 +127,7 @@ function Bento() {
   return (
     <section className="py-12 sm:py-16">
       <div className="mx-5 sm:mx-7 lg:mx-10">
-        <div className="overflow-hidden rounded-[2rem] bg-black px-6 py-12 sm:px-10 lg:px-12 lg:py-16">
+        <div className="overflow-hidden rounded-[2rem] bg-surface-2 ring-1 ring-ink-200/60 shadow-card px-6 py-12 sm:px-10 lg:px-12 lg:py-16">
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
             {/* Bento grid */}
             <div className="grid grid-cols-2 gap-4">
@@ -214,12 +214,12 @@ function Faq() {
 
       {/* Still have questions bar */}
       <Reveal>
-        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-4 rounded-3xl bg-ink-900 px-7 py-6 text-white sm:flex-row sm:items-center">
+        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-start justify-between gap-4 rounded-3xl bg-maroon-gradient px-7 py-6 text-white sm:flex-row sm:items-center">
           <p className="font-display text-lg font-bold">Still have questions?</p>
           <div className="flex gap-3">
             <Link
               href="/faq"
-              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-white/90"
+              className="rounded-xl bg-surface px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface/90"
             >
               Help Center
             </Link>

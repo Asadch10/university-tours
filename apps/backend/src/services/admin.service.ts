@@ -1058,13 +1058,113 @@ export async function updateSettings(data: { refundWindowsJson?: unknown; reques
 
 // ─── Price bounds ─────────────────────────────────────────────────────────────
 
+/** Every service type the platform prices, in the order the admin console lists them. */
+export const PRICED_SERVICE_TYPES = ['CAMPUS_TOUR', 'VIDEO_CONSULTATION', 'CONSULTATION'] as const;
+export type PricedServiceType = (typeof PRICED_SERVICE_TYPES)[number];
+
+/**
+ * Fallbacks for a service type that has no row yet (e.g. CONSULTATION on a database
+ * seeded before it existed). Returning these keeps the admin pricing table complete
+ * instead of silently hiding a tour type the guest-facing site already offers.
+ */
+const PRICE_DEFAULTS: Record<PricedServiceType, { minCents: number; maxCents: number; suggested1hCents: number; suggested2hCents: number }> = {
+  CAMPUS_TOUR: { minCents: 2000, maxCents: 20000, suggested1hCents: 8000, suggested2hCents: 16000 },
+  VIDEO_CONSULTATION: { minCents: 1500, maxCents: 15000, suggested1hCents: 5000, suggested2hCents: 10000 },
+  CONSULTATION: { minCents: 5000, maxCents: 60000, suggested1hCents: 20000, suggested2hCents: 40000 },
+};
+
+/** Always returns one entry per service type, defaulted where no row exists yet. */
 export async function getPriceBounds() {
-  return prisma.servicePriceBound.findMany();
+  const rows = await prisma.servicePriceBound.findMany();
+  const byType = new Map(rows.map((r) => [r.serviceType as PricedServiceType, r]));
+  return PRICED_SERVICE_TYPES.map((serviceType) => {
+    const row = byType.get(serviceType);
+    return {
+      serviceType,
+      ...(row
+        ? {
+            minCents: row.minCents,
+            maxCents: row.maxCents,
+            suggested1hCents: row.suggested1hCents,
+            suggested2hCents: row.suggested2hCents,
+          }
+        : PRICE_DEFAULTS[serviceType]),
+      /** False when the values shown are defaults that have never been saved. */
+      configured: !!row,
+    };
+  });
 }
 
-export async function setPriceBounds(data: { serviceType: string; minCents: number; maxCents: number; suggested1hCents: number; suggested2hCents: number }) {
+export async function setPriceBounds(
+  data: { serviceType: string; minCents: number; maxCents: number; suggested1hCents: number; suggested2hCents: number },
+  adminId: string,
+) {
   const { serviceType, ...rest } = data;
-  return prisma.servicePriceBound.update({ where: { serviceType: serviceType as never }, data: rest });
+  if (!PRICED_SERVICE_TYPES.includes(serviceType as PricedServiceType)) {
+    throw new HttpError(400, 'validation_error', `serviceType must be one of ${PRICED_SERVICE_TYPES.join(', ')}`);
+  }
+  for (const [key, value] of Object.entries(rest)) {
+    if (!Number.isInteger(value) || value < 0) {
+      throw new HttpError(400, 'validation_error', `${key} must be a non-negative whole number of cents`);
+    }
+  }
+  if (rest.minCents > rest.maxCents) {
+    throw new HttpError(400, 'validation_error', 'minCents cannot exceed maxCents');
+  }
+  for (const key of ['suggested1hCents', 'suggested2hCents'] as const) {
+    if (rest[key] < rest.minCents || rest[key] > rest.maxCents) {
+      throw new HttpError(400, 'validation_error', `${key} must fall between minCents and maxCents`);
+    }
+  }
+
+  const before = await prisma.servicePriceBound.findUnique({ where: { serviceType: serviceType as never } });
+
+  // Upsert, not update: a service type with no row yet (CONSULTATION on older databases)
+  // would otherwise throw P2025 and be permanently unsettable from the console.
+  const updated = await prisma.servicePriceBound.upsert({
+    where: { serviceType: serviceType as never },
+    update: rest,
+    create: { serviceType: serviceType as never, ...rest },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      adminId,
+      action: 'pricing.update',
+      entity: `service_price_bounds/${serviceType}`,
+      // Prisma rejects a plain `null` on a nullable Json column, so the key is omitted
+      // entirely when this service type had no previous row.
+      ...(before ? { beforeJson: before as unknown as Prisma.InputJsonValue } : {}),
+      afterJson: updated as unknown as Prisma.InputJsonValue,
+      ip: '127.0.0.1',
+    },
+  });
+
+  return updated;
+}
+
+/** Pricing change history, reconstructed from the immutable audit log. */
+export async function getPricingHistory() {
+  const logs = await prisma.auditLog.findMany({
+    where: { action: 'pricing.update' },
+    include: { admin: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+  return logs.map((l) => {
+    const before = (l.beforeJson ?? null) as { suggested1hCents?: number; suggested2hCents?: number } | null;
+    const after = (l.afterJson ?? {}) as { serviceType?: string; suggested1hCents?: number; suggested2hCents?: number };
+    return {
+      id: l.id,
+      serviceType: after.serviceType ?? null,
+      oldSuggested1hCents: before?.suggested1hCents ?? null,
+      newSuggested1hCents: after.suggested1hCents ?? null,
+      oldSuggested2hCents: before?.suggested2hCents ?? null,
+      newSuggested2hCents: after.suggested2hCents ?? null,
+      actor: l.admin?.name ?? 'Admin',
+      changedAt: l.createdAt,
+    };
+  });
 }
 
 // ─── Schools ──────────────────────────────────────────────────────────────────

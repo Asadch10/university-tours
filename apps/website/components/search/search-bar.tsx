@@ -29,10 +29,10 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
     <div className={cn('w-full', variant === 'hero' && 'mx-auto max-w-4xl')}>
       <form
         onSubmit={submit}
-        className="flex flex-col gap-2 rounded-3xl border border-white/15 bg-white/95 p-2 shadow-lift backdrop-blur-xl sm:flex-row sm:items-center sm:rounded-full sm:p-1.5"
+        className="flex flex-col gap-2 rounded-3xl border border-white/15 bg-surface/95 p-2 shadow-lift backdrop-blur-xl sm:flex-row sm:items-center sm:rounded-full sm:p-1.5"
       >
         <label className="flex min-w-0 flex-[2] items-center gap-2.5 rounded-2xl px-4 py-2.5 sm:rounded-full">
-          <GraduationCap size={18} className="shrink-0 text-maroon-800" />
+          <GraduationCap size={18} className="shrink-0 text-brand" />
           <span className="sr-only">University</span>
           <input
             list="uni-list"
@@ -51,7 +51,7 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
         <span className="hidden h-7 w-px bg-ink-200 sm:block" aria-hidden />
 
         <label className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 sm:rounded-full">
-          <Sparkles size={18} className="shrink-0 text-maroon-800" />
+          <Sparkles size={18} className="shrink-0 text-brand" />
           <span className="sr-only">Service type</span>
           <select
             value={service}
@@ -67,7 +67,7 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
         <span className="hidden h-7 w-px bg-ink-200 sm:block" aria-hidden />
 
         <label className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 sm:rounded-full">
-          <Calendar size={18} className="shrink-0 text-maroon-800" />
+          <Calendar size={18} className="shrink-0 text-brand" />
           <span className="sr-only">Date</span>
           <input
             type="date"

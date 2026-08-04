@@ -369,7 +369,7 @@ export default function AppConfigPage() {
                 </div>
 
                 {maintenance && (
-                  <div className="flex items-start gap-2.5 rounded-xl border border-warn/25 bg-warn/10 px-4 py-3">
+                  <div className="flex items-start gap-2.5 rounded-xl border border-warn/25 bg-warn-solid/10 px-4 py-3">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warn" />
                     <div>
                       <p className="text-sm font-semibold text-ink-900">Preview — users will see:</p>

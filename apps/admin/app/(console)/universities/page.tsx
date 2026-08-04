@@ -544,7 +544,7 @@ export default function UniversitiesPage() {
             </Field>
 
             <Field label="Popular programs" htmlFor="uni-tags" hint="Press Enter or comma to add.">
-              <div className="min-h-[42px] rounded-xl border border-ink-200 bg-white px-2.5 py-2 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-600/15">
+              <div className="min-h-[42px] rounded-xl border border-ink-200 bg-surface px-2.5 py-2 focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-600/15">
                 {form.tags.length > 0 && (
                   <div className="mb-1.5 flex flex-wrap gap-1.5">
                     {form.tags.map((t) => (

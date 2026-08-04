@@ -172,7 +172,7 @@ export function HelpCenter() {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-ivory/85">
             Find answers to common questions. Still need help?{' '}
-            <Link href="/contact" className="font-semibold text-gold-300 underline-offset-4 hover:underline">
+            <Link href="/contact" className="font-semibold text-onbrand-accent underline-offset-4 hover:underline">
               Contact us
             </Link>
             .
@@ -188,7 +188,7 @@ export function HelpCenter() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search FAQs"
-              className="w-full rounded-full border border-white/20 bg-white py-3.5 pl-12 pr-5 text-ink-900 shadow-lift placeholder:text-ink-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-400/40"
+              className="w-full rounded-full border border-white/20 bg-surface py-3.5 pl-12 pr-5 text-ink-900 shadow-lift placeholder:text-ink-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-400/40"
             />
           </div>
         </div>
@@ -196,7 +196,7 @@ export function HelpCenter() {
 
       {/* Category filters */}
       {!searching && (
-        <section className="border-b border-ink-100 bg-ivory">
+        <section className="border-b border-ink-100 bg-canvas">
           <div className="container-page py-5">
             <div className="flex flex-wrap justify-center gap-2">
               {CATEGORIES.map((c) => {
@@ -226,7 +226,7 @@ export function HelpCenter() {
       )}
 
       {/* FAQs */}
-      <section className="bg-ivory py-14 sm:py-20">
+      <section className="bg-canvas py-14 sm:py-20">
         <div className="container-page">
           <div className="mx-auto max-w-3xl">
             {searching && (
@@ -287,12 +287,12 @@ export function HelpCenter() {
             ))}
 
             {/* Still need help CTA */}
-            <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-3xl bg-ink-900 px-7 py-6 text-white sm:flex-row sm:items-center">
+            <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-3xl bg-maroon-gradient px-7 py-6 text-white sm:flex-row sm:items-center">
               <p className="font-display text-lg font-bold">Still have questions?</p>
               <div className="flex gap-3">
                 <Link
                   href="/contact"
-                  className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-white/90"
+                  className="rounded-xl bg-surface px-5 py-2.5 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface/90"
                 >
                   Contact us
                 </Link>

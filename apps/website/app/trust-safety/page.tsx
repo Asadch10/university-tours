@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PHOTOS } from '@/lib/images';
 import { Handshake, ShieldCheck, Ban } from 'lucide-react';
 import { Reveal, RevealGroup } from '@/components/ui/reveal';
 
@@ -8,10 +9,8 @@ export const metadata: Metadata = {
     'Building trust through transparency, training, and thoughtful guardrails. How University Campus Private Tours keeps families and student guides safe on every campus tour.',
 };
 
-const BANNER =
-  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/03/8bcc0983b6feef9579de0397ed985f1590aee5?auto=format&fit=clip&h=2400&w=2400&s=72046b00f38cb2ef8c175150b586afda';
-const IMG_MINORS =
-  'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/90/2c205090b5abffa6f4ad9a74165efd71b822a8?auto=format&crop=edges&fit=crop&h=1200&w=1200&s=7e5658169ccc2c8dfc156e959c78f657';
+const BANNER = PHOTOS.campusExterior.src;
+const IMG_MINORS = PHOTOS.campusTour.src;
 const IMG_PLEDGE =
   'https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/e7/3a581d83a856f5c8ba2631fb85b30f7db55b4b?auto=format&crop=edges&fit=crop&h=1200&w=1200&s=123c8458b790adfa0997ebf308ae929a';
 
@@ -35,7 +34,7 @@ const PRINCIPLES = [
 
 export default function TrustSafetyPage() {
   return (
-    <div className="bg-white">
+    <div className="bg-surface">
       {/* ── 1. Commitment + banner ─────────────────────────────────────── */}
       <section className="pt-[calc(var(--header-h)+3rem)] sm:pt-[calc(var(--header-h)+4rem)]">
         <div className="container-page text-center">
@@ -68,7 +67,7 @@ export default function TrustSafetyPage() {
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-bold leading-tight text-ink-900 sm:text-4xl">
             Setting the standard for safe campus tours.{' '}
-            <span className="text-maroon-900">Every tour, every time.</span>
+            <span className="text-brand">Every tour, every time.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-600">
             We want you to make the most of every campus visit. That’s why we’re committed to safety —
@@ -126,7 +125,7 @@ export default function TrustSafetyPage() {
       </section>
 
       {/* ── 3. Safety is our top priority ──────────────────────────────── */}
-      <section className="bg-ivory py-20 sm:py-28">
+      <section className="bg-canvas py-20 sm:py-28">
         <div className="container-page">
           <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="font-display text-3xl font-bold text-ink-900 sm:text-4xl">

@@ -55,7 +55,7 @@ export function ContactInformation({ profile }: { profile?: MyProfileDto | null 
             aria-readonly="true"
             className={`${settingsInput} cursor-not-allowed bg-ink-50 text-ink-500`}
           />
-          <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-maroon-800">
+          <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand">
             <CheckCircle2 size={15} className="text-verified" /> Your email address is verified
           </p>
         </div>
@@ -65,7 +65,7 @@ export function ContactInformation({ profile }: { profile?: MyProfileDto | null 
           <label htmlFor="s-phone" className="mb-1.5 block text-sm font-semibold text-ink-900">
             Phone number
           </label>
-          <div className="flex items-center rounded-xl border border-ink-200 bg-white transition-colors focus-within:border-maroon-800 focus-within:ring-2 focus-within:ring-maroon-800/15">
+          <div className="flex items-center rounded-xl border border-ink-200 bg-surface transition-colors focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15">
             <div className="relative flex items-center border-r border-ink-200 pl-3">
               <select
                 aria-label="Country code"
@@ -99,7 +99,7 @@ export function ContactInformation({ profile }: { profile?: MyProfileDto | null 
             type="checkbox"
             checked={promo}
             onChange={(e) => setPromo(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-maroon-900 accent-maroon-900"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-brand accent-brand"
           />
           <span>
             I&apos;d like to receive promotional messages from University Campus Private Tours. Message and

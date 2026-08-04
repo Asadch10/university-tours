@@ -102,8 +102,8 @@ function TypeSection({
   };
 
   return (
-    <div className="rounded-2xl border border-ink-200 bg-ivory/40 p-4 sm:p-5">
-      <p className="mb-4 inline-flex items-center gap-2 font-bold text-maroon-900">
+    <div className="rounded-2xl border border-ink-200 bg-surface-2/60 p-4 sm:p-5">
+      <p className="mb-4 inline-flex items-center gap-2 font-bold text-brand">
         <Icon size={16} /> {TOUR_TYPE_LABELS[service]}
       </p>
 
@@ -111,7 +111,7 @@ function TypeSection({
         {/* Dates */}
         <div>
           <p className="mb-2 text-sm font-semibold text-ink-900">Available dates</p>
-          <div className="rounded-xl border border-ink-200 bg-white p-3">
+          <div className="rounded-xl border border-ink-200 bg-surface p-3">
             <div className="mb-2 flex items-center justify-between">
               <button
                 type="button"
@@ -181,7 +181,7 @@ function TypeSection({
                   className={cn(
                     'rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors',
                     on
-                      ? 'border-maroon-900 bg-maroon-900 text-ivory'
+                      ? 'border-brand bg-maroon-900 text-ivory'
                       : 'border-ink-200 text-ink-700 hover:border-ink-400',
                   )}
                 >

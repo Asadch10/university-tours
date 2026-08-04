@@ -46,11 +46,11 @@ export function AuthShell({
 
       {/* Centered white card — equal space above and below */}
       <div className="relative flex min-h-[calc(100dvh-var(--header-h))] items-center justify-center px-4 py-10 sm:py-14">
-        <div className="w-full max-w-[540px] rounded-2xl bg-white px-5 py-8 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:px-12 sm:py-10">
+        <div className="w-full max-w-[540px] rounded-2xl bg-surface px-5 py-8 shadow-[0_0_60px_rgba(0,0,0,0.18)] sm:px-12 sm:py-10">
           {heading ? (
             /* Reset-flow header — a title instead of the auth tabs */
             <div>
-              <h1 className="font-display text-2xl font-bold text-maroon-900 sm:text-3xl">{heading}</h1>
+              <h1 className="font-display text-2xl font-bold text-brand sm:text-3xl">{heading}</h1>
               {subtitle && <p className="mt-2 text-sm leading-relaxed text-ink-600">{subtitle}</p>}
             </div>
           ) : (
@@ -61,7 +61,7 @@ export function AuthShell({
                 className={cn(
                   'pb-2 font-display text-2xl font-bold transition-colors',
                   !isLogin
-                    ? 'border-b-2 border-maroon-900 text-maroon-900'
+                    ? 'border-b-2 border-brand text-brand'
                     : 'text-ink-900 hover:text-ink-600',
                 )}
               >
@@ -72,7 +72,7 @@ export function AuthShell({
                 className={cn(
                   'pb-2 font-display text-2xl font-bold transition-colors',
                   isLogin
-                    ? 'border-b-2 border-maroon-900 text-maroon-900'
+                    ? 'border-b-2 border-brand text-brand'
                     : 'text-ink-900 hover:text-ink-600',
                 )}
               >
@@ -91,4 +91,4 @@ export function AuthShell({
 
 /* Shared input styling for the auth forms. */
 export const authInputClasses =
-  'w-full rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-maroon-800 focus:outline-none focus:ring-2 focus:ring-maroon-800/15';
+  'w-full rounded-lg border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';

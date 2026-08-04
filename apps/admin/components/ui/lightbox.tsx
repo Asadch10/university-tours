@@ -18,7 +18,7 @@ export function useLightbox(): { open: (src: string) => void; node: ReactNode } 
     src && typeof document !== 'undefined'
       ? createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/85 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas/90 p-4 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
             aria-label="Image preview"
@@ -28,7 +28,7 @@ export function useLightbox(): { open: (src: string) => void; node: ReactNode } 
               type="button"
               onClick={close}
               aria-label="Close preview"
-              className="absolute right-5 top-5 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink-900 shadow-lg ring-1 ring-black/5 transition hover:bg-ink-100"
+              className="absolute right-5 top-5 inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface text-ink-900 shadow-lg ring-1 ring-black/5 transition hover:bg-ink-100"
             >
               <X size={22} />
             </button>
@@ -67,7 +67,7 @@ export function ImageThumb({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-      <span className="absolute inset-0 flex items-center justify-center bg-ink-950/0 opacity-0 transition group-hover:bg-ink-950/30 group-hover:opacity-100">
+      <span className="absolute inset-0 flex items-center justify-center bg-canvas/0 opacity-0 transition group-hover:bg-canvas/40 group-hover:opacity-100">
         <ZoomIn size={18} className="text-white" />
       </span>
     </button>

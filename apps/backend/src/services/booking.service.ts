@@ -34,9 +34,23 @@ async function notifyStatusChange(id: string, status: string): Promise<void> {
   }).catch((err) => logger.error({ err, bookingId: id }, 'Booking status emails failed'));
 }
 
-/** Friendly service label for a ServiceType. */
+/**
+ * Friendly service label for a ServiceType.
+ *
+ * DISPLAY ONLY — this is what a guest reads in booking emails and what appears as the
+ * Stripe PaymentIntent description. It is never persisted or compared against, so the
+ * wording is safe to change. (The listing `tourTypes` strings ARE stored data and are a
+ * separate concern — see apps/website/lib/tour-types.ts.)
+ *
+ * Kept in step with SERVICE_LABEL in apps/website/lib/tour-types.ts and
+ * apps/admin/lib/tour-types.ts.
+ */
 export function serviceLabelFor(t: string): string {
-  return t === 'VIDEO_CONSULTATION' ? 'Video chat' : t === 'CONSULTATION' ? 'Consultancy' : 'Campus tour';
+  return t === 'VIDEO_CONSULTATION'
+    ? 'Virtual video chat'
+    : t === 'CONSULTATION'
+      ? 'Professional consultation'
+      : 'In-person campus tour';
 }
 
 /** Build the summary shown in every booking email from a booking row. */
@@ -239,6 +253,32 @@ export async function syncPaymentRecord(bookingId: string, paymentIntentId: stri
 
 const GUIDE_SERVICE_TYPES = ['CAMPUS_TOUR', 'VIDEO_CONSULTATION', 'CONSULTATION'] as const;
 
+/** Fallbacks when a service type has no row yet — mirrors admin.service.ts. */
+const PRICE_FALLBACK: Record<string, { h1: number; h2: number }> = {
+  CAMPUS_TOUR: { h1: 8000, h2: 16000 },
+  VIDEO_CONSULTATION: { h1: 5000, h2: 10000 },
+  CONSULTATION: { h1: 20000, h2: 40000 },
+};
+
+/**
+ * Authoritative price for a booking, in cents.
+ *
+ * Reads the admin-managed suggested price for the tour type (Finance → Price &
+ * commission) and picks the tier by duration. Kept in step with `priceFor()` in
+ * apps/website/lib/pricing.ts, which quotes the same figure in the booking widget.
+ */
+async function priceForBooking(serviceType: string, minutes: number): Promise<number> {
+  const row = await prisma.servicePriceBound.findUnique({ where: { serviceType: serviceType as never } });
+  const fallback = PRICE_FALLBACK[serviceType] ?? PRICE_FALLBACK.CAMPUS_TOUR!;
+  const h1 = row?.suggested1hCents ?? fallback.h1;
+  const h2 = row?.suggested2hCents ?? fallback.h2;
+
+  if (minutes <= 60) return h1;
+  if (minutes <= 120) return h2;
+  // Longer bookings scale from the 2-hour rate so they are never cheaper than 2 hours.
+  return Math.round((h2 * minutes) / 120);
+}
+
 export async function createGuideBooking(buyerId: string, data: {
   sellerId: string;
   serviceType: string;
@@ -269,6 +309,17 @@ export async function createGuideBooking(buyerId: string, data: {
   const commissionPct = settings?.commissionPct ?? 25;
   const payEnabled = isStripeEnabled();
 
+  // The price is derived server-side from the admin-managed pricing for this tour type
+  // and duration — the client's `priceCents` is only used to detect a stale quote. It is
+  // never trusted: a caller could otherwise post a $1 price for a $200 consultation.
+  const grossCents = await priceForBooking(data.serviceType, data.durationMinutes ?? 60);
+  if (data.priceCents !== grossCents) {
+    logger.warn(
+      { buyerId, serviceType: data.serviceType, quoted: data.priceCents, actual: grossCents },
+      'Booking price differed from server pricing — using the server value',
+    );
+  }
+
   const booking = await prisma.booking.create({
     data: {
       buyerId,
@@ -284,7 +335,7 @@ export async function createGuideBooking(buyerId: string, data: {
       // Payments on → hidden until the card hold clears; off → visible immediately.
       status: payEnabled ? 'PENDING_PAYMENT' : 'PENDING',
       requestedAt: new Date(),
-      grossCents: data.priceCents,
+      grossCents,
       commissionPctSnapshot: commissionPct,
       events: { create: { fromState: null, toState: payEnabled ? 'PENDING_PAYMENT' : 'PENDING', actor: buyerId } },
     },

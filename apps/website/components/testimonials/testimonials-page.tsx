@@ -199,7 +199,7 @@ function TextCard({ r }: { r: Review }) {
 
 export function TestimonialsPage() {
   return (
-    <div className="bg-white pt-[var(--header-h)]">
+    <div className="bg-surface pt-[var(--header-h)]">
       {/* Header */}
       <section className="container-page pb-12 pt-16 text-center sm:pt-20">
         <Reveal>
