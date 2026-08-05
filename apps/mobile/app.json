@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campus Private Tours",
     "slug": "ucpt-mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "scheme": "ucpt",
     "userInterfaceStyle": "dark",
@@ -65,7 +65,7 @@
       "expo-font"
     ],
     "extra": {
-      "apiBaseUrl": "http://192.168.18.43:4000",
+      "apiBaseUrl": "https://phpstack-1510285-6494046.cloudwaysapps.com",
       "eas": {
         "projectId": "998998d6-11fd-473b-8b90-fa7fa131df46"
       }
