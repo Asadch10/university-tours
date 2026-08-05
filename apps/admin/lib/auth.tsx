@@ -64,7 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Validate the session; `request` refreshes the access token if needed.
         try {
           const me = await authApi.me();
-          if (!cancelled) {
+          if (me.role !== 'ADMIN') {
+            // A stored non-admin session (e.g. signed in before this check existed)
+            // must be discarded, not restored — it can only produce 403s.
+            if (!cancelled) {
+              tokenStore.clear();
+              persist(null);
+            }
+          } else if (!cancelled) {
             persist({
               id: me.id,
               name: me.name,
@@ -90,6 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email, password) => {
       try {
         const res = await authApi.login(email.trim().toLowerCase(), password);
+        // /auth/login authenticates ANY account — website guests and guides included.
+        // Without this check a non-admin "logs in" successfully and then every admin
+        // request 403s, because the backend rightly refuses a non-ADMIN token.
+        if (res.user.role !== 'ADMIN') {
+          tokenStore.clear();
+          return { ok: false, error: 'This account does not have admin access.' };
+        }
         tokenStore.set(res.accessToken, res.refreshToken);
         persist({
           id: res.user.id,
