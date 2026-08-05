@@ -42,6 +42,13 @@ function shuffle(list: string[], avoid?: string): string[] {
 
 const FADE_MS = 700;
 
+/**
+ * Vertical focal point for the crop. 50% (the browser default) centres it; lower
+ * values keep more of the top of the frame. 28% keeps every subject's head in shot
+ * with a little headroom, without exposing empty sky/ceiling.
+ */
+const FOCAL_Y = '28%';
+
 export function HeroVideo({ poster }: { poster: string }) {
   // Deterministic on the server and for the first paint — shuffling during render
   // would produce a hydration mismatch. The randomisation happens on mount.
@@ -106,6 +113,13 @@ export function HeroVideo({ poster }: { poster: string }) {
             style={{
               opacity: isActive ? 1 : 0,
               transitionDuration: `${FADE_MS}ms`,
+              // The clips are 16:9 but the container is capped to the viewport height,
+              // which usually leaves it WIDER than 16:9 — so object-cover has to crop
+              // vertically. Centred cropping takes an equal slice off the top, and in
+              // every one of these clips the faces sit in the upper third, so heads got
+              // clipped at the header edge. Biasing upward makes the crop come off the
+              // bottom instead, which is only tables, laptops and torsos.
+              objectPosition: `50% ${FOCAL_Y}`,
               // The hidden player must never intercept clicks on the search card.
               pointerEvents: 'none',
             }}
