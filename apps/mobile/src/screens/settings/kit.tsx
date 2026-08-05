@@ -1,14 +1,18 @@
 // Shared building blocks for the mobile Settings sections (mirrors the web's shared.ts + Button).
 import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { font, radius, spacing, type Palette } from '../../theme';
+import { useStyles, useThemeColors } from '../../theme-context';
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
+// Chip colours now live on the palette so they follow the theme.
 export const GREEN_BG = '#e4f3ec';
 export const GREEN_FG = '#137a4d';
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const kit = useKit();
+  const tc = useThemeColors();
   return (
     <View style={{ marginTop: spacing(5) }}>
       <Text style={kit.label}>{label}</Text>
@@ -18,7 +22,9 @@ export function Field({ label, children }: { label: string; children: React.Reac
 }
 
 export function SInput(props: TextInputProps & { style?: TextInputProps['style'] }) {
-  return <TextInput placeholderTextColor={colors.ink300} {...props} style={[kit.input, props.style]} />;
+  const kit = useKit();
+  const tc = useThemeColors();
+  return <TextInput placeholderTextColor={tc.ink300} {...props} style={[kit.input, props.style]} />;
 }
 
 export function PrimaryButton({
@@ -34,6 +40,8 @@ export function PrimaryButton({
   disabled?: boolean;
   icon?: IoniconName;
 }) {
+  const kit = useKit();
+  const tc = useThemeColors();
   return (
     <Pressable
       onPress={onPress}
@@ -41,10 +49,10 @@ export function PrimaryButton({
       style={[kit.primaryBtn, (disabled || loading) && kit.btnDisabled]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.white} />
+        <ActivityIndicator color={tc.white} />
       ) : (
         <>
-          {icon && <Ionicons name={icon} size={16} color={colors.white} />}
+          {icon && <Ionicons name={icon} size={16} color={tc.white} />}
           <Text style={kit.primaryBtnText}>{label}</Text>
         </>
       )}
@@ -65,6 +73,8 @@ export function OutlineButton({
   disabled?: boolean;
   icon?: IoniconName;
 }) {
+  const kit = useKit();
+  const tc = useThemeColors();
   return (
     <Pressable
       onPress={onPress}
@@ -72,10 +82,10 @@ export function OutlineButton({
       style={[kit.outlineBtn, (disabled || loading) && kit.btnDisabled]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.maroon900} />
+        <ActivityIndicator color={tc.maroon900} />
       ) : (
         <>
-          {icon && <Ionicons name={icon} size={16} color={colors.maroon900} />}
+          {icon && <Ionicons name={icon} size={16} color={tc.maroon900} />}
           <Text style={kit.outlineBtnText}>{label}</Text>
         </>
       )}
@@ -84,50 +94,57 @@ export function OutlineButton({
 }
 
 export function Loading() {
+  const tc = useThemeColors();
   return (
     <View style={{ paddingVertical: spacing(24), alignItems: 'center' }}>
-      <ActivityIndicator color={colors.maroon800} size="large" />
+      <ActivityIndicator color={tc.maroon800} size="large" />
     </View>
   );
 }
 
-export const kit = StyleSheet.create({
-  label: { fontSize: 13, fontWeight: '700', color: colors.ink900, marginBottom: spacing(2) },
+export const makeKit = (tc: Palette) =>
+  StyleSheet.create({
+  label: { fontSize: font(13), fontWeight: '700', color: tc.ink900, marginBottom: spacing(2) },
   input: {
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
-    fontSize: 15,
-    color: colors.ink900,
+    fontSize: font(15),
+    color: tc.ink900,
   },
-  inputDisabled: { backgroundColor: colors.ink100, color: colors.ink500 },
-  hint: { fontSize: 12, color: colors.ink500, marginTop: spacing(2) },
+  inputDisabled: { backgroundColor: tc.ink100, color: tc.ink500 },
+  hint: { fontSize: font(12), color: tc.ink500, marginTop: spacing(2) },
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing(2),
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.lg,
     paddingVertical: spacing(4),
   },
-  primaryBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  primaryBtnText: { color: tc.white, fontSize: font(15), fontWeight: '700' },
   outlineBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing(2),
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     borderRadius: radius.lg,
     paddingVertical: spacing(3.5),
   },
-  outlineBtnText: { color: colors.maroon900, fontSize: 15, fontWeight: '700' },
+  outlineBtnText: { color: tc.maroon900, fontSize: font(15), fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
   verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginTop: spacing(2.5) },
-  verifiedText: { fontSize: 14, fontWeight: '600', color: colors.maroon800 },
+  verifiedText: { fontSize: font(14), fontWeight: '600', color: tc.maroon800 },
 });
+
+/** Themed settings stylesheet. Screens call this instead of importing a static sheet. */
+export function useKit() {
+  return useStyles(makeKit);
+}

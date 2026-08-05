@@ -1,37 +1,79 @@
 {
   "expo": {
-    "name": "University Campus Private Tours",
+    "name": "Campus Private Tours",
     "slug": "ucpt-mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "scheme": "ucpt",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "icon": "./assets/logo.png",
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6b1521"
+      "backgroundColor": "#0d0b0a"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ucpt.mobile"
+      "bundleIdentifier": "com.ucpt.mobile",
+      "userInterfaceStyle": "dark"
     },
     "android": {
-      "package": "com.ucpt.mobile"
+      "package": "com.ucpt.mobile",
+      "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_ANDROID_API_KEY"
+        }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "splash": {
+        "image": "./assets/logo.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0d0b0a"
+      },
+      "userInterfaceStyle": "dark"
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#7a1f2b"
+        }
+      ],
       [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.ucpt.mobile",
           "enableGooglePay": false
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
-      "apiBaseUrl": "http://localhost:4000"
+      "apiBaseUrl": "https://phpstack-1510285-6494046.cloudwaysapps.com",
+      "eas": {
+        "projectId": "998998d6-11fd-473b-8b90-fa7fa131df46"
+      }
+    },
+    "owner": "asad133",
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0d0b0a"
     }
   }
 }

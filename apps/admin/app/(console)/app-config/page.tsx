@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Send, AlertTriangle, Smartphone, Flag, Wrench, Megaphone, Mail } from 'lucide-react';
+import { Plus, Send, AlertTriangle, Wrench, Megaphone, Mail, Bell } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { useAppConfig, useAppConfigActions, useCampaigns, useCampaignActions } from '@/lib/queries';
-import type { AppConfig, PushCampaign } from '@/lib/data';
+import type { PushCampaign } from '@/lib/data';
 import { formatCompact, formatDateTime, humanize } from '@/lib/utils';
 
 type Segment = PushCampaign['segment'];
@@ -32,21 +32,22 @@ export default function AppConfigPage() {
   const confirm = useConfirm();
 
   const { data: config, isLoading: loadingConfig } = useAppConfig();
-  const { save } = useAppConfigActions();
+  const { save, broadcastPush } = useAppConfigActions();
   const { data: campaigns = [], isLoading: loadingCampaigns } = useCampaigns();
   const { create: createCampaign, send: sendCampaignAction } = useCampaignActions();
   const loading = loadingConfig || loadingCampaigns;
 
   // Editable form state, hydrated from the live config once it loads.
-  const [flags, setFlags] = useState<AppConfig['featureFlags']>([]);
-  const [minVersion, setMinVersion] = useState('');
-  const [forceMsg, setForceMsg] = useState('');
   const [maintenance, setMaintenance] = useState(false);
   const [banner, setBanner] = useState('');
   const [emailEnabled, setEmailEnabled] = useState(true);
-  const [savingRelease, setSavingRelease] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(true);
   const [savingMaint, setSavingMaint] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
+  const [savingPush, setSavingPush] = useState(false);
+  // Compose-a-push (design only for now — sending is wired up later).
+  const [pushTitle, setPushTitle] = useState('');
+  const [pushMsg, setPushMsg] = useState('');
 
   // Composer
   const [composerOpen, setComposerOpen] = useState(false);
@@ -57,12 +58,10 @@ export default function AppConfigPage() {
 
   useEffect(() => {
     if (!config) return;
-    setFlags(config.featureFlags);
-    setMinVersion(config.minSupportedVersion);
-    setForceMsg(config.forceUpdateMessage);
     setMaintenance(config.maintenanceMode);
     setBanner(config.maintenanceBanner);
     setEmailEnabled(config.emailNotificationsEnabled);
+    setPushEnabled(config.pushNotificationsEnabled);
   }, [config]);
 
   const toggleEmail = async (next: boolean) => {
@@ -90,34 +89,48 @@ export default function AppConfigPage() {
     }
   };
 
-  const flagsToJson = (list: AppConfig['featureFlags']) =>
-    Object.fromEntries(list.map((f) => [f.key, f.enabled]));
-
-  const toggleFlag = async (key: string, next: boolean) => {
-    const updated = flags.map((f) => (f.key === key ? { ...f, enabled: next } : f));
-    setFlags(updated);
+  const togglePush = async (next: boolean) => {
+    if (!next) {
+      const { confirmed } = await confirm({
+        title: 'Turn off mobile push notifications?',
+        description: 'While off, the mobile app receives no push notifications, including campaigns.',
+        confirmLabel: 'Turn off push',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
+    }
+    setSavingPush(true);
+    const prev = pushEnabled;
+    setPushEnabled(next);
     try {
-      await save.mutateAsync({ featureFlagsJson: flagsToJson(updated) });
-      toast.success('Flag updated', 'Applies on the next app-config fetch — no release needed.');
+      await save.mutateAsync({ pushNotificationsEnabled: next });
+      toast.success(next ? 'Push notifications on' : 'Push notifications off');
     } catch (e) {
-      setFlags(flags); // revert
+      setPushEnabled(prev); // revert
       toast.error((e as Error).message);
+    } finally {
+      setSavingPush(false);
     }
   };
 
-  const saveRelease = async () => {
-    if (!minVersion.trim()) {
-      toast.error('Minimum supported version is required.');
+  const sendPushNow = async () => {
+    if (!pushMsg.trim()) {
+      toast.error('Write a message first.');
       return;
     }
-    setSavingRelease(true);
+    const { confirmed } = await confirm({
+      title: 'Send this notification to everyone?',
+      description: 'It goes out immediately to every mobile app user — guides and guests. It cannot be unsent.',
+      confirmLabel: 'Send to all',
+    });
+    if (!confirmed) return;
     try {
-      await save.mutateAsync({ minSupportedVersion: minVersion.trim(), forceUpdateMessage: forceMsg });
-      toast.success('Release control saved');
+      const res = await broadcastPush.mutateAsync({ title: pushTitle.trim() || undefined, body: pushMsg.trim() });
+      toast.success('Notification sent', res.devices ? `Delivered to ${res.devices} device${res.devices === 1 ? '' : 's'}.` : 'No registered devices yet.');
+      setPushTitle('');
+      setPushMsg('');
     } catch (e) {
       toast.error((e as Error).message);
-    } finally {
-      setSavingRelease(false);
     }
   };
 
@@ -237,7 +250,7 @@ export default function AppConfigPage() {
       <div className="space-y-6">
         <PageHeader
           title="App Configuration"
-          description="Remote configuration for the mobile and web clients — feature flags, release gating, maintenance mode, and push campaigns."
+          description="Remote settings for the mobile and web apps."
         />
 
         {/* Email notifications — master switch */}
@@ -248,7 +261,7 @@ export default function AppConfigPage() {
                 <Mail size={16} className="text-brand-800" /> Email notifications
               </span>
             }
-            description="Master switch for all outbound email. When on, guides & guests get booking and account emails. When off, no email of any kind is sent."
+            description="Master switch for all outbound email."
           />
           <CardBody>
             {loading ? (
@@ -257,11 +270,7 @@ export default function AppConfigPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-900">Send emails to guides &amp; guests</p>
-                  <p className="text-xs text-ink-500">
-                    {emailEnabled
-                      ? 'On — booking requests, confirmations, verifications, and resets are delivered.'
-                      : 'Off — no emails are being sent to anyone.'}
-                  </p>
+                  <p className="text-xs text-ink-500">{emailEnabled ? 'On' : 'Off — no emails are sent.'}</p>
                 </div>
                 <Can perm="appconfig.manage">
                   <Switch checked={emailEnabled} onChange={toggleEmail} disabled={savingEmail} label="Email notifications" />
@@ -271,74 +280,57 @@ export default function AppConfigPage() {
           </CardBody>
         </Card>
 
-        {/* Feature flags */}
+        {/* Push notifications — master switch (mobile app) */}
         <Card>
           <CardHeader
             title={
               <span className="flex items-center gap-2">
-                <Flag size={16} className="text-brand-800" /> Feature flags
+                <Bell size={16} className="text-brand-800" /> Push notifications
               </span>
             }
-            description="Toggle capabilities remotely — changes apply on the next app-config fetch, no release required."
-          />
-          <CardBody className="divide-y divide-ink-200/60">
-            {loading ? (
-              <div className="space-y-3">
-                {[0, 1, 2].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : (
-              flags.map((f) => (
-                <div key={f.key} className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-ink-900">{f.label}</p>
-                    <p className="text-xs text-ink-500">{f.desc}</p>
-                  </div>
-                  <Switch checked={f.enabled} onChange={(v) => toggleFlag(f.key, v)} label={f.label} />
-                </div>
-              ))
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Release control */}
-        <Card>
-          <CardHeader
-            title={
-              <span className="flex items-center gap-2">
-                <Smartphone size={16} className="text-brand-800" /> Mobile release control
-              </span>
-            }
-            description="Clients below the minimum supported version see a blocking force-update screen."
+            description="Master switch + send a push to the mobile app."
           />
           <CardBody className="space-y-4">
             {loading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
               <>
-                <Field label="Minimum supported version" htmlFor="min-version" hint="Semver, e.g. 1.4.0">
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-ink-200 bg-ink-50/50 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ink-900">Send push to the mobile app</p>
+                    <p className="text-xs text-ink-500">{pushEnabled ? 'On' : 'Off — no push is sent.'}</p>
+                  </div>
+                  <Can perm="appconfig.manage">
+                    <Switch checked={pushEnabled} onChange={togglePush} disabled={savingPush} label="Push notifications" />
+                  </Can>
+                </div>
+
+                {/* Compose a push — design only; sending is wired up later. */}
+                <Field label="Title" htmlFor="push-title">
                   <Input
-                    id="min-version"
-                    value={minVersion}
-                    onChange={(e) => setMinVersion(e.target.value)}
-                    className="font-mono sm:max-w-xs"
-                    placeholder="1.4.0"
+                    id="push-title"
+                    value={pushTitle}
+                    onChange={(e) => setPushTitle(e.target.value)}
+                    placeholder="Tour season is here"
+                    disabled={!pushEnabled}
                   />
                 </Field>
-                <Field label="Force-update message" htmlFor="force-msg">
+                <Field label="Message" htmlFor="push-msg" hint="Shows on the mobile app for both guides and guests.">
                   <Textarea
-                    id="force-msg"
+                    id="push-msg"
                     rows={3}
-                    value={forceMsg}
-                    onChange={(e) => setForceMsg(e.target.value)}
-                    placeholder="A new version is required…"
+                    value={pushMsg}
+                    onChange={(e) => setPushMsg(e.target.value)}
+                    placeholder="Write the notification message…"
+                    disabled={!pushEnabled}
                   />
                 </Field>
                 <div className="flex justify-end">
-                  <Button variant="primary" size="sm" loading={savingRelease} onClick={saveRelease}>
-                    Save release control
-                  </Button>
+                  <Can perm="appconfig.manage">
+                    <Button variant="primary" size="sm" loading={broadcastPush.isPending} onClick={sendPushNow} disabled={!pushEnabled || !pushMsg.trim()}>
+                      <Send size={14} /> Send notification
+                    </Button>
+                  </Can>
                 </div>
               </>
             )}
@@ -353,7 +345,7 @@ export default function AppConfigPage() {
                 <Wrench size={16} className="text-brand-800" /> Maintenance mode
               </span>
             }
-            description="When on, the apps are gated and show the maintenance banner."
+            description="Gate the apps with a banner."
           />
           <CardBody className="space-y-4">
             {loading ? (

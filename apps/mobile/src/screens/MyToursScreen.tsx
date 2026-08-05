@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   Pressable,
   StyleSheet,
   ActivityIndicator,
@@ -14,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import {
   bookingsApi,
   formatPrice,
@@ -27,6 +28,10 @@ import {
   type BookingServiceType,
 } from '../api/bookings';
 import { friendlyError } from '../api/auth';
+import { BookingCardSkeleton } from '../components/Skeleton';
+import { SERVICE_LABEL } from '../tour-types';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 type ViewKey = 'guest' | 'guide';
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
@@ -51,28 +56,26 @@ const TAB_STATUSES: Record<TabKey, BookingStatus[]> = {
   canceled: ['CANCELLED', 'DECLINED', 'EXPIRED'],
 };
 
-// Green isn't in the shared palette; local tokens for "confirmed / paid".
-const GREEN_BG = '#e4f3ec';
-const GREEN_FG = '#137a4d';
-const RED_BG = '#fbe9ec';
-
-const STATUS_STYLE: Record<BookingStatus, { label: string; bg: string; fg: string }> = {
-  PENDING_PAYMENT: { label: 'Awaiting payment', bg: colors.maroon50, fg: colors.gold500 },
-  PENDING: { label: 'Pending', bg: '#faf1d8', fg: '#8a6d1f' },
-  CONFIRMED: { label: 'Confirmed', bg: GREEN_BG, fg: GREEN_FG },
-  COMPLETED: { label: 'Completed', bg: colors.ink100, fg: colors.ink600 },
-  DECLINED: { label: 'Rejected', bg: RED_BG, fg: colors.danger },
-  EXPIRED: { label: 'Expired', bg: colors.ink100, fg: colors.ink500 },
-  CANCELLED: { label: 'Canceled', bg: RED_BG, fg: colors.danger },
-};
+// Built from the active palette rather than module scope, so the chips follow the theme.
+const statusStyles = (tc: Palette): Record<BookingStatus, { label: string; bg: string; fg: string }> => ({
+  PENDING_PAYMENT: { label: 'Awaiting payment', bg: tc.maroon50, fg: tc.gold500 },
+  PENDING: { label: 'Pending', bg: tc.warnBg, fg: tc.warnFg },
+  CONFIRMED: { label: 'Confirmed', bg: tc.successBg, fg: tc.successFg },
+  COMPLETED: { label: 'Completed', bg: tc.ink100, fg: tc.ink600 },
+  DECLINED: { label: 'Rejected', bg: tc.dangerBg, fg: tc.dangerFg },
+  EXPIRED: { label: 'Expired', bg: tc.ink100, fg: tc.ink500 },
+  CANCELLED: { label: 'Canceled', bg: tc.dangerBg, fg: tc.dangerFg },
+});
 
 function serviceMeta(t: BookingServiceType): { icon: IoniconName; label: string } {
-  if (t === 'VIDEO_CONSULTATION') return { icon: 'videocam', label: 'Video consultation' };
-  if (t === 'CONSULTATION') return { icon: 'chatbubbles', label: 'Consultancy' };
-  return { icon: 'walk', label: 'Campus tour' };
+  if (t === 'VIDEO_CONSULTATION') return { icon: 'videocam', label: SERVICE_LABEL.VIDEO_CONSULTATION };
+  if (t === 'CONSULTATION') return { icon: 'chatbubbles', label: SERVICE_LABEL.CONSULTATION };
+  return { icon: 'walk', label: SERVICE_LABEL.CAMPUS_TOUR };
 }
 
 export function MyToursScreen() {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const [view, setView] = useState<ViewKey>('guest');
   const [tab, setTab] = useState<TabKey>('requests');
   const [bookings, setBookings] = useState<BookingDto[]>([]);
@@ -171,20 +174,26 @@ export function MyToursScreen() {
 
       {/* Content */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.maroon800} size="large" />
+        <View style={[styles.list, { gap: spacing(3) }]}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <BookingCardSkeleton key={i} />
+          ))}
         </View>
       ) : (
-        <ScrollView
+        <FlatList
+          data={active}
+          keyExtractor={(b) => b.id}
+          renderItem={({ item }) => <BookingRow booking={item} view={view} onPress={() => setSelected(item)} />}
           contentContainerStyle={styles.list}
+          initialNumToRender={8}
+          windowSize={11}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={colors.maroon800} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={tc.maroon800} />
           }
-        >
-          {active.length === 0 ? (
+          ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
-                <Ionicons name="calendar-outline" size={26} color={colors.maroon800} />
+                <Ionicons name="calendar-outline" size={26} color={tc.maroon800} />
               </View>
               <Text style={styles.emptyTitle}>No tours yet</Text>
               <Text style={styles.emptyText}>
@@ -193,10 +202,8 @@ export function MyToursScreen() {
                   : 'Tour requests from families will show up here once you’re listed as a guide.'}
               </Text>
             </View>
-          ) : (
-            active.map((b) => <BookingRow key={b.id} booking={b} view={view} onPress={() => setSelected(b)} />)
-          )}
-        </ScrollView>
+          }
+        />
       )}
     </SafeAreaView>
   );
@@ -205,16 +212,18 @@ export function MyToursScreen() {
 /* ═══ List row ══════════════════════════════════════════════════════════ */
 
 function BookingRow({ booking: b, view, onPress }: { booking: BookingDto; view: ViewKey; onPress: () => void }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const { icon, label } = serviceMeta(b.serviceType);
   const other = view === 'guest' ? b.seller?.name : b.buyer?.name;
   const otherLabel = view === 'guest' ? 'with' : 'for';
   const school = b.listing?.school?.name ?? b.schoolName;
-  const st = STATUS_STYLE[b.status];
+  const st = statusStyles(tc)[b.status];
 
   return (
     <Pressable style={styles.row} onPress={onPress}>
       <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={20} color={colors.maroon800} />
+        <Ionicons name={icon} size={20} color={tc.maroon800} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.rowTitle} numberOfLines={1}>
@@ -240,7 +249,9 @@ function BookingRow({ booking: b, view, onPress }: { booking: BookingDto; view: 
 }
 
 function StatusPill({ status }: { status: BookingStatus }) {
-  const st = STATUS_STYLE[status];
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
+  const st = statusStyles(tc)[status];
   return (
     <View style={[styles.pill, { backgroundColor: st.bg }]}>
       <Text style={[styles.pillText, { color: st.fg }]}>{st.label}</Text>
@@ -249,10 +260,12 @@ function StatusPill({ status }: { status: BookingStatus }) {
 }
 
 function PaidPill() {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   return (
-    <View style={[styles.pill, { backgroundColor: GREEN_BG, flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-      <Ionicons name="checkmark" size={11} color={GREEN_FG} />
-      <Text style={[styles.pillText, { color: GREEN_FG }]}>Paid</Text>
+    <View style={[styles.pill, { backgroundColor: tc.successBg, flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+      <Ionicons name="checkmark" size={11} color={tc.successFg} />
+      <Text style={[styles.pillText, { color: tc.successFg }]}>Paid</Text>
     </View>
   );
 }
@@ -270,6 +283,8 @@ function BookingDetail({
   onBack: () => void;
   onChanged: () => void;
 }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const [busy, setBusy] = useState<null | 'accept' | 'decline' | 'complete'>(null);
   const [meetingLink, setMeetingLink] = useState(b.videoLink ?? '');
   const [rating, setRating] = useState(0);
@@ -278,7 +293,7 @@ function BookingDetail({
   const [localReview, setLocalReview] = useState<{ rating: number; text: string | null } | null>(null);
 
   const { icon, label: serviceLabel } = serviceMeta(b.serviceType);
-  const st = STATUS_STYLE[b.status];
+  const st = statusStyles(tc)[b.status];
   const isGuide = view === 'guide';
   const canAcceptDecline = isGuide && b.status === 'PENDING';
   const canComplete = isGuide && b.status === 'CONFIRMED';
@@ -355,7 +370,7 @@ function BookingDetail({
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.detailScroll}>
         <Pressable style={styles.backBtn} onPress={onBack} hitSlop={8}>
-          <Ionicons name="arrow-back" size={18} color={colors.maroon900} />
+          <Ionicons name="arrow-back" size={18} color={tc.maroon900} />
           <Text style={styles.backText}>Back to My tours</Text>
         </Pressable>
 
@@ -363,7 +378,7 @@ function BookingDetail({
           {/* Header */}
           <View style={styles.detailHeader}>
             <View style={styles.detailHeaderIcon}>
-              <Ionicons name={icon} size={26} color={colors.maroon800} />
+              <Ionicons name={icon} size={26} color={tc.maroon800} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.detailKicker}>
@@ -386,7 +401,7 @@ function BookingDetail({
           <View style={styles.rowsBox}>
             {rows.map((r, i) => (
               <View key={r.label} style={[styles.detailRow, i > 0 && styles.detailRowBorder]}>
-                <Ionicons name={r.icon} size={16} color={colors.ink300} />
+                <Ionicons name={r.icon} size={16} color={tc.ink300} />
                 <Text style={styles.detailRowLabel}>{r.label}</Text>
                 <Text style={styles.detailRowValue}>{r.value}</Text>
               </View>
@@ -397,12 +412,12 @@ function BookingDetail({
           {showConfirmedLink && (
             <View style={styles.linkBox}>
               <Text style={styles.linkBoxTitle}>
-                <Ionicons name="link" size={14} color={GREEN_FG} /> Meeting link
+                <Ionicons name="link" size={14} color={tc.successFg} /> Meeting link
               </Text>
               <Pressable style={styles.joinBtn} onPress={() => Linking.openURL(b.videoLink!)}>
-                <Ionicons name="videocam" size={16} color={colors.white} />
+                <Ionicons name="videocam" size={16} color={tc.white} />
                 <Text style={styles.joinBtnText}>Join meeting</Text>
-                <Ionicons name="open-outline" size={14} color={colors.white} />
+                <Ionicons name="open-outline" size={14} color={tc.white} />
               </Pressable>
               <Text style={styles.linkUrl}>{b.videoLink}</Text>
             </View>
@@ -412,13 +427,13 @@ function BookingDetail({
           {canAcceptDecline && needsLink && (
             <View style={styles.inputBox}>
               <Text style={styles.inputLabel}>
-                <Ionicons name="link" size={14} color={colors.maroon800} /> Meeting link (Google Meet or Zoom)
+                <Ionicons name="link" size={14} color={tc.maroon800} /> Meeting link (Google Meet or Zoom)
               </Text>
               <TextInput
                 value={meetingLink}
                 onChangeText={setMeetingLink}
                 placeholder="https://meet.google.com/abc-defg-hij"
-                placeholderTextColor={colors.ink300}
+                placeholderTextColor={tc.ink300}
                 autoCapitalize="none"
                 keyboardType="url"
                 style={styles.input}
@@ -452,7 +467,7 @@ function BookingDetail({
             (existingReview ? (
               <View style={styles.inputBox}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="star" size={14} color={colors.gold500} /> {isGuide ? `${otherFirst}’s review` : 'Your review'}
+                  <Ionicons name="star" size={14} color={tc.gold500} /> {isGuide ? `${otherFirst}’s review` : 'Your review'}
                 </Text>
                 <StarsStatic value={existingReview.rating} />
                 {existingReview.text ? <Text style={styles.reviewText}>“{existingReview.text}”</Text> : null}
@@ -468,7 +483,7 @@ function BookingDetail({
                       <Ionicons
                         name={rating >= n ? 'star' : 'star-outline'}
                         size={30}
-                        color={rating >= n ? colors.gold500 : colors.ink200}
+                        color={rating >= n ? tc.gold500 : tc.ink200}
                       />
                     </Pressable>
                   ))}
@@ -477,7 +492,7 @@ function BookingDetail({
                   value={reviewText}
                   onChangeText={setReviewText}
                   placeholder={`Share how your ${serviceLabel.toLowerCase()} with ${otherFirst} went…`}
-                  placeholderTextColor={colors.ink300}
+                  placeholderTextColor={tc.ink300}
                   multiline
                   style={[styles.input, styles.textarea]}
                 />
@@ -487,10 +502,10 @@ function BookingDetail({
                   disabled={submittingReview || rating < 1}
                 >
                   {submittingReview ? (
-                    <ActivityIndicator color={colors.white} />
+                    <ActivityIndicator color={tc.white} />
                   ) : (
                     <>
-                      <Ionicons name="star" size={16} color={colors.white} />
+                      <Ionicons name="star" size={16} color={tc.white} />
                       <Text style={styles.primaryBtnText}>Submit review</Text>
                     </>
                   )}
@@ -507,20 +522,20 @@ function BookingDetail({
                 disabled={!!busy || (needsLink && !validLink)}
               >
                 {busy === 'accept' ? (
-                  <ActivityIndicator color={colors.white} />
+                  <ActivityIndicator color={tc.white} />
                 ) : (
                   <>
-                    <Ionicons name="checkmark" size={16} color={colors.white} />
+                    <Ionicons name="checkmark" size={16} color={tc.white} />
                     <Text style={styles.primaryBtnText}>Confirm booking</Text>
                   </>
                 )}
               </Pressable>
               <Pressable style={[styles.dangerBtn, !!busy && styles.btnDisabled]} onPress={() => act('decline')} disabled={!!busy}>
                 {busy === 'decline' ? (
-                  <ActivityIndicator color={colors.danger} />
+                  <ActivityIndicator color={tc.danger} />
                 ) : (
                   <>
-                    <Ionicons name="ban" size={16} color={colors.danger} />
+                    <Ionicons name="ban" size={16} color={tc.danger} />
                     <Text style={styles.dangerBtnText}>Reject</Text>
                   </>
                 )}
@@ -534,10 +549,10 @@ function BookingDetail({
               disabled={!!busy}
             >
               {busy === 'complete' ? (
-                <ActivityIndicator color={colors.white} />
+                <ActivityIndicator color={tc.white} />
               ) : (
                 <>
-                  <Ionicons name="checkmark-done" size={16} color={colors.white} />
+                  <Ionicons name="checkmark-done" size={16} color={tc.white} />
                   <Text style={styles.primaryBtnText}>Mark as complete</Text>
                 </>
               )}
@@ -550,48 +565,51 @@ function BookingDetail({
 }
 
 function StarsStatic({ value }: { value: number }) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   return (
     <View style={[styles.starsRow, { marginTop: spacing(2) }]}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <Ionicons key={n} name={value >= n ? 'star' : 'star-outline'} size={18} color={colors.gold500} />
+        <Ionicons key={n} name={value >= n ? 'star' : 'star-outline'} size={18} color={tc.gold500} />
       ))}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   header: { paddingHorizontal: spacing(5), paddingTop: spacing(2), paddingBottom: spacing(3) },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink900 },
+  title: { fontSize: font(28), fontWeight: '800', color: tc.ink900 },
   segment: {
     flexDirection: 'row',
-    backgroundColor: colors.cream,
+    backgroundColor: tc.cream,
     borderRadius: radius.pill,
     padding: 4,
     marginTop: spacing(4),
   },
   segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing(2.5), borderRadius: radius.pill },
   segmentBtnActive: {
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
-  segmentText: { fontSize: 14, fontWeight: '600', color: colors.ink500 },
-  segmentTextActive: { color: colors.maroon900 },
+  segmentText: { fontSize: font(14), fontWeight: '600', color: tc.ink500 },
+  segmentTextActive: { color: tc.maroon900 },
 
   tabRow: {
     flexDirection: 'row',
     paddingHorizontal: spacing(3),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
   tabBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing(2.5) },
-  tabText: { fontSize: 13, fontWeight: '700', color: colors.ink500 },
-  tabTextActive: { color: colors.maroon900 },
-  tabCount: { fontSize: 12, fontWeight: '600', color: colors.ink300, marginTop: 2 },
-  tabCountActive: { color: colors.maroon800 },
+  tabText: { fontSize: font(13), fontWeight: '700', color: tc.ink500 },
+  tabTextActive: { color: tc.maroon900 },
+  tabCount: { fontSize: font(12), fontWeight: '600', color: tc.ink300, marginTop: 2 },
+  tabCountActive: { color: tc.maroon800 },
   tabUnderline: {
     position: 'absolute',
     left: spacing(3),
@@ -599,7 +617,7 @@ const styles = StyleSheet.create({
     bottom: -1,
     height: 2.5,
     borderRadius: 2,
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
   },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -610,21 +628,21 @@ const styles = StyleSheet.create({
     height: 56,
     width: 56,
     borderRadius: radius.lg,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing(1),
   },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: colors.ink900 },
-  emptyText: { fontSize: 14, color: colors.ink500, textAlign: 'center', maxWidth: 280 },
+  emptyTitle: { fontSize: font(17), fontWeight: '800', color: tc.ink900 },
+  emptyText: { fontSize: font(14), color: tc.ink500, textAlign: 'center', maxWidth: 280 },
 
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(3),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     padding: spacing(4),
   },
@@ -632,28 +650,28 @@ const styles = StyleSheet.create({
     height: 44,
     width: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  rowRef: { fontSize: 12, fontWeight: '700', color: colors.maroon800, marginTop: 1 },
-  rowSub: { fontSize: 13, color: colors.ink500, marginTop: 1 },
-  rowMeta: { fontSize: 12, color: colors.ink300, marginTop: 2 },
+  rowTitle: { fontSize: font(15), fontWeight: '700', color: tc.ink900 },
+  rowRef: { fontSize: font(12), fontWeight: '700', color: tc.maroon800, marginTop: 1 },
+  rowSub: { fontSize: font(13), color: tc.ink500, marginTop: 1 },
+  rowMeta: { fontSize: font(12), color: tc.ink300, marginTop: 2 },
   rowRight: { alignItems: 'flex-end', gap: spacing(1) },
-  rowPrice: { fontSize: 14, fontWeight: '800', color: colors.ink900 },
+  rowPrice: { fontSize: font(14), fontWeight: '800', color: tc.ink900 },
 
   pill: { borderRadius: radius.pill, paddingHorizontal: spacing(2.5), paddingVertical: 3 },
-  pillText: { fontSize: 11, fontWeight: '700' },
+  pillText: { fontSize: font(11), fontWeight: '700' },
 
   // Detail
   detailScroll: { padding: spacing(5), paddingBottom: spacing(10) },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), marginBottom: spacing(4) },
-  backText: { fontSize: 14, fontWeight: '700', color: colors.maroon900 },
+  backText: { fontSize: font(14), fontWeight: '700', color: tc.maroon900 },
   detailCard: {
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.xl,
     overflow: 'hidden',
     paddingBottom: spacing(5),
@@ -663,18 +681,18 @@ const styles = StyleSheet.create({
     gap: spacing(3),
     padding: spacing(5),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
   detailHeaderIcon: {
     height: 52,
     width: 52,
     borderRadius: radius.lg,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  detailKicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1, color: colors.ink300 },
-  detailTitle: { fontSize: 20, fontWeight: '800', color: colors.ink900, marginTop: 2 },
+  detailKicker: { fontSize: font(11), fontWeight: '800', letterSpacing: 1, color: tc.ink300 },
+  detailTitle: { fontSize: font(20), fontWeight: '800', color: tc.ink900, marginTop: 2 },
   detailStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -682,18 +700,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(5),
     paddingTop: spacing(5),
   },
-  detailPrice: { fontSize: 18, fontWeight: '800', color: colors.ink900 },
+  detailPrice: { fontSize: font(18), fontWeight: '800', color: tc.ink900 },
   rowsBox: {
     marginHorizontal: spacing(5),
     marginTop: spacing(4),
     borderWidth: 1,
-    borderColor: colors.ink100,
+    borderColor: tc.ink100,
     borderRadius: radius.lg,
   },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingHorizontal: spacing(4), paddingVertical: spacing(3.5) },
-  detailRowBorder: { borderTopWidth: 1, borderTopColor: colors.ink100 },
-  detailRowLabel: { width: 84, fontSize: 13, color: colors.ink500 },
-  detailRowValue: { flex: 1, textAlign: 'right', fontSize: 13, fontWeight: '600', color: colors.ink900 },
+  detailRowBorder: { borderTopWidth: 1, borderTopColor: tc.ink100 },
+  detailRowLabel: { width: 84, fontSize: font(13), color: tc.ink500 },
+  detailRowValue: { flex: 1, textAlign: 'right', fontSize: font(13), fontWeight: '600', color: tc.ink900 },
 
   linkBox: {
     margin: spacing(5),
@@ -701,22 +719,22 @@ const styles = StyleSheet.create({
     padding: spacing(4),
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: GREEN_FG + '55',
-    backgroundColor: GREEN_BG + '80',
+    borderColor: tc.successFg + '55',
+    backgroundColor: tc.successBg + '80',
   },
-  linkBoxTitle: { fontSize: 14, fontWeight: '700', color: colors.ink900 },
+  linkBoxTitle: { fontSize: font(14), fontWeight: '700', color: tc.ink900 },
   joinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing(2),
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.lg,
     paddingVertical: spacing(3),
     marginTop: spacing(3),
   },
-  joinBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
-  linkUrl: { fontSize: 12, color: colors.ink500, textAlign: 'center', marginTop: spacing(2) },
+  joinBtnText: { color: tc.white, fontSize: font(14), fontWeight: '700' },
+  linkUrl: { fontSize: font(12), color: tc.ink500, textAlign: 'center', marginTop: spacing(2) },
 
   inputBox: {
     margin: spacing(5),
@@ -724,63 +742,63 @@ const styles = StyleSheet.create({
     padding: spacing(4),
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.ivory,
+    borderColor: tc.ink200,
+    backgroundColor: tc.ivory,
   },
-  inputLabel: { fontSize: 14, fontWeight: '700', color: colors.ink900 },
-  inputLabelPlain: { fontSize: 14, fontWeight: '700', color: colors.ink900 },
+  inputLabel: { fontSize: font(14), fontWeight: '700', color: tc.ink900 },
+  inputLabelPlain: { fontSize: font(14), fontWeight: '700', color: tc.ink900 },
   input: {
     marginTop: spacing(2),
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3),
-    fontSize: 14,
-    color: colors.ink900,
+    fontSize: font(14),
+    color: tc.ink900,
   },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
-  inputHint: { fontSize: 12, color: colors.ink500, marginTop: spacing(2) },
+  inputHint: { fontSize: font(12), color: tc.ink500, marginTop: spacing(2) },
 
   note: {
     marginHorizontal: spacing(5),
     marginTop: spacing(4),
-    backgroundColor: colors.ink100,
+    backgroundColor: tc.ink100,
     borderRadius: radius.md,
     paddingHorizontal: spacing(3.5),
     paddingVertical: spacing(2.5),
-    fontSize: 12,
-    color: colors.ink500,
+    fontSize: font(12),
+    color: tc.ink500,
     textAlign: 'center',
   },
 
   starsRow: { flexDirection: 'row', gap: spacing(1.5), marginTop: spacing(3) },
-  reviewText: { fontSize: 14, fontStyle: 'italic', color: colors.ink600, marginTop: spacing(2), lineHeight: 20 },
+  reviewText: { fontSize: font(14), fontStyle: 'italic', color: tc.ink600, marginTop: spacing(2), lineHeight: 20 },
 
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing(2),
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.lg,
     paddingVertical: spacing(3.5),
     marginHorizontal: spacing(5),
     marginTop: spacing(3),
   },
-  primaryBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  primaryBtnText: { color: tc.white, fontSize: font(14), fontWeight: '700' },
   dangerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing(2),
     borderWidth: 1,
-    borderColor: colors.danger + '55',
+    borderColor: tc.danger + '55',
     borderRadius: radius.lg,
     paddingVertical: spacing(3.5),
     marginHorizontal: spacing(5),
   },
-  dangerBtnText: { color: colors.danger, fontSize: 14, fontWeight: '700' },
+  dangerBtnText: { color: tc.danger, fontSize: font(14), fontWeight: '700' },
   btnDisabled: { opacity: 0.55 },
 });

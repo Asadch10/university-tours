@@ -1,28 +1,35 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../theme';
 import { accountApi } from '../../api/account';
 import { friendlyError } from '../../api/auth';
-import { Field, SInput, PrimaryButton, kit } from './kit';
+import { useToast } from '../../components/Toast';
+import { Field, SInput, PrimaryButton, useKit } from './kit';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 export function PasswordSection() {
+  const tc = useThemeColors();
+  const kit = useKit();
+  const styles = useStyles(makeStyles);
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   async function save() {
     if (password.length < 8) {
-      Alert.alert('Password too short', 'Use at least 8 characters.');
+      toast.error('Password too short', 'Use at least 8 characters.');
       return;
     }
     setSaving(true);
     try {
       await accountApi.changePassword(password);
       setPassword('');
-      Alert.alert('Password updated', 'Your new password is saved.');
+      toast.success('Password updated', 'Your new password is saved.');
     } catch (e) {
-      Alert.alert('Could not update password', friendlyError(e));
+      toast.error('Could not update password', friendlyError(e));
     } finally {
       setSaving(false);
     }
@@ -42,7 +49,7 @@ export function PasswordSection() {
             style={styles.input}
           />
           <Pressable onPress={() => setShow((s) => !s)} hitSlop={8} style={styles.eye}>
-            <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={colors.ink300} />
+            <Ionicons name={show ? 'eye-off' : 'eye'} size={18} color={tc.ink300} />
           </Pressable>
         </View>
         <Text style={kit.hint}>Use at least 8 characters.</Text>
@@ -60,7 +67,8 @@ export function PasswordSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
   row: { position: 'relative', justifyContent: 'center' },
   input: { paddingRight: spacing(12) },
   eye: { position: 'absolute', right: spacing(3) },

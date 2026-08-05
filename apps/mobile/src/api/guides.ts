@@ -2,7 +2,19 @@
 // (`/search/community-guides`) and maps them into the shapes the UI renders,
 // mirroring apps/website/lib/guides.ts (minus the web-only universities dataset
 // and availability parsing).
-import { api } from './client';
+import { api, API_BASE_URL } from './client';
+import { SERVICE_LABEL_SHORT } from '../tour-types';
+
+// API origin (trailing slash stripped) used to absolutize relative "/uploads/…" paths.
+const API_BASE = API_BASE_URL.replace(/\/$/, '');
+
+/** Full http URL stays; a leading-slash path is prefixed with the API origin; else null. */
+function absPhoto(v: unknown): string | null {
+  if (typeof v !== 'string' || !v) return null;
+  if (/^https?:\/\//.test(v)) return v;
+  if (v.startsWith('/')) return `${API_BASE}${v}`;
+  return null;
+}
 
 export type GuideService = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULTATION';
 
@@ -89,7 +101,6 @@ export const HOUSING_OPTIONS = [
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const strArr = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
-const httpPhoto = (v: unknown): v is string => typeof v === 'string' && /^https?:\/\//.test(v);
 const splitList = (v: unknown): string[] =>
   str(v).split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
 
@@ -128,6 +139,11 @@ function parseAvailability(value: unknown): Availability {
   return out;
 }
 
+/**
+ * Stored listing values -> service enums. The strings below are PERSISTED data, not
+ * display labels — renaming them would drop services from every existing listing.
+ * See src/tour-types.ts.
+ */
 function mapServices(tourTypes: unknown): GuideService[] {
   const t = strArr(tourTypes);
   const out: GuideService[] = [];
@@ -146,7 +162,7 @@ function mapAdmission(v: unknown): string {
 
 function guidePhoto(dto: CommunityGuideDto): string {
   const photos = Array.isArray(dto.listing.photos) ? dto.listing.photos : [];
-  const real = photos.find(httpPhoto);
+  const real = photos.map(absPhoto).find((p): p is string => !!p);
   return real ?? `https://i.pravatar.cc/600?u=${encodeURIComponent(dto.id)}`;
 }
 
@@ -172,7 +188,7 @@ export function communityGuideToGuide(dto: CommunityGuideDto): Guide {
 export function communityGuideToProfile(dto: CommunityGuideDto): GuideProfile {
   const gl = dto.listing;
   const base = communityGuideToGuide(dto);
-  const realPhotos = (Array.isArray(gl.photos) ? gl.photos : []).filter(httpPhoto);
+  const realPhotos = (Array.isArray(gl.photos) ? gl.photos : []).map(absPhoto).filter((p): p is string => !!p);
   const gallery = [base.photo, ...realPhotos].filter(
     (p, i, arr): p is string => typeof p === 'string' && !!p && arr.indexOf(p) === i,
   );
@@ -206,7 +222,7 @@ export function communityGuideToProfile(dto: CommunityGuideDto): GuideProfile {
     })),
     hostedBy:
       str(gl.intro) ||
-      `I joined University Campus Private Tours to share an honest, student's-eye view of ${base.university || 'my campus'}.`,
+      `I joined Campus Private Tours to share an honest, student's-eye view of ${base.university || 'my campus'}.`,
   };
 }
 
@@ -221,11 +237,7 @@ export function fromPrice(cents: number): string {
   return `$${Math.round((cents ?? 0) / 100)}`;
 }
 
-const SERVICE_LABEL: Record<GuideService, string> = {
-  CAMPUS_TOUR: 'In-person',
-  VIDEO_CONSULTATION: 'Video',
-  CONSULTATION: 'Consultancy',
-};
+/** Compact chip label (guide cards / detail). Full names live in SERVICE_LABEL. */
 export function serviceLabel(s: GuideService): string {
-  return SERVICE_LABEL[s];
+  return SERVICE_LABEL_SHORT[s];
 }

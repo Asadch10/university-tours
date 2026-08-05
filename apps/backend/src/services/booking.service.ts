@@ -4,12 +4,13 @@ import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
 import { stripe, isStripeEnabled, publishableKey, currency } from '../lib/stripe.js';
 import { sendNewBookingEmails, sendBookingStatusEmails, type BookingEmailSummary } from './mailer.service.js';
+import { sendPushToUsers } from './push.service.js';
 
 /** Notify both sides that a request has been sent (guide: new request, guest: sent). */
 async function notifyNewBooking(id: string): Promise<void> {
   const b = await prisma.booking.findUnique({
     where: { id },
-    include: { buyer: { select: { name: true, email: true } }, seller: { select: { name: true, email: true } } },
+    include: { buyer: { select: { id: true, name: true, email: true } }, seller: { select: { id: true, name: true, email: true } } },
   });
   if (!b) return;
   await sendNewBookingEmails({
@@ -17,13 +18,19 @@ async function notifyNewBooking(id: string): Promise<void> {
     guest: { email: b.buyer.email, name: b.buyer.name },
     summary: bookingEmailSummary(b),
   }).catch((err) => logger.error({ err, bookingId: id }, 'New booking emails failed'));
+  // Push the guide: someone just requested a booking.
+  void sendPushToUsers(b.seller.id, {
+    title: 'New booking request',
+    body: `${b.buyer.name} requested a ${serviceLabelFor(b.serviceType)}.`,
+    data: { type: 'booking', bookingId: id, role: 'guide' },
+  });
 }
 
 /** Email both the guest and guide about a booking's new status (best-effort). */
 async function notifyStatusChange(id: string, status: string): Promise<void> {
   const b = await prisma.booking.findUnique({
     where: { id },
-    include: { buyer: { select: { name: true, email: true } }, seller: { select: { name: true, email: true } } },
+    include: { buyer: { select: { id: true, name: true, email: true } }, seller: { select: { id: true, name: true, email: true } } },
   });
   if (!b) return;
   await sendBookingStatusEmails({
@@ -32,6 +39,18 @@ async function notifyStatusChange(id: string, status: string): Promise<void> {
     status,
     summary: bookingEmailSummary(b),
   }).catch((err) => logger.error({ err, bookingId: id }, 'Booking status emails failed'));
+  // Push the guest when the guide accepts/declines/completes their booking.
+  const guestPush =
+    status === 'CONFIRMED'
+      ? { title: 'Booking confirmed 🎉', body: `${b.seller.name} confirmed your ${serviceLabelFor(b.serviceType)}.` }
+      : status === 'DECLINED'
+        ? { title: 'Booking declined', body: `${b.seller.name} can’t take your ${serviceLabelFor(b.serviceType)}. Your hold was released.` }
+        : status === 'COMPLETED'
+          ? { title: 'Tour complete', body: `Your ${serviceLabelFor(b.serviceType)} with ${b.seller.name} is marked complete.` }
+          : null;
+  if (guestPush) {
+    void sendPushToUsers(b.buyer.id, { ...guestPush, data: { type: 'booking', bookingId: id, role: 'guest' } });
+  }
 }
 
 /**

@@ -4,8 +4,9 @@
 import { api, API_BASE_URL } from './client';
 
 // Single source of truth (already LAN-rewritten for devices); used to absolutize
-// relative image paths returned by the API.
-const API_BASE = API_BASE_URL;
+// relative image paths returned by the API. Trailing slash stripped so joining a
+// leading-slash path (e.g. "/uploads/x.jpg") never produces a broken "//uploads".
+const API_BASE = API_BASE_URL.replace(/\/$/, '');
 
 interface SchoolDto {
   id: string;

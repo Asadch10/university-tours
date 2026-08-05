@@ -13,8 +13,21 @@ export interface MyProfileDto {
   profileJson: Record<string, unknown> | null;
 }
 
+export interface SellerReview {
+  id: string;
+  rating: number;
+  text: string | null;
+  createdAt: string;
+  buyer: { id: string; name: string } | null;
+}
+
 export const accountApi = {
   getMe: () => api.request<MyProfileDto>('GET', '/users/me'),
+  updateMe: (body: { name?: string; profileJson?: Record<string, unknown> }) =>
+    api.request<MyProfileDto>('PATCH', '/users/me', body),
+  // Reviews this user has received as a guide (public endpoint).
+  reviews: (userId: string) =>
+    api.request<{ data: SellerReview[]; total: number }>('GET', `/sellers/${userId}/reviews`),
   updateContact: (body: { email?: string; phone?: string; promo?: boolean }) =>
     api.request<{ id: string; email: string; profileJson: Record<string, unknown> | null }>(
       'POST',

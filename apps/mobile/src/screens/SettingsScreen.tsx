@@ -4,15 +4,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import { accountApi, type MyProfileDto } from '../api/account';
 import { session } from '../api/auth';
+import { unregisterForPush } from '../api/push';
+import { Skeleton } from '../components/Skeleton';
+import { ProfileScreen } from './ProfileScreen';
 import { ContactInformationSection } from './settings/ContactInformationSection';
 import { PasswordSection } from './settings/PasswordSection';
 import { PayoutsSection } from './settings/PayoutsSection';
 import { PaymentsSection } from './settings/PaymentsSection';
 import { CollegeStatusSection } from './settings/CollegeStatusSection';
 import { ManageAccountSection } from './settings/ManageAccountSection';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 type SectionKey = 'contact' | 'password' | 'payouts' | 'payments' | 'college' | 'manage';
@@ -38,8 +43,11 @@ function initials(name: string) {
 }
 
 export function SettingsScreen() {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const nav = useNavigation<any>();
   const [active, setActive] = useState<SectionKey | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState<MyProfileDto | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,8 +67,19 @@ export function SettingsScreen() {
   }, []);
 
   async function logout() {
+    await unregisterForPush(); // stop this device receiving pushes for the account
     await session.clear();
     goAuth();
+  }
+
+  // ── Full profile screen (from the profile card) ──
+  if (showProfile) {
+    return (
+      <ProfileScreen
+        onBack={() => setShowProfile(false)}
+        onSaved={(name) => setProfile((p) => (p ? { ...p, name } : p))}
+      />
+    );
   }
 
   // ── Section detail view ──
@@ -71,19 +90,40 @@ export function SettingsScreen() {
         <StatusBar style="dark" />
         <View style={styles.detailHeader}>
           <Pressable onPress={() => setActive(null)} hitSlop={8} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color={colors.ink900} />
+            <Ionicons name="arrow-back" size={22} color={tc.ink900} />
           </Pressable>
           <Text style={styles.detailTitle}>{section.label}</Text>
         </View>
         <ScrollView contentContainerStyle={styles.detailScroll} keyboardShouldPersistTaps="handled">
-          {active === 'contact' && <ContactInformationSection profile={profile} />}
+          {active === 'contact' && (
+            <ContactInformationSection
+              profile={profile}
+              onUpdated={(patch) =>
+                setProfile((p) =>
+                  p
+                    ? { ...p, profileJson: { ...((p.profileJson as Record<string, unknown>) ?? {}), ...patch } }
+                    : p,
+                )
+              }
+            />
+          )}
           {active === 'password' && <PasswordSection />}
           {active === 'payouts' && <PayoutsSection />}
           {active === 'payments' && <PaymentsSection />}
           {active === 'college' && (
             <CollegeStatusSection
               profile={profile}
-              onRoleChange={(role) => setProfile((p) => (p ? { ...p, role } : p))}
+              onSaved={({ role, intent }) =>
+                setProfile((p) =>
+                  p
+                    ? {
+                        ...p,
+                        role,
+                        profileJson: { ...((p.profileJson as Record<string, unknown>) ?? {}), intent },
+                      }
+                    : p,
+                )
+              }
             />
           )}
           {active === 'manage' && <ManageAccountSection onSignedOut={goAuth} />}
@@ -99,29 +139,39 @@ export function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.menuScroll}>
         <Text style={styles.title}>Settings</Text>
 
-        {/* Profile card */}
-        <View style={styles.profileCard}>
+        {/* Profile card → opens the full profile screen */}
+        <Pressable style={styles.profileCard} onPress={() => setShowProfile(true)}>
           <View style={styles.avatar}>
             {loading ? (
-              <ActivityIndicator color={colors.white} />
+              <ActivityIndicator color={tc.white} />
             ) : (
               <Text style={styles.avatarText}>{initials(profile?.name ?? '')}</Text>
             )}
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.profileName} numberOfLines={1}>
-              {profile?.name ?? 'Your account'}
-            </Text>
-            <Text style={styles.profileEmail} numberOfLines={1}>
-              {profile?.email ?? '—'}
-            </Text>
+          <View style={{ flex: 1, minWidth: 0, gap: spacing(2) }}>
+            {loading ? (
+              <>
+                <Skeleton w={140} h={14} />
+                <Skeleton w={180} h={11} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {profile?.name ?? 'Your account'}
+                </Text>
+                <Text style={styles.profileEmail} numberOfLines={1}>
+                  {profile?.email ?? '—'}
+                </Text>
+              </>
+            )}
           </View>
           {profile?.role && (
             <View style={styles.roleChip}>
               <Text style={styles.roleChipText}>{profile.role === 'SELLER' ? 'Guide' : 'Guest'}</Text>
             </View>
           )}
-        </View>
+          <Ionicons name="chevron-forward" size={18} color={tc.ink300} />
+        </Pressable>
 
         {/* Section rows */}
         <View style={styles.menu}>
@@ -132,17 +182,17 @@ export function SettingsScreen() {
               style={[styles.menuRow, i > 0 && styles.menuRowBorder]}
             >
               <View style={styles.menuIcon}>
-                <Ionicons name={s.icon} size={19} color={colors.maroon800} />
+                <Ionicons name={s.icon} size={19} color={tc.maroon800} />
               </View>
               <Text style={styles.menuLabel}>{s.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.ink300} />
+              <Ionicons name="chevron-forward" size={18} color={tc.ink300} />
             </Pressable>
           ))}
         </View>
 
         {/* Log out */}
         <Pressable style={styles.logoutBtn} onPress={logout}>
-          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+          <Ionicons name="log-out-outline" size={18} color={tc.danger} />
           <Text style={styles.logoutText}>Log out</Text>
         </Pressable>
       </ScrollView>
@@ -150,18 +200,19 @@ export function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink900 },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
+  title: { fontSize: font(28), fontWeight: '800', color: tc.ink900 },
   menuScroll: { padding: spacing(5), paddingBottom: spacing(10) },
 
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(3),
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     padding: spacing(4),
     marginTop: spacing(5),
@@ -170,35 +221,35 @@ const styles = StyleSheet.create({
     height: 52,
     width: 52,
     borderRadius: 26,
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: colors.white, fontSize: 18, fontWeight: '800' },
-  profileName: { fontSize: 16, fontWeight: '800', color: colors.ink900 },
-  profileEmail: { fontSize: 13, color: colors.ink500, marginTop: 2 },
-  roleChip: { backgroundColor: colors.maroon50, borderRadius: radius.pill, paddingHorizontal: spacing(2.5), paddingVertical: 3 },
-  roleChipText: { fontSize: 12, fontWeight: '700', color: colors.maroon800 },
+  avatarText: { color: tc.white, fontSize: font(18), fontWeight: '800' },
+  profileName: { fontSize: font(16), fontWeight: '800', color: tc.ink900 },
+  profileEmail: { fontSize: font(13), color: tc.ink500, marginTop: 2 },
+  roleChip: { backgroundColor: tc.maroon50, borderRadius: radius.pill, paddingHorizontal: spacing(2.5), paddingVertical: 3 },
+  roleChipText: { fontSize: font(12), fontWeight: '700', color: tc.maroon800 },
 
   menu: {
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     marginTop: spacing(5),
     overflow: 'hidden',
   },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingHorizontal: spacing(4), paddingVertical: spacing(4) },
-  menuRowBorder: { borderTopWidth: 1, borderTopColor: colors.ink100 },
+  menuRowBorder: { borderTopWidth: 1, borderTopColor: tc.ink100 },
   menuIcon: {
     height: 36,
     width: 36,
     borderRadius: radius.md,
-    backgroundColor: colors.maroon50,
+    backgroundColor: tc.maroon50,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.ink900 },
+  menuLabel: { flex: 1, fontSize: font(15), fontWeight: '600', color: tc.ink900 },
 
   logoutBtn: {
     flexDirection: 'row',
@@ -206,12 +257,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing(2),
     borderWidth: 1,
-    borderColor: colors.danger + '44',
+    borderColor: tc.danger + '44',
     borderRadius: radius.lg,
     paddingVertical: spacing(4),
     marginTop: spacing(6),
   },
-  logoutText: { fontSize: 15, fontWeight: '700', color: colors.danger },
+  logoutText: { fontSize: font(15), fontWeight: '700', color: tc.danger },
 
   // Detail
   detailHeader: {
@@ -221,9 +272,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3),
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink100,
+    borderBottomColor: tc.ink100,
   },
   backBtn: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
-  detailTitle: { fontSize: 20, fontWeight: '800', color: colors.ink900 },
+  detailTitle: { fontSize: font(20), fontWeight: '800', color: tc.ink900 },
   detailScroll: { padding: spacing(5), paddingBottom: spacing(12) },
 });

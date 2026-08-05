@@ -56,6 +56,11 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   MAIL_FROM_ADDRESS: z.string().default('no-reply@ahmadnaeem.com'),
   MAIL_FROM_NAME: brandName,
+
+  // Expo push notifications. The access token is optional — Expo's push API works
+  // without one, but setting it (Expo dashboard → Access Tokens) enables enhanced
+  // security and higher rate limits. If unset, pushes still send.
+  EXPO_ACCESS_TOKEN: z.string().optional(),
 });
 
 export const config = envSchema.parse(process.env);

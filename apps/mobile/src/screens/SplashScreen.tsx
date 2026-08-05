@@ -1,14 +1,18 @@
 import { useEffect, useRef } from 'react';
-import { View, Image, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { Image, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, spacing } from '../theme';
+import { font, colors, spacing } from '../theme';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { useStyles } from '../theme-context';
+import type { Palette } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
-/** Branded splash: fades in the crest, then moves on to the auth screen. */
+/** Simple splash: fades in the logo on a plain white background, then goes to auth. */
 export function SplashScreen({ navigation }: Props) {
+  const styles = useStyles(makeStyles);
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(12)).current;
 
@@ -23,31 +27,34 @@ export function SplashScreen({ navigation }: Props) {
   }, [fade, rise, navigation]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }], alignItems: 'center' }}>
-        <View style={styles.badge}>
-          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-        </View>
-        <Text style={styles.title}>University Campus{'\n'}Private Tours</Text>
-        <Text style={styles.subtitle}>Book a private tour with a real student</Text>
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.brandName}>Campus Private Tours</Text>
       </Animated.View>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.maroon900, alignItems: 'center', justifyContent: 'center', padding: spacing(6) },
-  badge: {
-    height: 116,
-    width: 116,
-    borderRadius: 28,
-    backgroundColor: colors.white,
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: tc.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing(6),
+    padding: spacing(6),
+    // Nudge the logo block a little above the exact centre.
+    paddingBottom: spacing(28),
   },
-  logo: { height: 96, width: 96 },
-  title: { color: colors.white, fontSize: 26, fontWeight: '800', textAlign: 'center', lineHeight: 32 },
-  subtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14, textAlign: 'center', marginTop: spacing(2) },
+  logo: { height: 200, width: 200 },
+  brandName: {
+    marginTop: spacing(4),
+    fontSize: font(18),
+    fontWeight: '800',
+    color: tc.maroon900,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
 });

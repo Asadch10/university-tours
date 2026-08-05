@@ -281,7 +281,14 @@ adminRouter.get('/app-config', requirePermission('appconfig.manage'), asyncHandl
 }));
 
 adminRouter.put('/app-config', requirePermission('appconfig.manage'), asyncHandler(async (req, res) => {
-  res.json(await svc.setAppConfig(req.body as { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown; emailNotificationsEnabled?: boolean }, req.user!.id));
+  res.json(await svc.setAppConfig(req.body as { minSupportedVersion?: string; forceUpdateMessage?: string | null; maintenanceBanner?: string | null; featureFlagsJson?: unknown; emailNotificationsEnabled?: boolean; pushNotificationsEnabled?: boolean }, req.user!.id));
+}));
+
+// Broadcast a push notification to every registered mobile device.
+adminRouter.post('/app-config/broadcast-push', requirePermission('appconfig.manage'), asyncHandler(async (req, res) => {
+  const { title, body } = req.body as { title?: string; body?: string };
+  if (!body || !body.trim()) throw new HttpError(400, 'validation_error', 'body is required');
+  res.json(await svc.broadcastAppPush({ title: title?.trim() || 'Campus Private Tours', body: body.trim() }, req.user!.id));
 }));
 
 // ─── Templates ────────────────────────────────────────────────────────────────

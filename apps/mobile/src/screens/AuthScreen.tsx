@@ -14,14 +14,19 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, radius, spacing } from '../theme';
+import { font, colors, radius, spacing } from '../theme';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { session, friendlyError } from '../api/auth';
+import { registerForPush } from '../api/push';
+import { useStyles, useThemeColors } from '../theme-context';
+import type { Palette } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 type Mode = 'signin' | 'signup';
 
 export function AuthScreen({ navigation }: Props) {
+  const tc = useThemeColors();
+  const styles = useStyles(makeStyles);
   const [mode, setMode] = useState<Mode>('signin');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -56,10 +61,13 @@ export function AuthScreen({ navigation }: Props) {
             // Non-fatal: the account exists; phone can be set later in Profile.
           }
         }
+        // New sign-ups verify their email, then onboard — same flow as the website.
+        navigation.replace('VerifyEmail');
       } else {
         await session.login(email.trim(), password);
+        void registerForPush(); // ask for notifications + register this device
+        navigation.replace('Main');
       }
-      navigation.replace('Main');
     } catch (e) {
       setError(friendlyError(e));
     } finally {
@@ -75,14 +83,23 @@ export function AuthScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Brand */}
           <View style={styles.brand}>
             <View style={styles.badge}>
               <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             </View>
-            <Text style={styles.brandName}>University Campus Private Tours</Text>
+            <Text style={styles.brandName}>Campus Private Tours</Text>
           </View>
 
           <Text style={styles.heading}>{isSignup ? 'Create your account' : 'Welcome back'}</Text>
@@ -97,7 +114,7 @@ export function AuthScreen({ navigation }: Props) {
               return (
                 <Pressable key={m} onPress={() => switchMode(m)} style={[styles.segmentBtn, active && styles.segmentBtnActive]}>
                   <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                    {m === 'signin' ? 'Sign in' : 'Create account'}
+                    {m === 'signin' ? 'Login' : 'Sign Up'}
                   </Text>
                 </Pressable>
               );
@@ -113,7 +130,7 @@ export function AuthScreen({ navigation }: Props) {
                     value={firstName}
                     onChangeText={setFirstName}
                     placeholder="Jane"
-                    placeholderTextColor={colors.ink300}
+                    placeholderTextColor={tc.ink300}
                     autoCapitalize="words"
                     autoComplete="name-given"
                     style={styles.input}
@@ -126,7 +143,7 @@ export function AuthScreen({ navigation }: Props) {
                     value={lastName}
                     onChangeText={setLastName}
                     placeholder="Doe"
-                    placeholderTextColor={colors.ink300}
+                    placeholderTextColor={tc.ink300}
                     autoCapitalize="words"
                     autoComplete="name-family"
                     style={styles.input}
@@ -141,7 +158,7 @@ export function AuthScreen({ navigation }: Props) {
               value={email}
               onChangeText={setEmail}
               placeholder="you@college.edu"
-              placeholderTextColor={colors.ink300}
+              placeholderTextColor={tc.ink300}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
@@ -155,7 +172,7 @@ export function AuthScreen({ navigation }: Props) {
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="+1 555 123 4567"
-                placeholderTextColor={colors.ink300}
+                placeholderTextColor={tc.ink300}
                 keyboardType="phone-pad"
                 autoComplete="tel"
                 style={styles.input}
@@ -169,7 +186,7 @@ export function AuthScreen({ navigation }: Props) {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
-                placeholderTextColor={colors.ink300}
+                placeholderTextColor={tc.ink300}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 style={[styles.input, { flex: 1, borderWidth: 0, paddingHorizontal: 0 }]}
@@ -196,16 +213,16 @@ export function AuthScreen({ navigation }: Props) {
             style={[styles.submit, (!canSubmit || loading) && styles.submitDisabled]}
           >
             {loading ? (
-              <ActivityIndicator color={colors.white} />
+              <ActivityIndicator color={tc.white} />
             ) : (
-              <Text style={styles.submitText}>{isSignup ? 'Create account' : 'Sign in'}</Text>
+              <Text style={styles.submitText}>{isSignup ? 'Sign Up' : 'Login'}</Text>
             )}
           </Pressable>
 
           <Text style={styles.switch}>
             {isSignup ? 'Already have an account? ' : "Don't have an account? "}
             <Text style={styles.switchLink} onPress={() => switchMode(isSignup ? 'signin' : 'signup')}>
-              {isSignup ? 'Sign in' : 'Create one'}
+              {isSignup ? 'Login' : 'Sign up'}
             </Text>
           </Text>
         </ScrollView>
@@ -215,6 +232,7 @@ export function AuthScreen({ navigation }: Props) {
 }
 
 function Field({ label, children }: { label: string; children: ReactElement }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={{ marginTop: spacing(4) }}>
       <Text style={styles.label}>{label}</Text>
@@ -223,77 +241,78 @@ function Field({ label, children }: { label: string; children: ReactElement }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.white },
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: tc.white },
   scroll: { padding: spacing(6), paddingTop: spacing(8), flexGrow: 1 },
   brand: { alignItems: 'center', marginBottom: spacing(6) },
   badge: {
     height: 64,
     width: 64,
     borderRadius: radius.lg,
-    backgroundColor: colors.white,
+    backgroundColor: tc.white,
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logo: { height: 52, width: 52 },
-  brandName: { marginTop: spacing(3), fontSize: 13, fontWeight: '700', color: colors.maroon900, textAlign: 'center' },
-  heading: { fontSize: 26, fontWeight: '800', color: colors.ink900 },
-  sub: { fontSize: 14, color: colors.ink500, marginTop: spacing(1) },
+  brandName: { marginTop: spacing(3), fontSize: font(13), fontWeight: '700', color: tc.maroon900, textAlign: 'center' },
+  heading: { fontSize: font(26), fontWeight: '800', color: tc.ink900 },
+  sub: { fontSize: font(14), color: tc.ink500, marginTop: spacing(1) },
   segment: {
     flexDirection: 'row',
-    backgroundColor: colors.cream,
+    backgroundColor: tc.cream,
     borderRadius: radius.pill,
     padding: 4,
     marginTop: spacing(6),
   },
   segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing(2.5), borderRadius: radius.pill },
-  segmentBtnActive: { backgroundColor: colors.white, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  segmentText: { fontSize: 14, fontWeight: '600', color: colors.ink500 },
-  segmentTextActive: { color: colors.maroon900 },
-  label: { fontSize: 13, fontWeight: '700', color: colors.ink900, marginBottom: spacing(1.5) },
+  segmentBtnActive: { backgroundColor: tc.white, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  segmentText: { fontSize: font(14), fontWeight: '600', color: tc.ink500 },
+  segmentTextActive: { color: tc.maroon900 },
+  label: { fontSize: font(13), fontWeight: '700', color: tc.ink900, marginBottom: spacing(1.5) },
   nameRow: { flexDirection: 'row', gap: spacing(3) },
-  hint: { fontSize: 12, color: colors.ink500, marginTop: spacing(1.5) },
+  hint: { fontSize: font(12), color: tc.ink500, marginTop: spacing(1.5) },
   error: {
     marginTop: spacing(5),
     marginBottom: -spacing(2),
-    color: colors.maroon900,
-    fontSize: 13,
+    color: tc.maroon900,
+    fontSize: font(13),
     fontWeight: '600',
     textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
-    fontSize: 15,
-    color: colors.ink900,
+    fontSize: font(15),
+    color: tc.ink900,
   },
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
   },
-  showText: { fontSize: 13, fontWeight: '700', color: colors.maroon800, paddingLeft: spacing(3) },
+  showText: { fontSize: font(13), fontWeight: '700', color: tc.maroon800, paddingLeft: spacing(3) },
   forgot: { alignSelf: 'flex-end', marginTop: spacing(3) },
-  forgotText: { fontSize: 13, fontWeight: '600', color: colors.maroon800 },
+  forgotText: { fontSize: font(13), fontWeight: '600', color: tc.maroon800 },
   submit: {
     marginTop: spacing(6),
-    backgroundColor: colors.maroon900,
+    backgroundColor: tc.maroon900,
     borderRadius: radius.lg,
     paddingVertical: spacing(4),
     alignItems: 'center',
   },
-  submitDisabled: { backgroundColor: colors.ink200 },
-  submitText: { color: colors.white, fontSize: 16, fontWeight: '700' },
-  switch: { marginTop: spacing(6), textAlign: 'center', fontSize: 14, color: colors.ink500 },
-  switchLink: { color: colors.maroon800, fontWeight: '700' },
+  submitDisabled: { backgroundColor: tc.ink200 },
+  submitText: { color: tc.white, fontSize: font(16), fontWeight: '700' },
+  switch: { marginTop: spacing(6), textAlign: 'center', fontSize: font(14), color: tc.ink500 },
+  switchLink: { color: tc.maroon800, fontWeight: '700' },
 });

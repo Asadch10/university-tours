@@ -787,6 +787,7 @@ export function useAppConfig() {
         maintenanceMode: !!c.maintenanceBanner,
         maintenanceBanner: c.maintenanceBanner ?? '',
         emailNotificationsEnabled: c.emailNotificationsEnabled ?? true,
+        pushNotificationsEnabled: c.pushNotificationsEnabled ?? true,
         featureFlags: Object.entries(flags).map(([key, enabled]) => ({
           key,
           enabled: !!enabled,
@@ -803,6 +804,7 @@ export function useAppConfigActions() {
   const inv = () => qc.invalidateQueries({ queryKey: ['app-config'] });
   return {
     save: useMutation({ mutationFn: (b: Record<string, unknown>) => adminApi.appConfigSet(b), onSuccess: inv }),
+    broadcastPush: useMutation({ mutationFn: (b: { title?: string; body: string }) => adminApi.broadcastPush(b) }),
   };
 }
 

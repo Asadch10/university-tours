@@ -63,7 +63,46 @@ export const API_BASE_URL = resolveBaseUrl();
 
 const base = API_BASE_URL.replace(/\/$/, '');
 
-async function request<T>(method: string, path: string, body?: unknown, init?: RequestInit): Promise<T> {
+// A short-lived access token expires (~15 min). On a 401 we rotate it once using
+// the stored refresh token, then retry — so the user isn't logged out mid-session.
+let refreshing: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  const refreshToken = await SecureStore.getItemAsync('refreshToken');
+  if (!refreshToken) return false;
+  if (!refreshing) {
+    refreshing = (async () => {
+      try {
+        const res = await fetch(`${base}/api/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) return false;
+        const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
+        if (data.accessToken && data.refreshToken) {
+          await SecureStore.setItemAsync('accessToken', data.accessToken);
+          await SecureStore.setItemAsync('refreshToken', data.refreshToken);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        refreshing = null;
+      }
+    })();
+  }
+  return refreshing;
+}
+
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  init?: RequestInit,
+  _retried = false,
+): Promise<T> {
   const token = (await SecureStore.getItemAsync('accessToken')) ?? undefined;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -79,6 +118,11 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
   const text = await res.text();
   const json = text ? JSON.parse(text) : undefined;
   if (!res.ok) {
+    // Expired access token → refresh once and retry (never for the auth endpoints
+    // themselves, where a 401 is a genuine bad-credentials error).
+    if (res.status === 401 && !_retried && !path.startsWith('/auth/')) {
+      if (await tryRefresh()) return request<T>(method, path, body, init, true);
+    }
     throw new ApiClientError(res.status, (json as ApiError) ?? { error: 'Request failed' });
   }
   return json as T;

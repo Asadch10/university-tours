@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../theme';
+import { font, colors, radius, spacing } from '../../theme';
 import {
   connectApi,
   money,
@@ -11,9 +11,17 @@ import {
   type PayoutSummary,
 } from '../../api/account';
 import { friendlyError } from '../../api/auth';
-import { Field, OutlineButton, PrimaryButton, Loading, kit, GREEN_BG, GREEN_FG } from './kit';
+import { useToast } from '../../components/Toast';
+import { Skeleton } from '../../components/Skeleton';
+import { Field, OutlineButton, PrimaryButton, useKit, GREEN_BG, GREEN_FG } from './kit';
+import { useStyles, useThemeColors } from '../../theme-context';
+import type { Palette } from '../../theme';
 
 export function PayoutsSection() {
+  const tc = useThemeColors();
+  const kit = useKit();
+  const styles = useStyles(makeStyles);
+  const toast = useToast();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [summary, setSummary] = useState<PayoutSummary | null>(null);
   const [country, setCountry] = useState('');
@@ -43,7 +51,7 @@ export function PayoutsSection() {
       const { url } = await connectApi.onboard(country || undefined);
       await Linking.openURL(url);
     } catch (e) {
-      Alert.alert('Couldn’t start bank setup', friendlyError(e));
+      toast.error('Couldn’t start bank setup', friendlyError(e));
     } finally {
       setWorking(null);
     }
@@ -53,10 +61,10 @@ export function PayoutsSection() {
     setWorking('cashout');
     try {
       const { amountCents } = await connectApi.cashOut();
-      Alert.alert('Cash out started', `${money(amountCents, cur)} is on its way to your bank.`);
+      toast.success('Cash out started', `${money(amountCents, cur)} is on its way to your bank.`);
       load();
     } catch (e) {
-      Alert.alert('Couldn’t cash out', friendlyError(e));
+      toast.error('Couldn’t cash out', friendlyError(e));
     } finally {
       setWorking(null);
     }
@@ -68,13 +76,27 @@ export function PayoutsSection() {
       const { url } = await connectApi.dashboard();
       await Linking.openURL(url);
     } catch (e) {
-      Alert.alert('Couldn’t open Stripe dashboard', friendlyError(e));
+      toast.error('Couldn’t open Stripe dashboard', friendlyError(e));
     } finally {
       setWorking(null);
     }
   }
 
-  if (loading) return <Loading />;
+  if (loading) {
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', gap: spacing(3) }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} w="31%" h={64} r={12} />
+          ))}
+        </View>
+        <Skeleton w="100%" h={48} r={16} style={{ marginTop: spacing(5) }} />
+        <Skeleton w={150} h={16} style={{ marginTop: spacing(8) }} />
+        <Skeleton w="100%" h={72} r={16} style={{ marginTop: spacing(4) }} />
+        <Skeleton w="100%" h={48} r={16} style={{ marginTop: spacing(4) }} />
+      </View>
+    );
+  }
 
   const cur = summary?.currency ?? 'usd';
   const available = summary?.availableCents ?? 0;
@@ -110,12 +132,12 @@ export function PayoutsSection() {
         <View style={styles.bankHeader}>
           <Text style={styles.h2}>Bank account</Text>
           <View style={styles.stripeBadge}>
-            <Ionicons name="lock-closed" size={10} color={colors.white} />
+            <Ionicons name="lock-closed" size={10} color={tc.white} />
             <Text style={styles.stripeBadgeText}>Powered by Stripe</Text>
           </View>
         </View>
         <Text style={styles.bodyText}>
-          University Campus Private Tours uses Stripe to securely send your earnings to your bank account. Stripe
+          Campus Private Tours uses Stripe to securely send your earnings to your bank account. Stripe
           encrypts and protects your personal data.
         </Text>
 
@@ -137,10 +159,10 @@ export function PayoutsSection() {
           <View style={{ marginTop: spacing(5) }}>
             <Field label="Country">
               <Pressable style={styles.select} onPress={() => setPickerOpen(true)}>
-                <Text style={[styles.selectText, !country && { color: colors.ink300 }]}>
+                <Text style={[styles.selectText, !country && { color: tc.ink300 }]}>
                   {country || 'Select your country…'}
                 </Text>
-                <Ionicons name="chevron-down" size={16} color={colors.ink300} />
+                <Ionicons name="chevron-down" size={16} color={tc.ink300} />
               </Pressable>
             </Field>
           </View>
@@ -206,7 +228,7 @@ export function PayoutsSection() {
                   }}
                 >
                   <Text style={styles.modalRowText}>{c}</Text>
-                  {country === c && <Ionicons name="checkmark" size={18} color={colors.maroon800} />}
+                  {country === c && <Ionicons name="checkmark" size={18} color={tc.maroon800} />}
                 </Pressable>
               ))}
             </ScrollView>
@@ -217,15 +239,16 @@ export function PayoutsSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (tc: Palette) =>
+  StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: spacing(6), marginTop: spacing(2) },
   stat: {},
-  statValue: { fontSize: 22, fontWeight: '800', color: colors.ink900 },
-  statLabel: { fontSize: 13, color: colors.ink500, marginTop: 2 },
+  statValue: { fontSize: font(22), fontWeight: '800', color: tc.ink900 },
+  statLabel: { fontSize: font(13), color: tc.ink500, marginTop: 2 },
   section: { marginTop: spacing(8) },
   bankHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing(3), flexWrap: 'wrap' },
-  h2: { fontSize: 18, fontWeight: '800', color: colors.ink900 },
-  h3: { fontSize: 16, fontWeight: '800', color: colors.ink900 },
+  h2: { fontSize: font(18), fontWeight: '800', color: tc.ink900 },
+  h3: { fontSize: font(16), fontWeight: '800', color: tc.ink900 },
   stripeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,14 +258,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(2),
     paddingVertical: 3,
   },
-  stripeBadgeText: { color: colors.white, fontSize: 11, fontWeight: '700' },
-  bodyText: { fontSize: 14, color: colors.ink600, lineHeight: 20, marginTop: spacing(3) },
+  stripeBadgeText: { color: tc.white, fontSize: font(11), fontWeight: '700' },
+  bodyText: { fontSize: font(14), color: tc.ink600, lineHeight: 20, marginTop: spacing(3) },
   bankCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing(3),
     borderWidth: 1,
-    borderColor: colors.ink200,
+    borderColor: tc.ink200,
     borderRadius: radius.lg,
     padding: spacing(4),
     marginTop: spacing(5),
@@ -255,35 +278,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bankName: { fontSize: 15, fontWeight: '700', color: colors.ink900 },
-  bankSub: { fontSize: 13, color: colors.ink600, marginTop: 2 },
+  bankName: { fontSize: font(15), fontWeight: '700', color: tc.ink900 },
+  bankSub: { fontSize: font(13), color: tc.ink600, marginTop: 2 },
   select: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: colors.ink200,
-    backgroundColor: colors.white,
+    borderColor: tc.ink200,
+    backgroundColor: tc.white,
     borderRadius: radius.md,
     paddingHorizontal: spacing(4),
     paddingVertical: spacing(3.5),
   },
-  selectText: { fontSize: 15, color: colors.ink900 },
+  selectText: { fontSize: font(15), color: tc.ink900 },
   tableHead: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: colors.ink200,
+    borderBottomColor: tc.ink200,
     paddingBottom: spacing(2),
     marginTop: spacing(4),
   },
-  th: { fontSize: 11, fontWeight: '700', color: colors.ink500, textTransform: 'uppercase', letterSpacing: 0.5 },
-  tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.ink100, paddingVertical: spacing(3) },
-  td: { fontSize: 13, color: colors.ink600 },
-  tdBold: { fontWeight: '700', color: colors.ink900 },
-  emptyRow: { fontSize: 14, color: colors.ink500, paddingVertical: spacing(4), borderBottomWidth: 1, borderBottomColor: colors.ink100 },
+  th: { fontSize: font(11), fontWeight: '700', color: tc.ink500, textTransform: 'uppercase', letterSpacing: 0.5 },
+  tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: tc.ink100, paddingVertical: spacing(3) },
+  td: { fontSize: font(13), color: tc.ink600 },
+  tdBold: { fontWeight: '700', color: tc.ink900 },
+  emptyRow: { fontSize: font(14), color: tc.ink500, paddingVertical: spacing(4), borderBottomWidth: 1, borderBottomColor: tc.ink100 },
   modalBackdrop: { flex: 1, backgroundColor: '#00000055', justifyContent: 'center', padding: spacing(8) },
-  modalCard: { backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing(3), maxHeight: '70%' },
-  modalTitle: { fontSize: 13, fontWeight: '700', color: colors.ink500, padding: spacing(3) },
+  modalCard: { backgroundColor: tc.white, borderRadius: radius.xl, padding: spacing(3), maxHeight: '70%' },
+  modalTitle: { fontSize: font(13), fontWeight: '700', color: tc.ink500, padding: spacing(3) },
   modalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -291,5 +314,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(3.5),
     paddingHorizontal: spacing(3),
   },
-  modalRowText: { fontSize: 15, color: colors.ink900 },
+  modalRowText: { fontSize: font(15), color: tc.ink900 },
 });
