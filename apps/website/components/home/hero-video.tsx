@@ -5,18 +5,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 /**
  * The hero's rotating background video.
  *
- * Plays the six clips in `public/videos` one after another in a random order,
- * reshuffling each time it finishes a full pass so the sequence differs on every
- * visit rather than cycling the same loop.
+ * Plays the six clips in `public/videos` in a random order, reshuffling after each
+ * full pass so the sequence differs between visits.
  *
- * Two <video> elements are stacked and crossfaded: while one plays, the other is
- * already buffering the next clip. The clips are only ~5s each, so a hard cut every
- * five seconds would read as a glitch — the fade makes the rotation feel deliberate,
- * and preloading means the swap never shows a blank frame.
+ * Two <video> elements are stacked and crossfaded. The one that is fading out keeps
+ * playing its own clip until the fade completes — only then is it re-pointed at the
+ * upcoming clip to buffer it. Re-pointing it any earlier is what made a third clip
+ * flash between two others.
+ *
+ * The fade starts slightly BEFORE the outgoing clip ends, so both players are moving
+ * during the transition rather than one freezing on its last frame.
  */
 
-// encodeURI because some filenames contain spaces ("consultaion 2.mp4"). The files
-// are referenced exactly as they sit on disk so re-uploading them doesn't break paths.
+// encodeURI because one filename contains a space ("consultaion 2.mp4"). Files are
+// referenced exactly as they sit on disk, so re-uploading them can't break paths.
 const HERO_VIDEOS = [
   '/videos/campusTour-1.mp4',
   '/videos/CampusTour2.mp4',
@@ -26,6 +28,23 @@ const HERO_VIDEOS = [
   '/videos/consultaion 2.mp4',
 ].map(encodeURI);
 
+/** Crossfade length. Long enough to read as a dissolve rather than a cut. */
+const FADE_MS = 1400;
+
+/**
+ * Playback speed. The clips are shot fast; a touch under 1 makes the motion calmer
+ * without looking like slow motion. Also stretches each ~5s clip to ~7s, so the
+ * rotation itself feels less frantic.
+ */
+const PLAYBACK_RATE = 0.75;
+
+/**
+ * Vertical focal point for the crop. The container is capped to the viewport height,
+ * so object-cover crops vertically; every clip frames faces in the upper third, so
+ * the crop is biased to come off the bottom instead.
+ */
+const FOCAL_Y = '28%';
+
 /** Fisher–Yates, optionally guaranteeing the first item isn't `avoid`. */
 function shuffle(list: string[], avoid?: string): string[] {
   const a = [...list];
@@ -33,64 +52,111 @@ function shuffle(list: string[], avoid?: string): string[] {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j]!, a[i]!];
   }
-  // Stops the same clip playing twice across a cycle boundary.
-  if (avoid && a.length > 1 && a[0] === avoid) {
-    [a[0], a[1]] = [a[1]!, a[0]!];
-  }
+  if (avoid && a.length > 1 && a[0] === avoid) [a[0], a[1]] = [a[1]!, a[0]!];
   return a;
 }
 
-const FADE_MS = 700;
-
-/**
- * Vertical focal point for the crop. 50% (the browser default) centres it; lower
- * values keep more of the top of the frame. 28% keeps every subject's head in shot
- * with a little headroom, without exposing empty sky/ceiling.
- */
-const FOCAL_Y = '28%';
-
 export function HeroVideo({ poster }: { poster: string }) {
-  // Deterministic on the server and for the first paint — shuffling during render
-  // would produce a hydration mismatch. The randomisation happens on mount.
-  const [order, setOrder] = useState<string[]>(HERO_VIDEOS);
-  const [idx, setIdx] = useState(0);
-  const [active, setActive] = useState(0); // which of the two players is visible
+  // Deterministic first paint — shuffling during render would give the server and
+  // the client different markup and trip a hydration mismatch.
+  const [srcs, setSrcs] = useState<[string, string]>([HERO_VIDEOS[0]!, HERO_VIDEOS[1]!]);
+  const [active, setActive] = useState(0);
 
   const refs = [useRef<HTMLVideoElement>(null), useRef<HTMLVideoElement>(null)];
+  /** Remaining clips in the current pass; refilled (reshuffled) when exhausted. */
+  const queue = useRef<string[]>([]);
+  const lastPlayed = useRef<string>('');
+  /** Guards against the fade being triggered twice for the same clip. */
+  const swapping = useRef(false);
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setOrder(shuffle(HERO_VIDEOS));
+  /** Next clip to show, refilling and reshuffling the queue when it runs dry. */
+  const pull = useCallback((): string => {
+    if (queue.current.length === 0) queue.current = shuffle(HERO_VIDEOS, lastPlayed.current);
+    const clip = queue.current.shift()!;
+    lastPlayed.current = clip;
+    return clip;
   }, []);
 
-  const current = order[idx] ?? HERO_VIDEOS[0]!;
-  const next = order[(idx + 1) % order.length] ?? HERO_VIDEOS[0]!;
+  // Randomise on mount: the visible player gets a random clip, the hidden one
+  // preloads whatever follows it.
+  useEffect(() => {
+    queue.current = shuffle(HERO_VIDEOS);
+    const first = pull();
+    const second = pull();
+    setSrcs([first, second]);
+    setActive(0);
+    return () => {
+      if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    };
+  }, [pull]);
 
-  /** Advance to the next clip, reshuffling when a full pass completes. */
+  /**
+   * Begin the crossfade to the hidden player, which is already buffered.
+   *
+   * The outgoing player is deliberately left alone until the fade finishes — the
+   * whole point is that it keeps showing its own clip while dissolving.
+   */
   const advance = useCallback(() => {
-    setIdx((i) => {
-      const last = order[i];
-      if (i + 1 >= order.length) {
-        setOrder((o) => shuffle(o, last));
-        return 0;
-      }
-      return i + 1;
-    });
-    setActive((a) => 1 - a);
-  }, [order]);
+    if (swapping.current) return;
+    swapping.current = true;
 
-  // Play whichever player just became visible. Autoplay can be refused (low power
-  // mode, reduced-motion settings) — the poster stays up and nothing breaks.
+    const incoming = 1 - active;
+    const el = refs[incoming]?.current;
+    if (el) {
+      el.currentTime = 0;
+      el.playbackRate = PLAYBACK_RATE;
+      void el.play().catch(() => {});
+    }
+    setActive(incoming);
+
+    // Only once the dissolve is over is the now-hidden player re-pointed at the next
+    // clip. Doing this immediately is what caused a third clip to flash mid-fade.
+    fadeTimer.current = setTimeout(() => {
+      const upcoming = pull();
+      setSrcs((s) => {
+        const nextSrcs: [string, string] = [...s] as [string, string];
+        nextSrcs[1 - incoming] = upcoming;
+        return nextSrcs;
+      });
+      swapping.current = false;
+    }, FADE_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, pull]);
+
+  // Keep the visible player at the reduced rate. playbackRate resets whenever a new
+  // source loads, so it has to be reapplied rather than set once.
   useEffect(() => {
     const el = refs[active]?.current;
-    if (!el) return;
-    el.currentTime = 0;
-    void el.play().catch(() => {});
+    if (el) {
+      el.playbackRate = PLAYBACK_RATE;
+      void el.play().catch(() => {});
+    }
+    // Hold the hidden player on its first frame: preload="auto" still buffers it, but
+    // it isn't burning a second decode loop off-screen, and it's guaranteed to start
+    // from the beginning when it fades in.
+    const hidden = refs[1 - active]?.current;
+    if (hidden && !swapping.current) {
+      hidden.pause();
+      hidden.currentTime = 0;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, current]);
+  }, [active, srcs]);
 
-  // A clip that fails to load (missing file, unsupported codec) must not freeze the
-  // rotation — skip straight to the next one.
-  const onError = useCallback(() => advance(), [advance]);
+  /**
+   * Start the fade FADE_MS before the clip ends so both players are still moving
+   * through the transition. `onEnded` is only a backstop — if timeupdate resolution
+   * misses the window (or the clip is shorter than the fade), it still advances.
+   */
+  const onTimeUpdate = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const el = e.currentTarget;
+      if (!el.duration || Number.isNaN(el.duration)) return;
+      const remainingMs = ((el.duration - el.currentTime) / PLAYBACK_RATE) * 1000;
+      if (remainingMs <= FADE_MS) advance();
+    },
+    [advance],
+  );
 
   return (
     <>
@@ -100,27 +166,27 @@ export function HeroVideo({ poster }: { poster: string }) {
           <video
             key={slot}
             ref={refs[slot]}
-            src={isActive ? current : next}
+            src={srcs[slot]}
             poster={poster}
             muted
             playsInline
-            autoPlay={isActive}
+            autoPlay
             preload="auto"
             aria-hidden="true"
+            onTimeUpdate={isActive ? onTimeUpdate : undefined}
             onEnded={isActive ? advance : undefined}
-            onError={isActive ? onError : undefined}
-            className="absolute inset-0 h-full w-full object-cover transition-opacity ease-in-out"
+            // A clip that fails to load must not freeze the rotation.
+            onError={isActive ? advance : undefined}
+            onLoadedMetadata={(e) => {
+              e.currentTarget.playbackRate = PLAYBACK_RATE;
+            }}
+            className="absolute inset-0 h-full w-full object-cover"
             style={{
               opacity: isActive ? 1 : 0,
-              transitionDuration: `${FADE_MS}ms`,
-              // The clips are 16:9 but the container is capped to the viewport height,
-              // which usually leaves it WIDER than 16:9 — so object-cover has to crop
-              // vertically. Centred cropping takes an equal slice off the top, and in
-              // every one of these clips the faces sit in the upper third, so heads got
-              // clipped at the header edge. Biasing upward makes the crop come off the
-              // bottom instead, which is only tables, laptops and torsos.
+              // Symmetric ease so the outgoing and incoming clips cross at even
+              // weight — a linear fade reads as a dip through the darker frame.
+              transition: `opacity ${FADE_MS}ms cubic-bezier(0.4, 0, 0.6, 1)`,
               objectPosition: `50% ${FOCAL_Y}`,
-              // The hidden player must never intercept clicks on the search card.
               pointerEvents: 'none',
             }}
           />
