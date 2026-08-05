@@ -9,6 +9,7 @@ import { useUniversities } from '@/lib/schools';
 import { PHOTOS } from '@/lib/images';
 import { SERVICE_LABEL } from '@/lib/tour-types';
 import { Calendar, formatDate } from '@/components/ui/calendar';
+import { HeroVideo } from '@/components/home/hero-video';
 import { cn } from '@/lib/utils';
 
 /** Tour types offered in the hero search, in the order guests see them. */
@@ -378,27 +379,9 @@ export function Hero() {
           'sm:mx-0 sm:max-h-[calc(100dvh-var(--header-h))] sm:rounded-t-none sm:rounded-b-[2rem]',
         ].join(' ')}
       >
-        {/* Background video */}
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          poster={PHOTOS.campusTour.src}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          aria-hidden="true"
-        >
-          {/* Browsers play the first supported source, so highest quality goes first */}
-          <source
-            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p-av1.mp4"
-            type='video/mp4; codecs="av01.0.05M.08"'
-          />
-          <source
-            src="https://d3m810mf773mim.cloudfront.net/static/hero/homepage-hero-1080p.mp4"
-            type="video/mp4"
-          />
-        </video>
+        {/* Background video — the six clips in /public/videos, shuffled and
+            crossfaded. Self-hosted, so it no longer depends on a third-party CDN. */}
+        <HeroVideo poster={PHOTOS.campusTour.src} />
 
         {/* Gradient overlay — stronger on left for card readability */}
         <div
