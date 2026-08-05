@@ -32,3 +32,7 @@ apps/mobile/web-build/
 npm-debug.log*
 .DS_Store
 coverage/
+
+# eas-cli writes a stub `{"expo":{}}` here whenever it runs from the repo root
+# instead of apps/mobile. It is not config — the real one is apps/mobile/app.json.
+/app.json
