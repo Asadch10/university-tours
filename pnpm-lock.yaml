@@ -110,8 +110,8 @@ importers:
         specifier: ^2.8.5
         version: 2.8.6
       expo-server-sdk:
-        specifier: ^7.0.0
-        version: 7.0.0
+        specifier: ^6.1.0
+        version: 6.1.0
       express:
         specifier: ^4.21.2
         version: 4.22.2
@@ -2709,9 +2709,9 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-server-sdk@7.0.0:
-    resolution: {integrity: sha512-rh7Pa+IhjEpp0J2ga25wMSwH/hE60K2f5bP3ZXk9okRJaX/frqWgijmpjEbrFEJiAWzDHyGrRHeP1+RUNYyRqA==}
-    engines: {node: '>=22.12.0'}
+  expo-server-sdk@6.1.0:
+    resolution: {integrity: sha512-ISuax1AQ7cpM5RAqcu8gVcoLL0ZKskJ5OLoMWmdITBe9nYjTucjdGyBq817YkIvTcj1pAUwx+9toUT7l/V7thA==}
+    engines: {node: '>=20'}
 
   expo-server@1.0.7:
     resolution: {integrity: sha512-mcmyML3oXcqFUXUxtdtCL1O00ztNI2v76d+MdniXRUgHNxIcHZ05zo+DqBaOOT6LQnPk4vA4YHqQl7iGUfRb3g==}
@@ -7363,7 +7363,7 @@ snapshots:
     dependencies:
       expo: 54.0.36(@babel/core@7.29.7)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
 
-  expo-server-sdk@7.0.0:
+  expo-server-sdk@6.1.0:
     dependencies:
       promise-limit: 2.7.0
       promise-retry: 2.0.1

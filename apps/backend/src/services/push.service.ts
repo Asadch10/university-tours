@@ -6,7 +6,7 @@
 // `AppConfig.pushNotificationsEnabled` master switch, sends via Expo's push API,
 // and prunes tokens Expo reports as no longer valid. A push failure is always
 // swallowed (logged) so it can never break the request that triggered it.
-import { Expo, type ExpoPushMessage, type ExpoPushTicket } from 'expo-server-sdk';
+import type { Expo as ExpoClass, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
 import { prisma } from '@ucpt/db';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
@@ -27,11 +27,51 @@ async function pushEnabled(): Promise<boolean> {
   }
 }
 
-// ── Lazily-constructed Expo client ─────────────────────────────────────────────
-let expo: Expo | null = null;
-function client(): Expo {
-  if (!expo) expo = new Expo(config.EXPO_ACCESS_TOKEN ? { accessToken: config.EXPO_ACCESS_TOKEN } : {});
+// ── Lazily-loaded Expo client ─────────────────────────────────────────────────
+//
+// The SDK is imported at RUNTIME, not at module load. A static import means any
+// problem inside expo-server-sdk — an unsupported syntax on an older Node, a bad
+// install — is a startup SyntaxError that takes the whole API down with it. Push is
+// a peripheral feature; it must never be able to do that. If the import fails we log
+// once and silently disable push.
+type ExpoCtor = (new (opts: { accessToken?: string }) => ExpoClass) & {
+  isExpoPushToken(t: string): boolean;
+};
+
+let expo: ExpoClass | null = null;
+let ExpoModule: ExpoCtor | null = null;
+let loadFailed = false;
+
+async function loadExpo(): Promise<ExpoCtor | null> {
+  if (ExpoModule || loadFailed) return ExpoModule;
+  try {
+    const mod = (await import('expo-server-sdk')) as unknown as {
+      Expo?: ExpoCtor;
+      default?: { Expo?: ExpoCtor };
+    };
+    // The package has shipped as both ESM and CJS across majors, so accept either
+    // a named export or a default-wrapped one.
+    const found = mod.Expo ?? mod.default?.Expo;
+    if (!found) throw new Error('Expo export not found');
+    ExpoModule = found;
+  } catch (err) {
+    loadFailed = true;
+    logger.error({ err }, 'expo-server-sdk failed to load — push notifications are disabled');
+  }
+  return ExpoModule;
+}
+
+async function client(): Promise<ExpoClass | null> {
+  const Ctor = await loadExpo();
+  if (!Ctor) return null;
+  if (!expo) expo = new Ctor(config.EXPO_ACCESS_TOKEN ? { accessToken: config.EXPO_ACCESS_TOKEN } : {});
   return expo;
+}
+
+/** Token shape check — false when the SDK isn't available. */
+async function isExpoToken(t: string): Promise<boolean> {
+  const Ctor = await loadExpo();
+  return Ctor ? Ctor.isExpoPushToken(t) : false;
 }
 
 /** Extra JSON payload delivered with a push — used by the app to deep-link on tap. */
@@ -65,7 +105,9 @@ async function pruneInvalidTokens(tokens: string[], tickets: ExpoPushTicket[]): 
 
 /** Low-level: send one message to an explicit list of Expo push tokens. */
 async function sendToTokens(tokens: string[], msg: PushMessage): Promise<void> {
-  const valid = [...new Set(tokens)].filter((t) => Expo.isExpoPushToken(t));
+  const unique = [...new Set(tokens)];
+  const checks = await Promise.all(unique.map((t) => isExpoToken(t)));
+  const valid = unique.filter((_, i) => checks[i]);
   if (valid.length === 0) return;
 
   const messages: ExpoPushMessage[] = valid.map((to) => ({
@@ -76,7 +118,9 @@ async function sendToTokens(tokens: string[], msg: PushMessage): Promise<void> {
     ...(msg.data ? { data: msg.data } : {}),
   }));
 
-  const expoClient = client();
+  const expoClient = await client();
+  // SDK unavailable → nothing to send. Already logged once by loadExpo().
+  if (!expoClient) return;
   const chunks = expoClient.chunkPushNotifications(messages);
   const tickets: ExpoPushTicket[] = [];
   for (const chunk of chunks) {
@@ -150,7 +194,7 @@ export async function registerDeviceToken(
   pushToken: string,
   platform: 'IOS' | 'ANDROID',
 ): Promise<{ ok: true }> {
-  if (!Expo.isExpoPushToken(pushToken)) {
+  if (!(await isExpoToken(pushToken))) {
     // Non-fatal: log and no-op so the client isn't blocked by a bad token.
     logger.warn({ userId }, 'Ignoring non-Expo push token on register');
     return { ok: true };
