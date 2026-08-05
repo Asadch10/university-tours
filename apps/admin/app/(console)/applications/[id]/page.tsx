@@ -10,7 +10,13 @@ import { RequirePermission, Can } from '@/components/auth/permission-gate';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { timeAgo } from '@/lib/utils';
-import { useGuideApplications, useGuideApplicationActions, type GuideApplication } from '@/lib/queries';
+import {
+  useGuideApplications,
+  useGuideApplicationActions,
+  APPLICATION_PREFIX,
+  kindFromApplicationRef,
+  type GuideApplication,
+} from '@/lib/queries';
 import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 import { tourTypeLabel } from '@/lib/tour-types';
 
@@ -49,24 +55,30 @@ const httpPhoto = (p: unknown): p is string => typeof p === 'string' && /^https?
 export default function ApplicationDetailPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
-  const { data: rows = [], isLoading } = useGuideApplications();
-  const { approve, reject } = useGuideApplicationActions();
+  // "CA-3" → the counselor queue, "ID-3" → the guide queue. The reference itself
+  // carries which list to load, so the two never resolve to each other's rows.
+  const kind = kindFromApplicationRef(id);
+  const { data: rows = [], isLoading } = useGuideApplications(kind);
+  const { approve, reject } = useGuideApplicationActions(kind);
   const { success, error } = useToast();
   const confirm = useConfirm();
   const { open: openImage, node: lightbox } = useLightbox();
 
-  // URLs are "ID-<n>" (sequential); still accept the raw id for older/direct links.
+  // URLs are "<prefix>-<n>" (sequential per queue); still accept the raw id for
+  // older/direct links.
+  const prefix = APPLICATION_PREFIX[kind];
+  const profileNoun = kind === 'COUNSELOR' ? 'counselor profile' : 'guide profile';
   const app = rows.find(
-    (r) => `ID-${r.appNo}`.toLowerCase() === id.toLowerCase() || String(r.appNo) === id || r.id === id,
+    (r) => `${prefix}-${r.appNo}`.toLowerCase() === id.toLowerCase() || String(r.appNo) === id || r.id === id,
   );
-  // Show "ID-N" as the trailing crumb in the topbar (with "Applications" clickable).
-  usePageBreadcrumb(app ? `ID-${app.appNo}` : null);
+  // Trailing crumb in the topbar (with "Applications" clickable).
+  usePageBreadcrumb(app ? `${prefix}-${app.appNo}` : null);
 
   async function onApprove() {
     if (!app) return;
     try {
       await approve.mutateAsync(app.id);
-      success('Application approved', `${app.applicant}'s guide profile is now live. They've been emailed.`);
+      success('Application approved', `${app.applicant}'s ${profileNoun} is now live. They've been emailed.`);
       router.push('/applications');
     } catch (e) {
       error((e as Error).message);
@@ -78,7 +90,7 @@ export default function ApplicationDetailPage() {
     const suspend = app.status === 'APPROVED';
     const { confirmed } = await confirm({
       title: suspend ? 'Suspend guide' : 'Reject application',
-      description: `This ${suspend ? 'suspends' : 'rejects'} ${app.applicant}'s guide profile. They will be notified by email.`,
+      description: `This ${suspend ? 'suspends' : 'rejects'} ${app.applicant}'s ${profileNoun}. They will be notified by email.`,
       confirmLabel: suspend ? 'Suspend' : 'Reject application',
       tone: 'danger',
     });

@@ -6,6 +6,7 @@ import {
   ServiceType,
   QuestionnaireStatus,
   QuestionType,
+  ApplicantKind,
   UserRole,
   AdminRoleName,
   NotificationChannel,
@@ -205,11 +206,15 @@ async function main() {
     }
   }
 
-  // --- Active questionnaire ---
-  const existingQ = await prisma.questionnaire.findFirst({ where: { status: QuestionnaireStatus.ACTIVE } });
+  // --- Active guide questionnaire ---
+  // Versions are numbered per kind now, so every lookup here is scoped by kind too.
+  const existingQ = await prisma.questionnaire.findFirst({
+    where: { status: QuestionnaireStatus.ACTIVE, kind: ApplicantKind.GUIDE },
+  });
   if (!existingQ) {
     await prisma.questionnaire.create({
       data: {
+        kind: ApplicantKind.GUIDE,
         version: 3,
         status: QuestionnaireStatus.ACTIVE,
         questions: {
@@ -226,8 +231,41 @@ async function main() {
     });
     // Archived versions
     for (const v of [1, 2]) {
-      await prisma.questionnaire.upsert({ where: { version: v }, update: {}, create: { version: v, status: QuestionnaireStatus.ARCHIVED } });
+      await prisma.questionnaire.upsert({
+        where: { kind_version: { kind: ApplicantKind.GUIDE, version: v } },
+        update: {},
+        create: { kind: ApplicantKind.GUIDE, version: v, status: QuestionnaireStatus.ARCHIVED },
+      });
     }
+  }
+
+  // --- Active counselor questionnaire ---
+  // Counselors are outside admissions professionals, so this asks about credentials
+  // and practice rather than enrollment and campus life.
+  const existingCounselorQ = await prisma.questionnaire.findFirst({
+    where: { status: QuestionnaireStatus.ACTIVE, kind: ApplicantKind.COUNSELOR },
+  });
+  if (!existingCounselorQ) {
+    await prisma.questionnaire.create({
+      data: {
+        kind: ApplicantKind.COUNSELOR,
+        version: 1,
+        status: QuestionnaireStatus.ACTIVE,
+        questions: {
+          create: [
+            { type: QuestionType.TEXT, label: 'Full legal name', required: true, order: 1 },
+            { type: QuestionType.TEXT, label: 'Professional headline', required: true, order: 2, fieldKey: 'headline' },
+            { type: QuestionType.TEXT, label: 'Organization or practice name', required: false, order: 3, fieldKey: 'organization' },
+            { type: QuestionType.SINGLE_CHOICE, label: 'Years of experience in college admissions', required: true, order: 4, optionsJson: ['Less than 2', '2–5', '6–10', '11–20', '20+'], fieldKey: 'yearsExperience' },
+            { type: QuestionType.TEXT, label: 'Credentials and certifications', required: true, order: 5, fieldKey: 'credentials' },
+            { type: QuestionType.MULTI_CHOICE, label: 'Areas of specialty', required: true, order: 6, optionsJson: ['Application strategy', 'Essay coaching', 'Financial aid & scholarships', 'Athletic recruiting', 'International students', 'Transfer admissions', 'Test preparation', 'Special needs / IEP'], fieldKey: 'specialties' },
+            { type: QuestionType.LONG_TEXT, label: 'Describe your counseling approach', required: true, order: 7, fieldKey: 'bio' },
+            { type: QuestionType.TEXT, label: 'Professional website or LinkedIn', required: false, order: 8, fieldKey: 'website' },
+            { type: QuestionType.FILE, label: 'Proof of credentials', required: true, order: 9 },
+          ],
+        },
+      },
+    });
   }
 
   // --- CMS blocks ---

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Ban,
@@ -25,19 +25,24 @@ import { useLightbox, ImageThumb } from '@/components/ui/lightbox';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import type { ListingStatus } from '@/lib/data';
-import { useListingDetail, useListingActions, useListings } from '@/lib/queries';
+import { useListingDetail, useListingActions, useListings, LISTING_PREFIX, type ApplicantKind } from '@/lib/queries';
 import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
 import { formatDate } from '@/lib/utils';
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: listing, isLoading: loading, error } = useListingDetail(id);
-  const { moderate } = useListingActions();
+  const searchParams = useSearchParams();
+  // Which queue we arrived from — a user can hold both a guide and a counselor profile,
+  // so the id alone doesn't identify the listing.
+  const kind: ApplicantKind =
+    searchParams.get('kind')?.toUpperCase() === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE';
+  const { data: listing, isLoading: loading, error } = useListingDetail(id, kind);
+  const { moderate } = useListingActions(kind);
   // Sequential "L-<n>" from the listings list (same order as the table).
-  const { data: listings = [] } = useListings();
+  const { data: listings = [] } = useListings(kind);
   const listingNo = listings.find((l) => l.id === id)?.listingNo ?? null;
-  usePageBreadcrumb(listingNo ? `L-${listingNo}` : null);
+  usePageBreadcrumb(listingNo ? `${LISTING_PREFIX[kind]}-${listingNo}` : null);
 
   const toast = useToast();
   const confirm = useConfirm();

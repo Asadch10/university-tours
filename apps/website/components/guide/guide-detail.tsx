@@ -383,7 +383,19 @@ function timeSlots() {
 }
 const SLOTS = timeSlots();
 
-function BookingCard({ g }: { g: GuideProfile }) {
+/** The fields the booking widget actually needs — a counselor profile satisfies this too. */
+export type BookableProfile = Pick<
+  GuideProfile,
+  'id' | 'name' | 'headline' | 'university' | 'services' | 'availability'
+>;
+
+/**
+ * The booking widget, shared by the guide and counselor profile pages.
+ *
+ * `kind` decides which marketplace the booking is filed under; the backend validates
+ * the seller has a published listing of that kind before accepting it.
+ */
+export function BookingCard({ g, kind = 'GUIDE' }: { g: BookableProfile; kind?: 'GUIDE' | 'COUNSELOR' }) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState<Panel>(null);
@@ -497,6 +509,7 @@ function BookingCard({ g }: { g: GuideProfile }) {
         priceCents,
         listingTitle: g.headline,
         schoolName: g.university,
+        kind,
       });
       // Payments on → collect card in the payment step. Off → request is already live.
       if (res.clientSecret && res.publishableKey) {
@@ -579,7 +592,7 @@ function BookingCard({ g }: { g: GuideProfile }) {
             href="/my-tours"
             className="w-full rounded-2xl bg-maroon-900 py-3 text-center text-sm font-semibold text-ivory hover:bg-maroon-800"
           >
-            View in My tours
+            View in My bookings
           </Link>
           <button
             type="button"

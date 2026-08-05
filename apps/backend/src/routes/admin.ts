@@ -28,8 +28,8 @@ adminRouter.get('/reports', requirePermission('dashboard.view'), asyncHandler(as
 // ─── Applications ─────────────────────────────────────────────────────────────
 
 adminRouter.get('/applications', requirePermission('applications.decide'), asyncHandler(async (req, res) => {
-  const { status, q, page, limit } = req.query as Record<string, string>;
-  res.json(await svc.listApplications({ status, q, page: page ? +page : 1, limit: limit ? +limit : 20 }));
+  const { status, kind, q, page, limit } = req.query as Record<string, string>;
+  res.json(await svc.listApplications({ status, kind, q, page: page ? +page : 1, limit: limit ? +limit : 20 }));
 }));
 
 adminRouter.get('/applications/:id', requirePermission('applications.decide'), asyncHandler(async (req, res) => {
@@ -50,10 +50,11 @@ adminRouter.post('/applications/:id/request-changes', requirePermission('applica
   res.json(await svc.decideApplication(req.params['id'] as string, 'CHANGES_REQUESTED', reason, req.user!.id));
 }));
 
-// ─── Questionnaire (singleton) ────────────────────────────────────────────────
+// ─── Questionnaire (one per applicant kind) ───────────────────────────────────
 
-adminRouter.get('/questionnaires', requirePermission('questionnaires.manage'), asyncHandler(async (_req, res) => {
-  const [q, requiredPhotos] = await Promise.all([svc.getOrCreateQuestionnaire(), svc.getRequiredPhotos()]);
+adminRouter.get('/questionnaires', requirePermission('questionnaires.manage'), asyncHandler(async (req, res) => {
+  const kind = String(req.query['kind'] ?? '').toUpperCase() === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE';
+  const [q, requiredPhotos] = await Promise.all([svc.getOrCreateQuestionnaire(kind), svc.getRequiredPhotos()]);
   res.json({ ...q, requiredPhotos });
 }));
 
@@ -79,16 +80,16 @@ adminRouter.post('/users/:id/reset-password', requirePermission('users.manage'),
 // ─── Listings ─────────────────────────────────────────────────────────────────
 
 adminRouter.get('/listings', requirePermission('listings.moderate'), asyncHandler(async (req, res) => {
-  const { q, status, service, page, limit } = req.query as Record<string, string>;
-  res.json(await svc.listListings({ q, status, service, page: page ? +page : 1, limit: limit ? +limit : 20 }));
+  const { q, status, service, kind, page, limit } = req.query as Record<string, string>;
+  res.json(await svc.listListings({ q, status, service, kind, page: page ? +page : 1, limit: limit ? +limit : 20 }));
 }));
 
 adminRouter.get('/listings/:id', requirePermission('listings.moderate'), asyncHandler(async (req, res) => {
-  res.json(await svc.getListingDetail(req.params['id'] as string));
+  res.json(await svc.getListingDetail(req.params['id'] as string, req.query['kind'] as string | undefined));
 }));
 
 adminRouter.patch('/listings/:id', requirePermission('listings.moderate'), asyncHandler(async (req, res) => {
-  res.json(await svc.moderateListing(req.params['id'] as string, req.body as { status?: string }, req.user!.id));
+  res.json(await svc.moderateListing(req.params['id'] as string, req.body as { status?: string; kind?: string }, req.user!.id));
 }));
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────

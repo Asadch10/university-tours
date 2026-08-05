@@ -12,12 +12,13 @@ import { StarRating } from '@/components/ui/star-rating';
 import { useToast } from '@/lib/toast';
 import { SERVICE_LABEL } from '@/lib/tour-types';
 
-type View = 'guest' | 'guide';
+type View = 'guest' | 'guide' | 'counselor';
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
 
 const VIEWS: { key: View; label: string }[] = [
   { key: 'guest', label: 'As guest' },
   { key: 'guide', label: 'As guide' },
+  { key: 'counselor', label: 'As counselor' },
 ];
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -133,7 +134,7 @@ export function MyToursView() {
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 lg:grid-cols-[300px_1fr]">
         {/* Left rail — title + perspective switch */}
         <aside className="border-b border-ink-200/70 bg-canvas-alt px-6 py-10 lg:min-h-[calc(100dvh-var(--header-h))] lg:border-b-0 lg:border-r lg:px-8">
-          <h1 className="font-display text-3xl font-semibold text-ink-900">My tours</h1>
+          <h1 className="font-display text-3xl font-semibold text-ink-900">My bookings</h1>
 
           <nav className="mt-8 space-y-1" aria-label="Tours perspective">
             {VIEWS.map((v) => {
@@ -192,11 +193,13 @@ export function MyToursView() {
               <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-tint text-brand">
                 <CalendarRange size={26} />
               </span>
-              <p className="text-lg font-semibold text-ink-900">No tours yet</p>
+              <p className="text-lg font-semibold text-ink-900">No bookings yet</p>
               <p className="max-w-sm text-sm text-ink-500">
                 {view === 'guest'
-                  ? 'Tours you book with student guides will show up here.'
-                  : 'Tour requests from families will show up here once you’re listed as a guide.'}
+                  ? 'Tours and consultations you book will show up here.'
+                  : view === 'counselor'
+                    ? 'Consultation requests from families will show up here once your counselor profile is live.'
+                    : 'Tour requests from families will show up here once you’re listed as a guide.'}
               </p>
             </div>
           ) : (
@@ -280,8 +283,10 @@ function BookingDetail({
   const { Icon, label: serviceLabel } = serviceMeta(b.serviceType);
   const st = STATUS_STYLE[b.status];
 
-  // Only the guide can change status, and only on their own tours.
-  const isGuide = view === 'guide';
+  // Only the host can change status, and only on their own bookings. Both the guide
+  // and the counselor perspective are the seller side — gating on 'guide' alone would
+  // leave a counselor able to see a request but not accept it.
+  const isGuide = view !== 'guest';
   const canAcceptDecline = isGuide && b.status === 'PENDING';
   const canComplete = isGuide && b.status === 'CONFIRMED';
   // Video chat & consultancy are online — a meeting link is required to confirm.
@@ -346,8 +351,10 @@ function BookingDetail({
   const title = b.listing?.title ?? b.listingTitle ?? serviceLabel;
   const school = b.listing?.school?.name ?? b.schoolName;
   const other = view === 'guest' ? b.seller?.name : b.buyer?.name;
-  const otherRole = view === 'guest' ? 'Guide' : 'Guest';
-  const otherFirst = other?.split(' ')[0] ?? (view === 'guest' ? 'the guide' : 'the guest');
+  // As a guest the other party is whoever is hosting; from either host perspective
+  // it's the family who booked.
+  const otherRole = view === 'guest' ? (view === 'guest' && b.kind === 'COUNSELOR' ? 'Counselor' : 'Guide') : 'Guest';
+  const otherFirst = other?.split(' ')[0] ?? (view === 'guest' ? 'the host' : 'the guest');
   const duration = fmtDuration(b.durationMinutes);
 
   const rows: { icon: typeof User; label: string; value: string }[] = [
@@ -368,7 +375,7 @@ function BookingDetail({
           onClick={onBack}
           className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand transition-colors hover:text-brand"
         >
-          <ArrowLeft size={16} /> Back to My tours
+          <ArrowLeft size={16} /> Back to My bookings
         </button>
 
         <div className="overflow-hidden rounded-3xl border border-ink-200/70 bg-surface shadow-soft">
@@ -446,7 +453,7 @@ function BookingDetail({
                 />
                 <p className="mt-2 text-xs text-ink-500">
                   Create the meeting for the scheduled time, paste the link here, then confirm. {otherFirst} gets it by
-                  email and here in My tours.
+                  email and here in My bookings.
                 </p>
               </div>
             )}
@@ -492,7 +499,7 @@ function BookingDetail({
                 if (isGuide) {
                   return (
                     <p className="rounded-xl bg-ink-50 px-3.5 py-2.5 text-center text-xs text-ink-500">
-                      No review yet — {otherFirst} can leave one from their My tours.
+                      No review yet — {otherFirst} can leave one from their My bookings.
                     </p>
                   );
                 }

@@ -11,8 +11,8 @@ import { Tabs } from '@/components/ui/tabs';
 import { SearchInput } from '@/components/ui/search-input';
 import { TableSkeleton } from '@/components/ui/skeleton';
 import { RequirePermission } from '@/components/auth/permission-gate';
-import { timeAgo } from '@/lib/utils';
-import { useGuideApplications, type GuideApplication } from '@/lib/queries';
+import { cn, timeAgo } from '@/lib/utils';
+import { useGuideApplications, APPLICATION_PREFIX, type GuideApplication, type ApplicantKind } from '@/lib/queries';
 
 type Status = GuideApplication['status'];
 type Filter = 'ALL' | Status;
@@ -24,13 +24,21 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'REJECTED', label: 'Rejected' },
 ];
 
+const KIND_TABS: { value: ApplicantKind; label: string }[] = [
+  { value: 'GUIDE', label: 'Guides' },
+  { value: 'COUNSELOR', label: 'College counselors' },
+];
+
 export default function ApplicationsPage() {
   const router = useRouter();
-  const { data: rows = [], isLoading: loading } = useGuideApplications();
+  // Two independent submission queues behind one screen.
+  const [kind, setKind] = useState<ApplicantKind>('GUIDE');
+  const { data: rows = [], isLoading: loading } = useGuideApplications(kind);
   const [filter, setFilter] = useState<Filter>('ALL');
   const [query, setQuery] = useState('');
 
-  const open = (a: GuideApplication) => router.push(`/applications/ID-${a.appNo}`);
+  // The prefix carries the queue, so the detail page knows which one to load.
+  const open = (a: GuideApplication) => router.push(`/applications/${APPLICATION_PREFIX[kind]}-${a.appNo}`);
 
   const counts = useMemo(
     () =>
@@ -62,7 +70,11 @@ export default function ApplicationsPage() {
       key: 'appNo',
       header: 'ID',
       hideOnMobile: true,
-      cell: (a) => <span className="font-mono text-xs font-semibold text-brand-900">ID-{a.appNo}</span>,
+      cell: (a) => (
+        <span className="font-mono text-xs font-semibold text-brand-900">
+          {APPLICATION_PREFIX[kind]}-{a.appNo}
+        </span>
+      ),
     },
     {
       key: 'applicant',
@@ -78,10 +90,16 @@ export default function ApplicationsPage() {
         </div>
       ),
     },
-    { key: 'school', header: 'School', hideOnMobile: true, cell: (a) => <span className="text-ink-700">{a.school}</span> },
+    {
+      key: 'school',
+      // Counselors aren't campus-bound — the same column carries their practice.
+      header: kind === 'COUNSELOR' ? 'Practice' : 'School',
+      hideOnMobile: true,
+      cell: (a) => <span className="text-ink-700">{a.school}</span>,
+    },
     {
       key: 'tourTypes',
-      header: 'Tour types',
+      header: kind === 'COUNSELOR' ? 'Specialties' : 'Tour types',
       hideOnMobile: true,
       cell: (a) => <span className="text-ink-600">{a.tourTypes.join(', ') || '—'}</span>,
     },
@@ -103,9 +121,45 @@ export default function ApplicationsPage() {
     <RequirePermission anyOf={['applications.decide']}>
       <div className="space-y-6">
         <PageHeader
-          title="Guide applications"
-          description="Review become-a-guide submissions — read every answer, view photos, then approve (publish) or reject."
+          title="Applications"
+          description={
+            kind === 'COUNSELOR'
+              ? 'Review become-a-college-counselor submissions — read every answer, then approve (publish) or reject.'
+              : 'Review become-a-guide submissions — read every answer, view photos, then approve (publish) or reject.'
+          }
         />
+
+        {/* Which submission queue is being reviewed. */}
+        <div
+          role="tablist"
+          aria-label="Application type"
+          className="inline-flex w-full gap-1 overflow-x-auto rounded-xl border border-ink-200 bg-surface-2 p-1 sm:w-auto"
+        >
+          {KIND_TABS.map((k) => {
+            const active = kind === k.value;
+            return (
+              <button
+                key={k.value}
+                role="tab"
+                aria-selected={active}
+                type="button"
+                onClick={() => {
+                  setKind(k.value);
+                  setFilter('ALL');
+                  setQuery('');
+                }}
+                className={cn(
+                  'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-ink-600 hover:bg-surface-3 hover:text-ink-900',
+                )}
+              >
+                {k.label}
+              </button>
+            );
+          })}
+        </div>
 
         {loading ? (
           <TableSkeleton />
@@ -120,7 +174,7 @@ export default function ApplicationsPage() {
               <SearchInput
                 value={query}
                 onChange={setQuery}
-                placeholder="Search applicant, email, or school…"
+                placeholder={kind === 'COUNSELOR' ? 'Search applicant, email, or practice…' : 'Search applicant, email, or school…'}
                 className="sm:w-72"
               />
             </div>
@@ -131,10 +185,16 @@ export default function ApplicationsPage() {
               rowKey={(a) => a.id}
               onRowClick={open}
               empty={{
-                title: query ? 'No matching applications' : 'No guide applications yet',
+                title: query
+                  ? 'No matching applications'
+                  : kind === 'COUNSELOR'
+                    ? 'No counselor applications yet'
+                    : 'No guide applications yet',
                 description: query
                   ? 'Try a different name, email, or school.'
-                  : 'Become-a-guide submissions will appear here for review.',
+                  : kind === 'COUNSELOR'
+                    ? 'Become-a-college-counselor submissions will appear here for review.'
+                    : 'Become-a-guide submissions will appear here for review.',
               }}
             />
           </div>

@@ -64,6 +64,8 @@ export interface Application {
   id: string;
   applicant: string;
   email: string;
+  /** Which flow this application came from. Drives the badge and the kind filter. */
+  kind: 'GUIDE' | 'COUNSELOR';
   school: string;
   major: string;
   gradYear: number;

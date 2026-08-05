@@ -64,13 +64,26 @@ searchRouter.get('/community-guides/:id', asyncHandler(async (req, res) => {
   res.json(await svc.getPublishedGuide(req.params['id'] as string));
 }));
 
+// Approved + published college counselors. Public, and the exact counterpart of the
+// community-guides pair above.
+searchRouter.get('/counselors', asyncHandler(async (_req, res) => {
+  res.json(await svc.listPublishedCounselors());
+}));
+
+searchRouter.get('/counselors/:id', asyncHandler(async (req, res) => {
+  res.json(await svc.getPublishedCounselor(req.params['id'] as string));
+}));
+
 export const configRouter = Router();
 
 configRouter.get('/price-bounds', asyncHandler(async (_req, res) => {
   res.json(await svc.getPriceBounds());
 }));
 
-// Public: the active become-a-guide questionnaire + required photo count.
-configRouter.get('/questionnaire', asyncHandler(async (_req, res) => {
-  res.json(await svc.getPublicQuestionnaire());
+// Public: the active application questionnaire + required photo count.
+// `?kind=COUNSELOR` selects the counselor form; anything else (including no param,
+// which is what the mobile app sends) returns the become-a-guide one.
+configRouter.get('/questionnaire', asyncHandler(async (req, res) => {
+  const kind = String(req.query['kind'] ?? '').toUpperCase() === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE';
+  res.json(await svc.getPublicQuestionnaire(kind));
 }));

@@ -1,5 +1,5 @@
 import * as argon2 from 'argon2';
-import { prisma, Prisma } from '@ucpt/db';
+import { prisma, Prisma, type ApplicantKind } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
 import { sendProfileUnderReviewEmail, sendListingReviewAdminEmail } from './mailer.service.js';
@@ -52,10 +52,12 @@ export async function completeOnboarding(userId: string, data: { intent?: string
     merged.schools = data.schools.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim());
   }
   const patch: Prisma.UserUpdateInput = { profileJson: merged as Prisma.InputJsonValue };
-  // The onboarding choice decides the account role: guides host tours → SELLER, otherwise BUYER.
-  // Never change an ADMIN.
+  // The onboarding choice decides the account role. Guides and counselors both sell on
+  // the marketplace → SELLER; guests book → BUYER. Never change an ADMIN.
+  // ('book'/'other' are the pre-counselor intent values, still stored on older accounts.)
   if (user.role !== 'ADMIN') {
-    patch.role = (data.intent === 'guide' ? 'SELLER' : 'BUYER') as never;
+    const sells = data.intent === 'guide' || data.intent === 'counselor';
+    patch.role = (sells ? 'SELLER' : 'BUYER') as never;
   }
   return prisma.user.update({
     where: { id: userId },
@@ -74,10 +76,27 @@ export async function completeOnboarding(userId: string, data: { intent?: string
  * than being overwritten by a later step that only carries its own fields.
  */
 export async function saveGuideListing(userId: string, listing: Record<string, unknown>) {
+  return saveApplicantListing(userId, listing, 'guideListing');
+}
+
+/**
+ * Save/submit a counselor listing. Identical mechanics to the guide flow, writing to
+ * `profileJson.counselorListing` — so a user can hold a guide listing and a counselor
+ * listing side by side without either one clobbering the other.
+ */
+export async function saveCounselorListing(userId: string, listing: Record<string, unknown>) {
+  return saveApplicantListing(userId, listing, 'counselorListing');
+}
+
+async function saveApplicantListing(
+  userId: string,
+  listing: Record<string, unknown>,
+  listingKey: 'guideListing' | 'counselorListing',
+) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { profileJson: true, role: true, name: true, email: true } });
   if (!user) throw new HttpError(404, 'not_found', 'User not found');
   const prev = (user.profileJson ?? {}) as Record<string, unknown>;
-  const prevListing = (prev.guideListing ?? {}) as Record<string, unknown>;
+  const prevListing = (prev[listingKey] ?? {}) as Record<string, unknown>;
   const isDraft = listing.status === 'draft';
 
   // Merge onto the existing draft, but never let a blank value from a later step
@@ -88,22 +107,22 @@ export async function saveGuideListing(userId: string, listing: Record<string, u
     v === '' || v === null || v === undefined || (Array.isArray(v) && v.length === 0);
   const isNonEmpty = (v: unknown) => !isEmpty(v);
 
-  const guideListing: Record<string, unknown> = { ...prevListing };
+  const nextListing: Record<string, unknown> = { ...prevListing };
   for (const [key, value] of Object.entries(listing)) {
     if (isEmpty(value) && isNonEmpty(prevListing[key])) continue; // keep the saved value
-    guideListing[key] = value;
+    nextListing[key] = value;
   }
   if (isDraft) {
-    guideListing.status = 'draft';
+    nextListing.status = 'draft';
   } else {
-    guideListing.status = 'under_review';
-    guideListing.submittedAt = new Date().toISOString();
+    nextListing.status = 'under_review';
+    nextListing.submittedAt = new Date().toISOString();
   }
 
   const patch: Prisma.UserUpdateInput = {
-    profileJson: { ...prev, guideListing } as Prisma.InputJsonValue,
+    profileJson: { ...prev, [listingKey]: nextListing } as Prisma.InputJsonValue,
   };
-  // Only submitting a completed listing makes the user a guide — a draft leaves the role untouched.
+  // Only submitting a completed listing makes the user a seller — a draft leaves the role untouched.
   if (!isDraft && user.role !== 'ADMIN') patch.role = 'SELLER' as never;
   const updated = await prisma.user.update({
     where: { id: userId },
@@ -111,19 +130,39 @@ export async function saveGuideListing(userId: string, listing: Record<string, u
     select: { id: true, role: true, profileJson: true },
   });
 
+  // Put the matching profile into review so the admin queue and the website's status
+  // banner agree. Counselors have no onboarding step that pre-creates their profile,
+  // so it is upserted here on first submission.
+  if (!isDraft) {
+    if (listingKey === 'counselorListing') {
+      await prisma.counselorProfile.upsert({
+        where: { userId },
+        update: { applicationStatus: 'SUBMITTED' },
+        create: { userId, applicationStatus: 'SUBMITTED' },
+      });
+    } else {
+      await prisma.sellerProfile.upsert({
+        where: { userId },
+        update: { applicationStatus: 'SUBMITTED' },
+        create: { userId, applicationStatus: 'SUBMITTED' },
+      });
+    }
+  }
+
   // Notify the applicant that their profile is under review — but only on the
   // transition into review (not on every draft save, and not if it was already
   // under review). Best-effort: a mail failure must not fail the save.
   const enteringReview = !isDraft && prevListing.status !== 'under_review';
   if (enteringReview) {
-    sendProfileUnderReviewEmail({ to: user.email, name: user.name }).catch((err) => {
+    const kind = listingKey === 'counselorListing' ? 'COUNSELOR' : 'GUIDE';
+    sendProfileUnderReviewEmail({ to: user.email, name: user.name, kind }).catch((err) => {
       logger.error({ err, userId }, 'Under-review email dispatch failed');
     });
 
     // Notify the admin team so they know to re-check the listing and set its status.
     // An edit to an already-live listing is flagged separately from a first submission.
     const isEdit = prevListing.status === 'published' || prevListing.status === 'suspended';
-    notifyAdminsListingInReview({ userId, guideName: user.name, guideEmail: user.email, isEdit }).catch((err) => {
+    notifyAdminsListingInReview({ userId, guideName: user.name, guideEmail: user.email, isEdit, kind }).catch((err) => {
       logger.error({ err, userId }, 'Admin listing-review email dispatch failed');
     });
   }
@@ -137,6 +176,7 @@ async function notifyAdminsListingInReview(opts: {
   guideName: string;
   guideEmail: string;
   isEdit: boolean;
+  kind: 'GUIDE' | 'COUNSELOR';
 }): Promise<void> {
   const admins = await prisma.user.findMany({
     where: { role: 'ADMIN' },
@@ -150,8 +190,10 @@ async function notifyAdminsListingInReview(opts: {
     to,
     guideName: opts.guideName,
     guideEmail: opts.guideEmail,
-    reviewUrl: `${base}/listings/${opts.userId}`,
+    // ?kind= so the admin link opens the right profile — a user may hold both.
+    reviewUrl: `${base}/listings/${opts.userId}?kind=${opts.kind}`,
     isEdit: opts.isEdit,
+    kind: opts.kind,
   });
 }
 
@@ -160,16 +202,37 @@ async function notifyAdminsListingInReview(opts: {
  * admin, revert the role back to BUYER (they are no longer a guide).
  */
 export async function deleteGuideListing(userId: string) {
+  return deleteApplicantListing(userId, 'guideListing');
+}
+
+/** Counselor counterpart of deleteGuideListing. */
+export async function deleteCounselorListing(userId: string) {
+  return deleteApplicantListing(userId, 'counselorListing');
+}
+
+async function deleteApplicantListing(userId: string, listingKey: 'guideListing' | 'counselorListing') {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { profileJson: true, role: true } });
   if (!user) throw new HttpError(404, 'not_found', 'User not found');
-  const { guideListing: _removed, ...rest } = (user.profileJson ?? {}) as Record<string, unknown>;
+  const { [listingKey]: _removed, ...rest } = (user.profileJson ?? {}) as Record<string, unknown>;
   const patch: Prisma.UserUpdateInput = { profileJson: rest as Prisma.InputJsonValue };
-  if (user.role === 'SELLER') patch.role = 'BUYER' as never;
-  return prisma.user.update({
+  // Only drop back to BUYER if they no longer have the *other* listing either —
+  // deleting a counselor listing must not strip a working guide of their role.
+  const otherKey = listingKey === 'guideListing' ? 'counselorListing' : 'guideListing';
+  const stillHasOther = !!(rest as Record<string, unknown>)[otherKey];
+  if (user.role === 'SELLER' && !stillHasOther) patch.role = 'BUYER' as never;
+
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: patch,
     select: { id: true, role: true, profileJson: true },
   });
+
+  if (listingKey === 'counselorListing') {
+    await prisma.counselorProfile
+      .update({ where: { userId }, data: { applicationStatus: 'NOT_SUBMITTED', approvedAt: null } })
+      .catch(() => {}); // no profile row yet — nothing to reset
+  }
+  return updated;
 }
 
 /** Contact settings: email (on the user), phone + promo opt-in (in profileJson). */
@@ -306,27 +369,51 @@ export async function getMyPayouts(sellerId: string, page = 1, limit = 20) {
 }
 
 // ─── Applications ─────────────────────────────────────────────────────────────
+//
+// Guides and counselors share this entire flow; `kind` is what separates them. It
+// defaults to GUIDE everywhere so existing callers — including the shipped mobile
+// app, which has no idea counselors exist — keep behaving exactly as before.
 
-export async function getActiveQuestionnaire() {
+/** Ensure the profile row the given application kind writes its status to exists. */
+async function ensureApplicantProfile(userId: string, kind: ApplicantKind) {
+  if (kind === 'COUNSELOR') {
+    // Counselors have no onboarding step that pre-creates a profile the way guides
+    // do, so create it on first application rather than rejecting the submission.
+    return prisma.counselorProfile.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    });
+  }
+  const profile = await prisma.sellerProfile.findUnique({ where: { userId } });
+  if (!profile) throw new HttpError(400, 'no_profile', 'Seller profile not found');
+  return profile;
+}
+
+export async function getActiveQuestionnaire(kind: ApplicantKind = 'GUIDE') {
   const q = await prisma.questionnaire.findFirst({
-    where: { status: 'ACTIVE' },
+    where: { status: 'ACTIVE', kind },
     include: { questions: { orderBy: { order: 'asc' } } },
   });
   if (!q) throw new HttpError(404, 'not_found', 'No active questionnaire found');
   return q;
 }
 
-export async function submitApplication(sellerId: string, answers: { questionId: string; answer: string }[]) {
-  const profile = await prisma.sellerProfile.findUnique({ where: { userId: sellerId } });
-  if (!profile) throw new HttpError(400, 'no_profile', 'Seller profile not found');
+export async function submitApplication(
+  sellerId: string,
+  answers: { questionId: string; answer: string }[],
+  kind: ApplicantKind = 'GUIDE',
+) {
+  await ensureApplicantProfile(sellerId, kind);
 
+  // Scoped to `kind`: an approved guide must still be able to apply as a counselor.
   const existing = await prisma.application.findFirst({
-    where: { sellerId, status: { in: ['SUBMITTED', 'APPROVED'] } },
+    where: { sellerId, kind, status: { in: ['SUBMITTED', 'APPROVED'] } },
   });
   if (existing) throw new HttpError(409, 'already_applied', 'Application already submitted or approved');
 
   const questionnaire = await prisma.questionnaire.findFirst({
-    where: { status: 'ACTIVE' },
+    where: { status: 'ACTIVE', kind },
     include: { questions: true },
   });
   if (!questionnaire) throw new HttpError(400, 'no_questionnaire', 'No active questionnaire');
@@ -341,9 +428,10 @@ export async function submitApplication(sellerId: string, answers: { questionId:
     };
   });
 
-  return prisma.application.create({
+  const created = await prisma.application.create({
     data: {
       sellerId,
+      kind,
       questionnaireVersionId: questionnaire.id,
       status: 'SUBMITTED',
       submittedAt: new Date(),
@@ -351,11 +439,26 @@ export async function submitApplication(sellerId: string, answers: { questionId:
     },
     include: { questionnaire: true, answers: true },
   });
+
+  // Mirror the application state onto the profile so the website can show status
+  // without loading the application itself — same as the guide flow does.
+  if (kind === 'COUNSELOR') {
+    await prisma.counselorProfile.update({
+      where: { userId: sellerId },
+      data: { applicationStatus: 'SUBMITTED' },
+    });
+  } else {
+    await prisma.sellerProfile.update({
+      where: { userId: sellerId },
+      data: { applicationStatus: 'SUBMITTED' },
+    });
+  }
+  return created;
 }
 
-export async function getMyApplication(sellerId: string) {
+export async function getMyApplication(sellerId: string, kind: ApplicantKind = 'GUIDE') {
   const app = await prisma.application.findFirst({
-    where: { sellerId },
+    where: { sellerId, kind },
     include: { questionnaire: { include: { questions: { orderBy: { order: 'asc' } } } }, answers: true },
     orderBy: { submittedAt: 'desc' },
   });
@@ -363,9 +466,13 @@ export async function getMyApplication(sellerId: string) {
   return app;
 }
 
-export async function resubmitApplication(sellerId: string, answers: { questionId: string; answer: string }[]) {
+export async function resubmitApplication(
+  sellerId: string,
+  answers: { questionId: string; answer: string }[],
+  kind: ApplicantKind = 'GUIDE',
+) {
   const app = await prisma.application.findFirst({
-    where: { sellerId, status: 'CHANGES_REQUESTED' },
+    where: { sellerId, kind, status: 'CHANGES_REQUESTED' },
     include: { questionnaire: { include: { questions: true } } },
     orderBy: { submittedAt: 'desc' },
   });
@@ -384,6 +491,13 @@ export async function resubmitApplication(sellerId: string, answers: { questionI
       where: { id: app.id },
       data: { status: 'SUBMITTED', submittedAt: new Date(), answers: { create: answerRecords as never[] } },
     });
+    // Move the profile out of CHANGES_REQUESTED too, or the website would keep
+    // showing the "changes requested" banner after a successful resubmit.
+    if (kind === 'COUNSELOR') {
+      await tx.counselorProfile.update({ where: { userId: sellerId }, data: { applicationStatus: 'SUBMITTED' } });
+    } else {
+      await tx.sellerProfile.update({ where: { userId: sellerId }, data: { applicationStatus: 'SUBMITTED' } });
+    }
   });
   return { ok: true };
 }

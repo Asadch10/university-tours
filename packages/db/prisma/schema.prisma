@@ -54,6 +54,14 @@ enum ApplicationStatus {
   REJECTED
 }
 
+// Which marketplace side someone is applying to join. Guides are enrolled students
+// verified against a school; counselors are outside admissions professionals with no
+// enrollment. Both are UserRole.SELLER — this is what tells the two flows apart.
+enum ApplicantKind {
+  GUIDE
+  COUNSELOR
+}
+
 enum BookingStatus {
   PENDING_PAYMENT // card not yet authorized — hidden from the guide until the hold clears
   PENDING
@@ -132,7 +140,8 @@ model User {
   stripeCustomerId     String?  @map("stripe_customer_id")
   createdAt       DateTime       @default(now()) @map("created_at")
 
-  sellerProfile   SellerProfile?
+  sellerProfile    SellerProfile?
+  counselorProfile CounselorProfile?
   devices         Device[]
   listings        Listing[]      @relation("SellerListings")
   buyerBookings   Booking[]      @relation("BuyerBookings")
@@ -172,6 +181,36 @@ model SellerProfile {
 
   @@index([schoolId])
   @@map("seller_profiles")
+}
+
+// A college counselor — an outside admissions professional, not an enrolled student.
+// Deliberately a sibling of SellerProfile rather than a `kind` column on it: the two
+// verify differently (enrollment doc vs. professional credential) and share almost no
+// fields, and keeping them separate lets one user hold both roles at once, each with
+// its own independent approval status.
+model CounselorProfile {
+  userId            String            @id @map("user_id")
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo             String?
+  phone             String?
+  // Professional identity.
+  headline          String?           // e.g. "Independent college admissions counselor"
+  organization      String?           // firm or practice name; null for solo counselors
+  website           String?
+  yearsExperience   Int?              @map("years_experience")
+  credentials       String?           // e.g. "M.Ed., IECA Professional Member"
+  specialtiesJson   Json?             @map("specialties_json") // string[] — e.g. ["Essays", "Financial aid"]
+  bio               String?           @db.Text
+  // Proof of credential, reviewed by admin — the counselor equivalent of a guide's
+  // enrollment document.
+  credentialDocId   String?           @unique @map("credential_doc_id")
+  credentialDoc     Document?         @relation("CredentialDoc", fields: [credentialDocId], references: [id], onDelete: SetNull)
+  applicationStatus ApplicationStatus @default(NOT_SUBMITTED) @map("application_status")
+  approvedAt        DateTime?         @map("approved_at")
+  ratingAvg         Float             @default(0) @map("rating_avg")
+  ratingCount       Int               @default(0) @map("rating_count")
+
+  @@map("counselor_profiles")
 }
 
 model Device {
@@ -239,8 +278,14 @@ model Listing {
   id          String        @id @default(cuid())
   sellerId    String        @map("seller_id")
   seller      User          @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Restrict)
-  schoolId    String        @map("school_id")
-  school      School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  // Which marketplace this listing belongs to. Not derivable from the seller: one user
+  // may be an approved guide AND an approved counselor, so without this the two browse
+  // pages could not tell their listings apart.
+  kind        ApplicantKind @default(GUIDE)
+  // Optional: guide listings are always campus-bound, but a counselor is an outside
+  // professional with no home campus, so their listing has no school.
+  schoolId    String?       @map("school_id")
+  school      School?       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   serviceType ServiceType   @map("service_type")
   title       String
   description String?      @db.Text
@@ -250,6 +295,7 @@ model Listing {
   bookings Booking[]
 
   @@index([schoolId, serviceType, status])
+  @@index([kind, status])
   @@index([sellerId])
   @@map("listings")
 }
@@ -290,6 +336,11 @@ model Booking {
   buyer                 User          @relation("BuyerBookings", fields: [buyerId], references: [id], onDelete: Restrict)
   sellerId              String        @map("seller_id")
   seller                User          @relation("SellerBookings", fields: [sellerId], references: [id], onDelete: Restrict)
+  // Which marketplace this booking came from. Stamped at creation and never derived:
+  // one user can be both a guide and a counselor, and `serviceType` can't tell them
+  // apart either (a guide may also sell "Professional consultation"). This is what
+  // splits My bookings into "As guide" and "As counselor".
+  kind                  ApplicantKind @default(GUIDE)
   // Nullable: website "become a guide" listings live in User.profileJson, not the
   // Listing table, so a guide booking has no Listing/Option row — the snapshot
   // fields below (listingTitle, durationMinutes, grossCents…) carry what was booked.
@@ -327,6 +378,7 @@ model Booking {
   payment Payment?
 
   @@index([sellerId, status])
+  @@index([sellerId, kind, status])
   @@index([buyerId, status])
   @@index([scheduledDate])
   @@index([status, expiresAt])
@@ -428,12 +480,17 @@ model Payment {
 
 model Questionnaire {
   id      String              @id @default(cuid())
-  version Int                 @unique
+  // Which application flow this questionnaire drives. Guides and counselors are
+  // managed independently in admin, so versions are numbered PER KIND — hence the
+  // composite unique below rather than a bare `@unique` on version.
+  kind    ApplicantKind       @default(GUIDE)
+  version Int
   status  QuestionnaireStatus @default(DRAFT)
 
   questions    QuestionnaireQuestion[]
   applications Application[]
 
+  @@unique([kind, version])
   @@map("questionnaires")
 }
 
@@ -458,6 +515,10 @@ model Application {
   id                     String            @id @default(cuid())
   sellerId               String            @map("seller_id")
   seller                 User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  // GUIDE or COUNSELOR. A user may hold one of each, so this is what separates
+  // "my guide application" from "my counselor application" for the same user.
+  // Defaults to GUIDE so every pre-existing row keeps its meaning.
+  kind                   ApplicantKind     @default(GUIDE)
   questionnaireVersionId String            @map("questionnaire_version_id")
   questionnaire          Questionnaire     @relation(fields: [questionnaireVersionId], references: [id], onDelete: Restrict)
   status                 ApplicationStatus @default(SUBMITTED)
@@ -466,8 +527,9 @@ model Application {
 
   answers ApplicationAnswer[]
 
-  @@index([sellerId])
+  @@index([sellerId, kind])
   @@index([status])
+  @@index([kind])
   @@map("applications")
 }
 
@@ -549,6 +611,7 @@ model Document {
   createdAt   DateTime            @default(now()) @map("created_at")
 
   enrollmentFor SellerProfile?      @relation("EnrollmentDoc")
+  credentialFor CounselorProfile?   @relation("CredentialDoc")
   answers       ApplicationAnswer[] @relation("AnswerFile")
   messages      Message[]           @relation("MessageImage")
 

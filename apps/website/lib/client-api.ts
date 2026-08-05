@@ -25,6 +25,7 @@ export interface SessionUser {
   role: Role | null; // null until onboarding decides it
   emailVerified?: boolean;
   hasListing?: boolean; // true once the user has published a guide listing
+  hasCounselorListing?: boolean; // ditto for a counselor listing — the two are independent
 }
 
 export interface AuthResponse {
@@ -246,6 +247,18 @@ export const guidesApi = {
     rawRequest<{ data: CommunityGuideDto[] }>('GET', '/search/community-guides', undefined, false),
 };
 
+// ─── Public counselors (admin-approved website listings) ──────────────────────
+// Same DTO shape as guides — the backend returns the identical row structure, just
+// sourced from `profileJson.counselorListing` instead of `guideListing`.
+
+export const counselorsApi = {
+  // Approved + published counselors shown on Browse college counselors. Public.
+  list: () =>
+    rawRequest<{ data: CommunityGuideDto[] }>('GET', '/search/counselors', undefined, false),
+  byId: (id: string) =>
+    rawRequest<CommunityGuideDto>('GET', `/search/counselors/${id}`, undefined, false),
+};
+
 // ─── Account / profile ────────────────────────────────────────────────────────
 
 export interface MyProfileDto {
@@ -273,6 +286,11 @@ export const accountApi = {
     request<{ id: string; role: Role; profileJson: Record<string, unknown> | null }>('POST', '/users/me/guide-listing', listing),
   deleteGuideListing: () =>
     request<{ id: string; role: Role; profileJson: Record<string, unknown> | null }>('DELETE', '/users/me/guide-listing'),
+  // Counselor listing — same contract, separate slot in profileJson.
+  saveCounselorListing: (listing: Record<string, unknown>) =>
+    request<{ id: string; role: Role; profileJson: Record<string, unknown> | null }>('POST', '/users/me/counselor-listing', listing),
+  deleteCounselorListing: () =>
+    request<{ id: string; role: Role; profileJson: Record<string, unknown> | null }>('DELETE', '/users/me/counselor-listing'),
 };
 
 // ─── Stripe Connect (guide bank onboarding for payouts) ───────────────────────
@@ -337,7 +355,13 @@ export interface PublicQuestionnaire {
 }
 
 export const questionnaireApi = {
-  active: () => request<PublicQuestionnaire>('GET', '/config/questionnaire'),
+  // `kind` selects which application form's questions come back. Omitted = guide,
+  // matching the backend default.
+  active: (kind?: 'GUIDE' | 'COUNSELOR') =>
+    request<PublicQuestionnaire>(
+      'GET',
+      kind === 'COUNSELOR' ? '/config/questionnaire?kind=COUNSELOR' : '/config/questionnaire',
+    ),
 };
 
 // ─── Saved cards (Payments settings) ──────────────────────────────────────────
@@ -375,6 +399,8 @@ export type BookingServiceType = 'CAMPUS_TOUR' | 'VIDEO_CONSULTATION' | 'CONSULT
 export interface BookingDto {
   id: string;
   bookingNo: number; // human-friendly sequential reference, shown as "B-{n}"
+  /** Which marketplace the booking came from. Older rows are GUIDE. */
+  kind?: 'GUIDE' | 'COUNSELOR';
   status: BookingStatus;
   serviceType: BookingServiceType;
   scheduledDate: string;
@@ -414,6 +440,8 @@ export interface CreateGuideBookingInput {
   listingTitle?: string;
   schoolName?: string;
   noteForGuide?: string;
+  /** Omit for a guide booking; 'COUNSELOR' books a counselor's consultation. */
+  kind?: 'GUIDE' | 'COUNSELOR';
 }
 
 // createGuide returns the booking plus the Stripe fields needed to collect payment.
@@ -424,8 +452,10 @@ export interface CreateGuideBookingResult extends BookingDto {
 }
 
 export const bookingsApi = {
-  // as: 'guest' (tours I booked) | 'guide' (tours I host)
-  list: (as: 'guest' | 'guide') => request<Paged<BookingDto>>('GET', `/bookings?as=${as}`),
+  // as: 'guest' (everything I booked) | 'guide' | 'counselor' (sessions I host, split
+  // by which marketplace the booking came from)
+  list: (as: 'guest' | 'guide' | 'counselor') =>
+    request<Paged<BookingDto>>('GET', `/bookings?as=${as}`),
   // Book a website "become a guide" listing (requires sign-in). Creates the booking
   // as PENDING_PAYMENT and returns a Stripe client secret to authorize the card.
   createGuide: (input: CreateGuideBookingInput) =>

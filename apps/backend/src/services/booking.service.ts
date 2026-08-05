@@ -309,6 +309,8 @@ export async function createGuideBooking(buyerId: string, data: {
   listingTitle?: string;
   schoolName?: string;
   noteForGuide?: string;
+  /** Which marketplace the buyer booked through. Defaults to GUIDE. */
+  kind?: 'GUIDE' | 'COUNSELOR';
 }) {
   if (data.sellerId === buyerId) throw new HttpError(400, 'cannot_book_self', 'You cannot book your own listing');
   if (!GUIDE_SERVICE_TYPES.includes(data.serviceType as never)) {
@@ -317,11 +319,15 @@ export async function createGuideBooking(buyerId: string, data: {
   if (!data.scheduledDate) throw new HttpError(400, 'validation_error', 'A date is required');
   if (!Number.isFinite(data.priceCents) || data.priceCents < 0) throw new HttpError(400, 'validation_error', 'Invalid price');
 
-  // The seller must be a published website guide.
+  // The seller must have a PUBLISHED listing of the kind being booked. Checking the
+  // matching listing matters: someone who is an approved guide but whose counselor
+  // profile is still under review must not be bookable as a counselor.
+  const kind = data.kind === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE';
+  const listingKey = kind === 'COUNSELOR' ? 'counselorListing' : 'guideListing';
   const seller = await prisma.user.findUnique({ where: { id: data.sellerId }, select: { id: true, role: true, status: true, profileJson: true } });
-  const gl = ((seller?.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as Record<string, unknown> | null;
+  const gl = ((seller?.profileJson as Record<string, unknown> | null)?.[listingKey] ?? null) as Record<string, unknown> | null;
   if (!seller || seller.status !== 'ACTIVE' || !gl || gl.status !== 'published') {
-    throw new HttpError(404, 'not_found', 'Guide not found or not available for booking');
+    throw new HttpError(404, 'not_found', kind === 'COUNSELOR' ? 'Counselor not found or not available for booking' : 'Guide not found or not available for booking');
   }
 
   const settings = await prisma.settings.findUnique({ where: { id: 'singleton' } });
@@ -343,6 +349,7 @@ export async function createGuideBooking(buyerId: string, data: {
     data: {
       buyerId,
       sellerId: data.sellerId,
+      kind,
       serviceType: data.serviceType as never,
       listingTitle: data.listingTitle ?? (typeof gl.listingTitle === 'string' ? gl.listingTitle : null),
       durationMinutes: data.durationMinutes ?? null,
@@ -430,11 +437,16 @@ export async function listBookings(
   perspective: 'buyer' | 'seller',
   page = 1,
   limit = 50,
+  kind?: 'GUIDE' | 'COUNSELOR',
 ) {
-  // "As guest" (buyer) → tours I booked; "As guide" (seller) → tours I host.
+  // "As guest" (buyer) → sessions I booked; "As guide" / "As counselor" (seller) →
+  // sessions I host, split by which marketplace they came from.
   // Unpaid bookings (PENDING_PAYMENT) are hidden from both lists until the hold clears.
   const where = {
     ...(perspective === 'seller' ? { sellerId: userId } : { buyerId: userId }),
+    // Only meaningful on the seller side — as a buyer you want everything you booked,
+    // guide sessions and counselor consultations alike, in one list.
+    ...(perspective === 'seller' && kind ? { kind } : {}),
     status: { not: 'PENDING_PAYMENT' as const },
   };
 

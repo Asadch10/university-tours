@@ -9,12 +9,10 @@ import { accountApi, authApi, friendlyError, tokenStore } from '@/lib/client-api
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { universities } from '@/lib/data';
+import { INTENT_OPTIONS } from '@/lib/onboarding-options';
 
-const OPTIONS = [
-  { key: 'book', label: 'Book a private tour' },
-  { key: 'guide', label: 'Become a guide and host tours' },
-  { key: 'other', label: 'Other' },
-];
+// Shared with Settings → College status so the two screens can't drift apart.
+const OPTIONS = INTENT_OPTIONS;
 
 const inputClasses =
   'w-full rounded-xl border border-ink-200 bg-surface px-4 py-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15';
@@ -80,8 +78,8 @@ export function OnboardingView() {
   }, [router, verifyToken]);
 
   async function handleIntentContinue() {
-    // Buyers pick their schools next; everyone else finishes here.
-    if (selected === 'book') {
+    // Guests pick their schools next; applicants go straight to their application.
+    if (selected === 'guest') {
       setStep('schools');
       return;
     }
@@ -89,7 +87,8 @@ export function OnboardingView() {
     try {
       const res = await accountApi.completeOnboarding(selected);
       if (res.role) updateSessionUser({ role: res.role });
-      router.push('/');
+      // Each choice lands on its own destination.
+      router.push(OPTIONS.find((o) => o.key === selected)?.href ?? '/');
     } catch (e) {
       toast.error('Something went wrong', friendlyError(e));
       setSaving(false);
@@ -104,7 +103,7 @@ export function OnboardingView() {
     const all = Array.from(new Set([...schools, ...custom]));
     setSaving(true);
     try {
-      const res = await accountApi.completeOnboarding('book', all);
+      const res = await accountApi.completeOnboarding('guest', all);
       if (res.role) updateSessionUser({ role: res.role });
       router.push('/search');
     } catch (e) {
@@ -165,14 +164,17 @@ export function OnboardingView() {
                         type="button"
                         onClick={() => setSelected(o.key)}
                         className={cn(
-                          'flex w-full items-center gap-3 rounded-2xl border px-5 py-4 text-left transition-colors',
+                          'flex w-full items-start gap-3 rounded-2xl border px-5 py-4 text-left transition-colors',
                           active ? 'border-brand bg-brand-tint/50 ring-1 ring-inset ring-brand' : 'border-ink-200 bg-surface hover:border-brand-muted',
                         )}
                       >
-                        <span className={cn('inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', active ? 'border-brand' : 'border-ink-300')}>
+                        <span className={cn('mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', active ? 'border-brand' : 'border-ink-300')}>
                           {active && <span className="h-2.5 w-2.5 rounded-full bg-maroon-800" />}
                         </span>
-                        <span className="text-sm font-medium text-ink-900">{o.label}</span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-ink-900">{o.label}</span>
+                          <span className="mt-0.5 block text-xs text-ink-500">{o.description}</span>
+                        </span>
                       </button>
                     );
                   })}

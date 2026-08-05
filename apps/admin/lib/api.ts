@@ -206,14 +206,17 @@ export const authApi = {
 export const adminApi = {
   dashboard: () => request<DashboardDto>('GET', '/admin/dashboard'),
 
-  applications: (p: { status?: string; q?: string; page?: number } = {}) =>
+  applications: (p: { status?: string; kind?: string; q?: string; page?: number } = {}) =>
     request<Paged<ApplicationDto>>('GET', `/admin/applications${qs({ ...p, limit: 100 })}`),
   applicationApprove: (id: string) => request('POST', `/admin/applications/${id}/approve`),
   applicationReject: (id: string, reason: string) => request('POST', `/admin/applications/${id}/reject`, { reason }),
   applicationRequestChanges: (id: string, reason: string) =>
     request('POST', `/admin/applications/${id}/request-changes`, { reason }),
 
-  questionnaire: () => request<QuestionnaireDto>('GET', '/admin/questionnaires'),
+  // Guide and counselor questionnaires are separate records managed independently;
+  // omitting `kind` returns the guide one, matching the backend default.
+  questionnaire: (kind: 'GUIDE' | 'COUNSELOR' = 'GUIDE') =>
+    request<QuestionnaireDto>('GET', `/admin/questionnaires?kind=${kind}`),
   questionnaireAddQuestion: (id: string, q: { type: string; label: string; required: boolean; options?: string[] }) =>
     request<QuestionnaireDto['questions'][number]>('POST', `/admin/questionnaires/${id}/questions`, q),
   questionnaireUpdateQuestion: (id: string, qid: string, q: { type?: string; label?: string; required?: boolean; options?: string[] | null }) =>
@@ -232,10 +235,13 @@ export const adminApi = {
   userResetPassword: (id: string) =>
     request<{ ok: true; email: string; sent: boolean }>('POST', `/admin/users/${id}/reset-password`),
 
-  listings: (p: { q?: string; status?: string; service?: string; page?: number } = {}) =>
+  // `kind` selects the guide or counselor submission queue; omitted = guide.
+  listings: (p: { q?: string; status?: string; service?: string; kind?: string; page?: number } = {}) =>
     request<Paged<ListingDto>>('GET', `/admin/listings${qs({ ...p, limit: 100 })}`),
-  listingDetail: (id: string) => request<ListingDetailDto>('GET', `/admin/listings/${id}`),
-  listingModerate: (id: string, status: string) => request('PATCH', `/admin/listings/${id}`, { status }),
+  listingDetail: (id: string, kind: 'GUIDE' | 'COUNSELOR' = 'GUIDE') =>
+    request<ListingDetailDto>('GET', `/admin/listings/${id}?kind=${kind}`),
+  listingModerate: (id: string, status: string, kind?: 'GUIDE' | 'COUNSELOR') =>
+    request('PATCH', `/admin/listings/${id}`, { status, ...(kind ? { kind } : {}) }),
 
   bookings: (p: { status?: string; q?: string; page?: number } = {}) =>
     request<Paged<BookingDto>>('GET', `/admin/bookings${qs({ ...p, limit: 100 })}`),
@@ -340,10 +346,18 @@ export interface DashboardDto {
 export interface ApplicationDto {
   id: string;
   status: string;
+  /** GUIDE or COUNSELOR. Pre-existing rows are GUIDE. */
+  kind?: 'GUIDE' | 'COUNSELOR';
   reason: string | null;
   submittedAt: string;
-  seller: { id: string; name: string; email: string; sellerProfile?: { school?: { name: string } | null; major?: string | null; gradYear?: number | null } | null };
-  questionnaire?: { version: number } | null;
+  seller: {
+    id: string;
+    name: string;
+    email: string;
+    sellerProfile?: { school?: { name: string } | null; major?: string | null; gradYear?: number | null } | null;
+    counselorProfile?: { headline?: string | null; organization?: string | null; yearsExperience?: number | null } | null;
+  };
+  questionnaire?: { version: number; kind?: 'GUIDE' | 'COUNSELOR' } | null;
   answers: { questionLabelSnapshot: string; value: string | null }[];
 }
 

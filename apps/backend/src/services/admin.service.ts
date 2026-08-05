@@ -1,4 +1,4 @@
-import { prisma, Prisma } from '@ucpt/db';
+import { prisma, Prisma, type ApplicantKind } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
 import { config } from '../config.js';
@@ -82,10 +82,13 @@ export async function getDashboard() {
 
 // ─── Applications ─────────────────────────────────────────────────────────────
 
-export async function listApplications(opts: { status?: string; q?: string; page?: number; limit?: number }) {
-  const { status, q, page = 1, limit = 20 } = opts;
+export async function listApplications(opts: { status?: string; kind?: string; q?: string; page?: number; limit?: number }) {
+  const { status, kind, q, page = 1, limit = 20 } = opts;
   const where: Record<string, unknown> = {};
   if (status && status !== 'ALL') where.status = status;
+  // No `kind` (or ALL) intentionally returns both guide and counselor applications,
+  // so the existing admin screen keeps working untouched until it opts into filtering.
+  if (kind && kind !== 'ALL') where.kind = kind;
   if (q) {
     where.seller = {
       OR: [
@@ -98,8 +101,14 @@ export async function listApplications(opts: { status?: string; q?: string; page
     prisma.application.findMany({
       where,
       include: {
-        seller: { select: { id: true, name: true, email: true, sellerProfile: { include: { school: true } } } },
-        questionnaire: { select: { version: true } },
+        seller: {
+          select: {
+            id: true, name: true, email: true,
+            sellerProfile: { include: { school: true } },
+            counselorProfile: true,
+          },
+        },
+        questionnaire: { select: { version: true, kind: true } },
         answers: true,
       },
       orderBy: { submittedAt: 'desc' },
@@ -115,7 +124,13 @@ export async function getApplication(id: string) {
   const app = await prisma.application.findUnique({
     where: { id },
     include: {
-      seller: { select: { id: true, name: true, email: true, sellerProfile: { include: { school: true } } } },
+      seller: {
+        select: {
+          id: true, name: true, email: true,
+          sellerProfile: { include: { school: true } },
+          counselorProfile: true,
+        },
+      },
       questionnaire: { include: { questions: { orderBy: { order: 'asc' } } } },
       answers: true,
     },
@@ -130,13 +145,29 @@ export async function decideApplication(id: string, decision: 'APPROVED' | 'REJE
 
   await prisma.$transaction(async (tx) => {
     await tx.application.update({ where: { id }, data: { status: decision, reason: reason ?? null } });
-    if (decision === 'APPROVED') {
-      await tx.sellerProfile.update({ where: { userId: app.sellerId }, data: { applicationStatus: 'APPROVED', approvedAt: new Date() } });
+
+    // The decision lands on whichever profile this application was for. A user may
+    // hold both, so approving their counselor application must not touch their
+    // guide status (or vice versa).
+    const data = decision === 'APPROVED'
+      ? { applicationStatus: 'APPROVED' as const, approvedAt: new Date() }
+      : { applicationStatus: decision as never };
+
+    if (app.kind === 'COUNSELOR') {
+      // upsert, not update: the counselor profile is created on first submission,
+      // but a row deleted out from under us shouldn't fail the whole decision.
+      await tx.counselorProfile.upsert({
+        where: { userId: app.sellerId },
+        update: data,
+        create: { userId: app.sellerId, ...data },
+      });
     } else {
-      await tx.sellerProfile.update({ where: { userId: app.sellerId }, data: { applicationStatus: decision as never } });
+      await tx.sellerProfile.update({ where: { userId: app.sellerId }, data });
     }
+
     if (adminId) {
-      await tx.auditLog.create({ data: { adminId, action: `application.${decision.toLowerCase()}`, entity: `applications/${id} (${app.seller.name})`, ip: '127.0.0.1' } });
+      const label = app.kind === 'COUNSELOR' ? 'counselor_application' : 'application';
+      await tx.auditLog.create({ data: { adminId, action: `${label}.${decision.toLowerCase()}`, entity: `applications/${id} (${app.seller.name})`, ip: '127.0.0.1' } });
     }
   });
   return { ok: true };
@@ -160,21 +191,24 @@ export async function setRequiredPhotos(n: number, adminId: string) {
   return { requiredPhotos: v };
 }
 
-export async function getOrCreateQuestionnaire() {
-  // Manage the SAME questionnaire the website's become-a-guide form uses: the
-  // ACTIVE one. Fall back to the latest version, then create one if none exist.
+export async function getOrCreateQuestionnaire(kind: ApplicantKind = 'GUIDE') {
+  // Manage the SAME questionnaire the website's application form uses: the ACTIVE one
+  // for this kind. Fall back to the latest version, then create one if none exist.
+  // Guide and counselor questionnaires are wholly independent — separate rows,
+  // separate version sequences, separate question sets.
   const active = await prisma.questionnaire.findFirst({
-    where: { status: 'ACTIVE' },
+    where: { status: 'ACTIVE', kind },
     include: { questions: { orderBy: { order: 'asc' } } },
   });
   if (active) return active;
   const latest = await prisma.questionnaire.findFirst({
+    where: { kind },
     include: { questions: { orderBy: { order: 'asc' } } },
     orderBy: { version: 'desc' },
   });
   if (latest) return latest;
   return prisma.questionnaire.create({
-    data: { version: 1, status: 'ACTIVE', questions: {} },
+    data: { kind, version: 1, status: 'ACTIVE', questions: {} },
     include: { questions: { orderBy: { order: 'asc' } } },
   });
 }
@@ -406,8 +440,11 @@ export type GuideListingStatus = (typeof GUIDE_LISTING_STATUSES)[number];
 const guideListingStatus = (s: unknown): GuideListingStatus =>
   s === 'published' ? 'PUBLISHED' : s === 'suspended' ? 'SUSPENDED' : s === 'draft' ? 'DRAFT' : 'UNDER_REVIEW';
 
-export async function listListings(opts: { q?: string; status?: string; service?: string; page?: number; limit?: number }) {
+export async function listListings(opts: { q?: string; status?: string; service?: string; kind?: string; page?: number; limit?: number }) {
   const { q, status, service, page = 1, limit = 20 } = opts;
+  // Which submission queue to read. Defaults to GUIDE so the existing admin screen is
+  // unchanged; the counselor tab passes COUNSELOR.
+  const listingKey = String(opts.kind ?? '').toUpperCase() === 'COUNSELOR' ? 'counselorListing' : 'guideListing';
   // JSON-path filters on nullable Json columns are error-prone across Prisma
   // versions, so fetch candidates and filter in JS — one listing per user keeps
   // this small.
@@ -426,13 +463,25 @@ export async function listListings(opts: { q?: string; status?: string; service?
 
   let rows = users
     .map((u) => {
-      const gl = ((u.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as Record<string, unknown> | null;
+      const gl = ((u.profileJson as Record<string, unknown> | null)?.[listingKey] ?? null) as Record<string, unknown> | null;
       if (!gl) return null;
+      // Counselor submissions carry their answers under `answers` keyed by fieldKey,
+      // so the title/school columns come from there instead of the guide's flat fields.
+      const answers = (gl.answers ?? {}) as Record<string, unknown>;
+      const headline = typeof answers.headline === 'string' ? answers.headline.trim() : '';
+      const organization = typeof answers.organization === 'string' ? answers.organization.trim() : '';
+      const isCounselor = listingKey === 'counselorListing';
       return {
         id: u.id,
-        title: typeof gl.listingTitle === 'string' && gl.listingTitle.trim() ? gl.listingTitle : 'Untitled listing',
-        school: typeof gl.school === 'string' && gl.school.trim() ? gl.school : null,
-        tourTypes: Array.isArray(gl.tourTypes) ? gl.tourTypes.filter((t): t is string => typeof t === 'string') : [],
+        title: isCounselor
+          ? (headline || 'College counselor')
+          : (typeof gl.listingTitle === 'string' && gl.listingTitle.trim() ? gl.listingTitle : 'Untitled listing'),
+        school: isCounselor
+          ? (organization || null)
+          : (typeof gl.school === 'string' && gl.school.trim() ? gl.school : null),
+        tourTypes: isCounselor
+          ? (Array.isArray(answers.specialties) ? answers.specialties.filter((t): t is string => typeof t === 'string') : [])
+          : (Array.isArray(gl.tourTypes) ? gl.tourTypes.filter((t): t is string => typeof t === 'string') : []),
         photos: Array.isArray(gl.photos) ? gl.photos.filter((p): p is string => typeof p === 'string') : [],
         intro: typeof gl.intro === 'string' ? gl.intro : null,
         status: guideListingStatus(gl.status),
@@ -464,7 +513,9 @@ export async function listListings(opts: { q?: string; status?: string; service?
 }
 
 /** Everything the admin detail page needs: the website listing JSON plus the owner's account and seller profile. */
-export async function getListingDetail(id: string) {
+export async function getListingDetail(id: string, kind?: string) {
+  const isCounselor = String(kind ?? '').toUpperCase() === 'COUNSELOR';
+  const listingKey = isCounselor ? 'counselorListing' : 'guideListing';
   const u = await prisma.user.findUnique({
     where: { id },
     select: {
@@ -491,14 +542,25 @@ export async function getListingDetail(id: string) {
       _count: { select: { sellerBookings: true, buyerBookings: true } },
     },
   });
-  const gl = ((u?.profileJson as Record<string, unknown> | null)?.guideListing ?? null) as Record<string, unknown> | null;
+  const gl = ((u?.profileJson as Record<string, unknown> | null)?.[listingKey] ?? null) as Record<string, unknown> | null;
   if (!u || !gl) throw new HttpError(404, 'not_found', 'Listing not found');
+
+  // A counselor's fields live under `answers`, keyed by the questionnaire's fieldKeys.
+  const answers = (gl.answers ?? {}) as Record<string, unknown>;
+  const answerStr = (k: string) => (typeof answers[k] === 'string' ? (answers[k] as string).trim() : '');
 
   return {
     id: u.id,
-    title: typeof gl.listingTitle === 'string' && gl.listingTitle.trim() ? gl.listingTitle : 'Untitled listing',
-    school: typeof gl.school === 'string' && gl.school.trim() ? gl.school : null,
-    tourTypes: Array.isArray(gl.tourTypes) ? gl.tourTypes.filter((t): t is string => typeof t === 'string') : [],
+    kind: isCounselor ? 'COUNSELOR' : 'GUIDE',
+    title: isCounselor
+      ? (answerStr('headline') || 'College counselor')
+      : (typeof gl.listingTitle === 'string' && gl.listingTitle.trim() ? gl.listingTitle : 'Untitled listing'),
+    school: isCounselor
+      ? (answerStr('organization') || null)
+      : (typeof gl.school === 'string' && gl.school.trim() ? gl.school : null),
+    tourTypes: isCounselor
+      ? (Array.isArray(answers.specialties) ? answers.specialties.filter((t): t is string => typeof t === 'string') : [])
+      : (Array.isArray(gl.tourTypes) ? gl.tourTypes.filter((t): t is string => typeof t === 'string') : []),
     photos: Array.isArray(gl.photos) ? gl.photos.filter((p): p is string => typeof p === 'string') : [],
     intro: typeof gl.intro === 'string' ? gl.intro : null,
     status: guideListingStatus(gl.status),
@@ -532,7 +594,7 @@ export async function getListingDetail(id: string) {
   };
 }
 
-export async function moderateListing(id: string, data: { status?: string }, adminId?: string) {
+export async function moderateListing(id: string, data: { status?: string; kind?: string }, adminId?: string) {
   const toJson: Record<string, string> = {
     PUBLISHED: 'published',
     SUSPENDED: 'suspended',
@@ -542,20 +604,35 @@ export async function moderateListing(id: string, data: { status?: string }, adm
   const next = toJson[data.status ?? ''];
   if (!next) throw new HttpError(400, 'validation_error', `status must be one of ${GUIDE_LISTING_STATUSES.join(', ')}`);
 
+  const isCounselor = String(data.kind ?? '').toUpperCase() === 'COUNSELOR';
+  const listingKey = isCounselor ? 'counselorListing' : 'guideListing';
+
   const user = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, profileJson: true } });
   const profile = (user?.profileJson ?? {}) as Record<string, unknown>;
-  const gl = profile.guideListing as Record<string, unknown> | undefined;
+  const gl = profile[listingKey] as Record<string, unknown> | undefined;
   if (!user || !gl) throw new HttpError(404, 'not_found', 'Listing not found');
 
   const prevStatus = gl.status;
-  const guideListing: Record<string, unknown> = { ...gl, status: next };
-  if (next === 'published' && !guideListing.publishedAt) guideListing.publishedAt = new Date().toISOString();
+  const nextListing: Record<string, unknown> = { ...gl, status: next };
+  if (next === 'published' && !nextListing.publishedAt) nextListing.publishedAt = new Date().toISOString();
 
   const updated = await prisma.user.update({
     where: { id },
-    data: { profileJson: { ...profile, guideListing } as Prisma.InputJsonValue },
+    data: { profileJson: { ...profile, [listingKey]: nextListing } as Prisma.InputJsonValue },
     select: { id: true },
   });
+
+  // Keep the counselor profile's approval in step, since the public directory is
+  // gated on APPROVED as well as on the listing being published.
+  if (isCounselor) {
+    const applicationStatus =
+      next === 'published' ? 'APPROVED' : next === 'suspended' ? 'REJECTED' : 'SUBMITTED';
+    await prisma.counselorProfile.upsert({
+      where: { userId: id },
+      update: { applicationStatus, ...(next === 'published' ? { approvedAt: new Date() } : {}) },
+      create: { userId: id, applicationStatus, ...(next === 'published' ? { approvedAt: new Date() } : {}) },
+    });
+  }
   if (adminId) {
     await prisma.auditLog.create({
       data: { adminId, action: `listing.${next}`, entity: `listings/${id} (${user.name})`, ip: '127.0.0.1' },
@@ -565,19 +642,23 @@ export async function moderateListing(id: string, data: { status?: string }, adm
   // Notify the guide on a decision — only on an actual status change, so
   // re-saving the same status doesn't re-send. Best-effort (never fails the update).
   if (next !== prevStatus) {
-    const dashboardUrl = `${config.APP_WEB_URL.replace(/\/+$/, '')}/manage-listing`;
+    const emailKind = isCounselor ? 'COUNSELOR' : 'GUIDE';
+    // Each role manages its profile on a different page — link them to the right one.
+    // One page manages both profiles; ?tab= opens the right section.
+    const dashboardUrl = `${config.APP_WEB_URL.replace(/\/+$/, '')}/manage-listing${isCounselor ? '?tab=counselor' : ''}`;
     if (next === 'published') {
-      sendProfileApprovedEmail({ to: user.email, name: user.name, dashboardUrl }).catch((err) =>
+      sendProfileApprovedEmail({ to: user.email, name: user.name, dashboardUrl, kind: emailKind }).catch((err) =>
         logger.error({ err, userId: id }, 'Approval email dispatch failed'),
       );
-      // Push the guide: their listing was approved.
       void sendPushToUsers(id, {
-        title: 'Listing approved 🎉',
-        body: 'Your guide listing is now live. Guests can find and book you.',
+        title: isCounselor ? 'Counselor profile approved 🎉' : 'Listing approved 🎉',
+        body: isCounselor
+          ? 'Your counselor profile is now live. Families can find and book you.'
+          : 'Your guide listing is now live. Guests can find and book you.',
         data: { type: 'listing', status: 'published' },
       });
     } else if (next === 'suspended') {
-      sendProfileDeclinedEmail({ to: user.email, name: user.name, dashboardUrl }).catch((err) =>
+      sendProfileDeclinedEmail({ to: user.email, name: user.name, dashboardUrl, kind: emailKind }).catch((err) =>
         logger.error({ err, userId: id }, 'Decline email dispatch failed'),
       );
     }

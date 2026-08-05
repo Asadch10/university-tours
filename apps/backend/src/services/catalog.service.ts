@@ -1,4 +1,4 @@
-import { prisma } from '@ucpt/db';
+import { prisma, type ApplicantKind } from '@ucpt/db';
 import { HttpError } from '../lib/http.js';
 import { getPriceBounds as adminGetPriceBounds } from './admin.service.js';
 
@@ -56,16 +56,30 @@ export async function getListing(id: string) {
 }
 
 export async function createListing(sellerId: string, data: {
-  schoolId: string;
+  schoolId?: string;
   serviceType: string;
   title: string;
   description?: string;
+  kind?: ApplicantKind;
   options: { durationMinutes: number; priceCents: number; label?: string }[];
 }) {
-  const seller = await prisma.sellerProfile.findUnique({ where: { userId: sellerId } });
-  if (!seller || seller.applicationStatus !== 'APPROVED') {
-    throw new HttpError(403, 'not_approved', 'Seller must be approved to create listings');
+  const kind: ApplicantKind = data.kind ?? 'GUIDE';
+
+  // Each kind is gated on its own approval. A user approved as a guide but not as a
+  // counselor can create guide listings only, and vice versa.
+  if (kind === 'COUNSELOR') {
+    const counselor = await prisma.counselorProfile.findUnique({ where: { userId: sellerId } });
+    if (!counselor || counselor.applicationStatus !== 'APPROVED') {
+      throw new HttpError(403, 'not_approved', 'Counselor must be approved to create listings');
+    }
+  } else {
+    const seller = await prisma.sellerProfile.findUnique({ where: { userId: sellerId } });
+    if (!seller || seller.applicationStatus !== 'APPROVED') {
+      throw new HttpError(403, 'not_approved', 'Seller must be approved to create listings');
+    }
+    if (!data.schoolId) throw new HttpError(400, 'validation_error', 'schoolId is required for guide listings');
   }
+
   const bounds = await prisma.servicePriceBound.findUnique({ where: { serviceType: data.serviceType as never } });
   if (bounds) {
     for (const opt of data.options) {
@@ -77,7 +91,9 @@ export async function createListing(sellerId: string, data: {
   return prisma.listing.create({
     data: {
       sellerId,
-      schoolId: data.schoolId,
+      kind,
+      // Counselors are not campus-bound, so their listing carries no school.
+      schoolId: kind === 'COUNSELOR' ? null : data.schoolId,
       serviceType: data.serviceType as never,
       title: data.title,
       description: data.description,
@@ -127,7 +143,9 @@ export async function searchGuides(opts: {
   limit?: number;
 }) {
   const { schoolId, serviceType, q, page = 1, limit = 20 } = opts;
-  const where: Record<string, unknown> = { status: 'ACTIVE' };
+  // GUIDE only — counselor listings have their own browse page and must not surface
+  // here, even though both are ACTIVE listings owned by SELLER users.
+  const where: Record<string, unknown> = { status: 'ACTIVE', kind: 'GUIDE' };
   if (schoolId) where.schoolId = schoolId;
   if (serviceType) where.serviceType = serviceType;
   if (q) {
@@ -153,6 +171,14 @@ export async function searchGuides(opts: {
   return { data, total, page, limit };
 }
 
+// ─── Counselor discovery ──────────────────────────────────────────────────────
+//
+// Deliberately mirrors the guide directory below (listPublishedGuides /
+// getPublishedGuide) rather than querying the Listing table: the website's
+// marketplace reads a published listing out of `profileJson`, and counselors must
+// behave identically. The only structural difference is the profileJson key —
+// `counselorListing` instead of `guideListing`.
+
 // ─── Price bounds (public read for UI validation) ─────────────────────────────
 
 /**
@@ -169,10 +195,10 @@ export async function getPriceBounds() {
 
 // ─── Public questionnaire (become-a-guide extra questions, admin-managed) ──────
 
-export async function getPublicQuestionnaire() {
+export async function getPublicQuestionnaire(kind: ApplicantKind = 'GUIDE') {
   const [q, settings] = await Promise.all([
     prisma.questionnaire.findFirst({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', kind },
       include: { questions: { orderBy: { order: 'asc' } } },
     }),
     prisma.settings.findUnique({ where: { id: 'singleton' } }),
@@ -211,11 +237,20 @@ interface CommunityGuideRow {
   reviewList: CommunityGuideReview[];
 }
 
-function publishedListing(profileJson: unknown): Record<string, unknown> | null {
-  const gl = ((profileJson as Record<string, unknown> | null)?.guideListing ?? null) as
+/** Read a published listing out of profileJson under `key`, or null if not published. */
+function publishedUnder(profileJson: unknown, key: 'guideListing' | 'counselorListing') {
+  const gl = ((profileJson as Record<string, unknown> | null)?.[key] ?? null) as
     | Record<string, unknown>
     | null;
   return gl && gl.status === 'published' ? gl : null;
+}
+
+function publishedListing(profileJson: unknown): Record<string, unknown> | null {
+  return publishedUnder(profileJson, 'guideListing');
+}
+
+function publishedCounselorListing(profileJson: unknown): Record<string, unknown> | null {
+  return publishedUnder(profileJson, 'counselorListing');
 }
 
 /** All published website guides, newest first — with per-guide rating aggregates. */
@@ -281,4 +316,72 @@ export async function getPublishedGuide(id: string): Promise<CommunityGuideRow> 
     : null;
 
   return { id: u.id, name: u.name, rating, reviews: reviews.length, listing: gl, reviewList };
+}
+
+/**
+ * All published counselors, newest first — the Browse College Counselors directory.
+ *
+ * Gated on APPROVED as well as published: a counselor whose approval is revoked
+ * disappears from the directory immediately, without needing their listing edited.
+ */
+export async function listPublishedCounselors(): Promise<{ data: CommunityGuideRow[] }> {
+  const users = await prisma.user.findMany({
+    where: { role: { not: 'ADMIN' }, counselorProfile: { applicationStatus: 'APPROVED' } },
+    select: { id: true, name: true, profileJson: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
+  const published = users
+    .map((u) => ({ u, cl: publishedCounselorListing(u.profileJson) }))
+    .filter((x): x is { u: (typeof users)[number]; cl: Record<string, unknown> } => x.cl !== null);
+
+  const ids = published.map((x) => x.u.id);
+  const agg = ids.length
+    ? await prisma.review.groupBy({
+        by: ['sellerId'],
+        where: { sellerId: { in: ids }, hidden: false },
+        _avg: { rating: true },
+        _count: true,
+      })
+    : [];
+  const bySeller = new Map(agg.map((a) => [a.sellerId, a]));
+
+  const data = published.map(({ u, cl }) => {
+    const a = bySeller.get(u.id);
+    return {
+      id: u.id,
+      name: u.name,
+      rating: a?._avg.rating ?? null,
+      reviews: a?._count ?? 0,
+      listing: cl,
+      reviewList: [],
+    };
+  });
+  return { data };
+}
+
+export async function getPublishedCounselor(id: string): Promise<CommunityGuideRow> {
+  const u = await prisma.user.findFirst({
+    where: { id, counselorProfile: { applicationStatus: 'APPROVED' } },
+    select: { id: true, name: true, profileJson: true },
+  });
+  const cl = u ? publishedCounselorListing(u.profileJson) : null;
+  if (!u || !cl) throw new HttpError(404, 'not_found', 'Counselor not found');
+
+  const reviews = await prisma.review.findMany({
+    where: { sellerId: id, hidden: false },
+    include: { buyer: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+  const reviewList: CommunityGuideReview[] = reviews.map((r) => ({
+    name: r.buyer.name,
+    rating: r.rating,
+    text: r.text,
+    date: r.createdAt.toISOString(),
+  }));
+  const rating = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : null;
+
+  return { id: u.id, name: u.name, rating, reviews: reviews.length, listing: cl, reviewList };
 }

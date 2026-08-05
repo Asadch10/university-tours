@@ -131,6 +131,46 @@ const EMAIL_TEMPLATES: EmailTemplateDef[] = [
     html: () => declinedEmailHtml({ first: P('first'), brand: P('brand'), dashboardUrl: P('dashboardUrl') }),
     sampleVars: { first: 'Alex', brand: config.MAIL_FROM_NAME, dashboardUrl: 'https://app.example.com/manage-listing' },
   },
+  // Counselor equivalents of the three applicant emails above. Separate rows so an
+  // admin can word them independently — a counselor is an outside professional, not a
+  // student, and the guide copy (ID checks, campus photos, hosting tours) is wrong.
+  {
+    key: 'email.counselor.under_review',
+    subject: 'Your counselor profile is under review · {{brand}}',
+    html: () =>
+      underReviewEmailHtml({
+        first: P('first'),
+        brand: P('brand'),
+        roleNoun: 'college counselor',
+        reviewing: 'your credentials and professional background',
+      }),
+    sampleVars: { first: 'Alex', brand: config.MAIL_FROM_NAME },
+  },
+  {
+    key: 'email.counselor.approved',
+    subject: "You're approved — your counselor profile is live · {{brand}}",
+    html: () =>
+      approvedEmailHtml({
+        first: P('first'),
+        brand: P('brand'),
+        dashboardUrl: P('dashboardUrl'),
+        roleProfile: 'counselor profile',
+        approvedBody: 'Families can now find you in the counselor directory and book consultations.',
+      }),
+    sampleVars: { first: 'Alex', brand: config.MAIL_FROM_NAME, dashboardUrl: 'https://app.example.com/manage-listing' },
+  },
+  {
+    key: 'email.counselor.declined',
+    subject: 'An update on your counselor profile · {{brand}}',
+    html: () =>
+      declinedEmailHtml({
+        first: P('first'),
+        brand: P('brand'),
+        dashboardUrl: P('dashboardUrl'),
+        roleProfile: 'counselor profile',
+      }),
+    sampleVars: { first: 'Alex', brand: config.MAIL_FROM_NAME, dashboardUrl: 'https://app.example.com/manage-listing' },
+  },
   {
     key: 'email.password_reset',
     subject: 'Reset your password · {{brand}}',
@@ -251,27 +291,70 @@ export async function sendVerificationEmail(opts: {
  * Send the "your guide profile is under review" message after a user submits
  * their become-a-guide application.
  */
+/**
+ * Role-specific wording for the three applicant emails.
+ *
+ * Guides and counselors apply through the same machinery but are different products —
+ * a counselor is an outside professional with no enrollment, ID check, or campus
+ * photos, so the guide copy is actively wrong for them.
+ */
+export type ApplicantEmailKind = 'GUIDE' | 'COUNSELOR';
+
+interface RoleCopy {
+  /** "guide" / "college counselor" — used mid-sentence. */
+  noun: string;
+  /** "guide profile" / "counselor profile" — used in subjects. */
+  profile: string;
+  /** What the review actually covers. */
+  reviewing: string;
+  /** What approval unlocks. */
+  approvedBody: string;
+  /** Admin-managed template key prefix. */
+  templatePrefix: string;
+}
+
+const ROLE_COPY: Record<ApplicantEmailKind, RoleCopy> = {
+  GUIDE: {
+    noun: 'guide',
+    profile: 'guide profile',
+    reviewing: 'your details, ID, and photos',
+    approvedBody: 'Students can find your listing and start booking tours with you.',
+    templatePrefix: 'email',
+  },
+  COUNSELOR: {
+    noun: 'college counselor',
+    profile: 'counselor profile',
+    reviewing: 'your credentials and professional background',
+    approvedBody: 'Families can now find you in the counselor directory and book consultations.',
+    templatePrefix: 'email.counselor',
+  },
+};
+
 export async function sendProfileUnderReviewEmail(opts: {
   to: string;
   name: string;
+  kind?: ApplicantEmailKind;
 }): Promise<void> {
   const first = firstNameOf(opts.name, opts.to);
   const brand = config.MAIL_FROM_NAME;
+  const c = ROLE_COPY[opts.kind ?? 'GUIDE'];
 
   const text =
     `Hi ${first},\n\n` +
-    `Thanks for applying to become a guide with ${brand}. ` +
+    `Thanks for applying to become a ${c.noun} with ${brand}. ` +
     `We've received your profile and it's now under review by our team.\n\n` +
-    `What happens next: our team will review your details, ID, and photos — this usually takes 1–2 business days. ` +
+    `What happens next: our team will review ${c.reviewing} — this usually takes 1–2 business days. ` +
     `We'll email you as soon as a decision is made.\n\n` +
     `You don't need to do anything right now. Thanks for your patience!`;
 
-  const t = await renderTemplate('email.under_review', { first, brand });
+  // Counselors look for `email.counselor.under_review` first; if an admin hasn't
+  // created one, the built-in counselor copy below is used (never the guide template).
+  const t = await renderTemplate(`${c.templatePrefix}.under_review`, { first, brand });
   await send({
     to: opts.to,
-    subject: t?.subject ?? `Your guide profile is under review · ${brand}`,
+    subject: t?.subject ?? `Your ${c.profile} is under review · ${brand}`,
     text,
-    html: t?.html ?? underReviewEmailHtml({ first, brand }),
+    html: t?.html ?? underReviewEmailHtml({ first, brand, roleNoun: c.noun, reviewing: c.reviewing }),
   });
 }
 
@@ -285,13 +368,16 @@ export async function sendListingReviewAdminEmail(opts: {
   guideEmail: string;
   reviewUrl: string;
   isEdit: boolean;
+  kind?: ApplicantEmailKind;
 }): Promise<void> {
   const brand = config.MAIL_FROM_NAME;
   const who = opts.guideName?.trim() || opts.guideEmail;
-  const action = opts.isEdit ? 'updated their guide listing' : 'submitted a new guide listing';
+  // "guide listing" vs "counselor profile", so the admin knows which queue to open.
+  const thing = opts.kind === 'COUNSELOR' ? 'counselor profile' : 'guide listing';
+  const action = opts.isEdit ? `updated their ${thing}` : `submitted a new ${thing}`;
   const subject = opts.isEdit
-    ? `Listing edited — ${who} needs re-review · ${brand}`
-    : `New guide listing to review — ${who} · ${brand}`;
+    ? `${opts.kind === 'COUNSELOR' ? 'Counselor profile' : 'Listing'} edited — ${who} needs re-review · ${brand}`
+    : `New ${thing} to review — ${who} · ${brand}`;
 
   const text =
     `${who} (${opts.guideEmail}) just ${action}, so it's back in the review queue.\n\n` +
@@ -302,7 +388,7 @@ export async function sendListingReviewAdminEmail(opts: {
     to: opts.to,
     subject,
     text,
-    html: adminListingReviewHtml({ brand, who, guideEmail: opts.guideEmail, reviewUrl: opts.reviewUrl, isEdit: opts.isEdit }),
+    html: adminListingReviewHtml({ brand, who, guideEmail: opts.guideEmail, reviewUrl: opts.reviewUrl, isEdit: opts.isEdit, thing }),
   });
 }
 
@@ -314,23 +400,29 @@ export async function sendProfileApprovedEmail(opts: {
   to: string;
   name: string;
   dashboardUrl: string;
+  kind?: ApplicantEmailKind;
 }): Promise<void> {
   const first = firstNameOf(opts.name, opts.to);
   const brand = config.MAIL_FROM_NAME;
+  const c = ROLE_COPY[opts.kind ?? 'GUIDE'];
+  const closing =
+    opts.kind === 'COUNSELOR'
+      ? "Welcome aboard — we can't wait to see you help your first family."
+      : "Welcome aboard — we can't wait to see you host your first tour.";
 
   const text =
     `Hi ${first},\n\n` +
-    `Great news — your guide profile has been approved and is now live on ${brand}! ` +
-    `Students can find your listing and start booking tours with you.\n\n` +
-    `Manage your listing and availability here:\n${opts.dashboardUrl}\n\n` +
-    `Welcome aboard — we can't wait to see you host your first tour.`;
+    `Great news — your ${c.profile} has been approved and is now live on ${brand}! ` +
+    `${c.approvedBody}\n\n` +
+    `Manage your profile here:\n${opts.dashboardUrl}\n\n` +
+    closing;
 
-  const t = await renderTemplate('email.approved', { first, brand, dashboardUrl: opts.dashboardUrl });
+  const t = await renderTemplate(`${c.templatePrefix}.approved`, { first, brand, dashboardUrl: opts.dashboardUrl });
   await send({
     to: opts.to,
-    subject: t?.subject ?? `You're approved — your guide profile is live · ${brand}`,
+    subject: t?.subject ?? `You're approved — your ${c.profile} is live · ${brand}`,
     text,
-    html: t?.html ?? approvedEmailHtml({ first, brand, dashboardUrl: opts.dashboardUrl }),
+    html: t?.html ?? approvedEmailHtml({ first, brand, dashboardUrl: opts.dashboardUrl, roleProfile: c.profile, approvedBody: c.approvedBody }),
   });
 }
 
@@ -342,23 +434,27 @@ export async function sendProfileDeclinedEmail(opts: {
   to: string;
   name: string;
   dashboardUrl: string;
+  kind?: ApplicantEmailKind;
 }): Promise<void> {
   const first = firstNameOf(opts.name, opts.to);
   const brand = config.MAIL_FROM_NAME;
+  const c = ROLE_COPY[opts.kind ?? 'GUIDE'];
+  const interest =
+    opts.kind === 'COUNSELOR' ? `counseling with ${brand}` : `guiding with ${brand}`;
 
   const text =
     `Hi ${first},\n\n` +
-    `Thanks for your interest in guiding with ${brand}. After reviewing your profile, ` +
-    `we're not able to approve it as submitted and your listing has been paused.\n\n` +
-    `You can review and update your listing here:\n${opts.dashboardUrl}\n\n` +
+    `Thanks for your interest in ${interest}. After reviewing your profile, ` +
+    `we're not able to approve it as submitted and it has been paused.\n\n` +
+    `You can review and update it here:\n${opts.dashboardUrl}\n\n` +
     `If you have questions, just reply to this email.`;
 
-  const t = await renderTemplate('email.declined', { first, brand, dashboardUrl: opts.dashboardUrl });
+  const t = await renderTemplate(`${c.templatePrefix}.declined`, { first, brand, dashboardUrl: opts.dashboardUrl });
   await send({
     to: opts.to,
-    subject: t?.subject ?? `An update on your guide profile · ${brand}`,
+    subject: t?.subject ?? `An update on your ${c.profile} · ${brand}`,
     text,
-    html: t?.html ?? declinedEmailHtml({ first, brand, dashboardUrl: opts.dashboardUrl }),
+    html: t?.html ?? declinedEmailHtml({ first, brand, dashboardUrl: opts.dashboardUrl, roleProfile: c.profile }),
   });
 }
 
@@ -625,8 +721,10 @@ function verificationEmailHtml(opts: { first: string; brand: string; verifyUrl: 
 }
 
 /** "Guide profile under review" confirmation email. */
-function underReviewEmailHtml(opts: { first: string; brand: string }): string {
+function underReviewEmailHtml(opts: { first: string; brand: string; roleNoun?: string; reviewing?: string }): string {
   const { first, brand } = opts;
+  const roleNoun = opts.roleNoun ?? 'guide';
+  const reviewing = opts.reviewing ?? 'your details, ID, and photos';
   const maroon = '#7A1B2E';
   return `<!doctype html>
 <html lang="en">
@@ -646,7 +744,7 @@ function underReviewEmailHtml(opts: { first: string; brand: string }): string {
             </tr>
             <tr>
               <td style="padding:16px 40px 8px 40px;font-size:15px;line-height:1.6;color:#374151;">
-                Hi ${first}, thanks for applying to become a guide. We've received your application and our team is reviewing your details, ID, and photos now.
+                Hi ${first}, thanks for applying to become a ${roleNoun}. We've received your application and our team is reviewing ${reviewing} now.
               </td>
             </tr>
             <tr>
@@ -679,16 +777,19 @@ function adminListingReviewHtml(opts: {
   guideEmail: string;
   reviewUrl: string;
   isEdit: boolean;
+  /** "guide listing" or "counselor profile" — what the admin is being asked to review. */
+  thing?: string;
 }): string {
   const { brand, who, guideEmail, reviewUrl, isEdit } = opts;
+  const thing = opts.thing ?? 'guide listing';
   const maroon = '#7A1B2E';
   const heading = isEdit ? 'A listing was edited' : 'New listing to review';
   const pill = isEdit
     ? '<div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;">✏️ Edited · needs re-review</div>'
     : '<div style="display:inline-block;background:#e0e7ff;color:#3730a3;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;">🆕 New submission</div>';
   const line = isEdit
-    ? `<strong>${who}</strong> (${guideEmail}) updated their guide listing, so it's back in the review queue.`
-    : `<strong>${who}</strong> (${guideEmail}) submitted a new guide listing for review.`;
+    ? `<strong>${who}</strong> (${guideEmail}) updated their ${thing}, so it's back in the review queue.`
+    : `<strong>${who}</strong> (${guideEmail}) submitted a new ${thing} for review.`;
   return `<!doctype html>
 <html lang="en">
   <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
@@ -732,8 +833,10 @@ function adminListingReviewHtml(opts: {
 }
 
 /** "Guide profile approved / live" email. */
-function approvedEmailHtml(opts: { first: string; brand: string; dashboardUrl: string }): string {
+function approvedEmailHtml(opts: { first: string; brand: string; dashboardUrl: string; roleProfile?: string; approvedBody?: string }): string {
   const { first, brand, dashboardUrl } = opts;
+  const roleProfile = opts.roleProfile ?? 'guide profile';
+  const approvedBody = opts.approvedBody ?? 'Students can find your listing and start booking tours with you.';
   const maroon = '#7A1B2E';
   const green = '#16a34a';
   return `<!doctype html>
@@ -759,7 +862,7 @@ function approvedEmailHtml(opts: { first: string; brand: string; dashboardUrl: s
             </tr>
             <tr>
               <td style="padding:16px 40px 8px 40px;font-size:15px;line-height:1.6;color:#374151;">
-                Your guide profile has been approved and is now live. Students can find your listing and start booking tours with you.
+                Your ${roleProfile} has been approved and is now live. ${approvedBody}
               </td>
             </tr>
             <tr>
@@ -781,8 +884,9 @@ function approvedEmailHtml(opts: { first: string; brand: string; dashboardUrl: s
 }
 
 /** "Guide profile paused / not approved" email. */
-function declinedEmailHtml(opts: { first: string; brand: string; dashboardUrl: string }): string {
+function declinedEmailHtml(opts: { first: string; brand: string; dashboardUrl: string; roleProfile?: string }): string {
   const { first, brand, dashboardUrl } = opts;
+  const roleProfile = opts.roleProfile ?? 'guide profile';
   const maroon = '#7A1B2E';
   return `<!doctype html>
 <html lang="en">
@@ -802,7 +906,7 @@ function declinedEmailHtml(opts: { first: string; brand: string; dashboardUrl: s
             </tr>
             <tr>
               <td style="padding:16px 40px 8px 40px;font-size:15px;line-height:1.6;color:#374151;">
-                Hi ${first}, thanks for your interest in guiding with ${brand}. After reviewing your profile, we're not able to approve it as submitted, and your listing has been paused for now.
+                Hi ${first}, thanks for your interest in joining ${brand}. After reviewing your ${roleProfile}, we're not able to approve it as submitted, and it has been paused for now.
               </td>
             </tr>
             <tr>

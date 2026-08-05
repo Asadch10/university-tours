@@ -157,7 +157,7 @@ export default function ProfilePage() {
   const quickLinks = [
     { href: '/settings', label: 'Account settings', desc: 'Password, college & payouts', icon: Settings },
     { href: '/manage-listing', label: 'Manage listing', desc: 'Your guide profile', icon: GraduationCap },
-    { href: '/my-tours', label: 'My tours', desc: 'Bookings & schedule', icon: CalendarDays },
+    { href: '/my-tours', label: 'My bookings', desc: 'Bookings & schedule', icon: CalendarDays },
   ];
 
   return (

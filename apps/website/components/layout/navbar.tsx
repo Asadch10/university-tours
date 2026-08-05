@@ -9,27 +9,45 @@ import { Logo } from '@/components/brand/logo';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { UserMenu, ACCOUNT_MENU } from '@/components/layout/user-menu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useAuthUser, signOut, initialsOf, updateSessionUser } from '@/lib/auth';
-import { accountApi } from '@/lib/client-api';
+import { useAuthUser, signOut, initialsOf } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
-// Public (logged-out) primary links.
+// Public (logged-out) primary links. Guides and counselors each get their own
+// submenu (below) rather than sitting flat here.
 const NAV_LINKS = [
   { href: '/universities', label: 'Explore schools' },
-  { href: '/search', label: 'Browse tour guides' },
+];
+
+/**
+ * Signed-in primary links — all flat, no submenus.
+ *
+ * Once you're signed in the "Become a …" invitations aren't what you need from the
+ * header, so the two dropdowns collapse to plain Browse links and Manage listing gets
+ * its own top-level entry. It's shown even without a profile yet: /manage-listing's
+ * empty state is the route into applying, so nothing is lost by dropping "Become a …".
+ */
+function userLinksFor() {
+  return [
+    { href: '/search', label: 'Browse guides' },
+    { href: '/browse-counselors', label: 'Browse college counselors' },
+    { href: '/manage-listing', label: 'Manage listing' },
+    { href: '/my-tours', label: 'My bookings' },
+  ];
+}
+
+/**
+ * The two marketplace submenus — signed-out visitors only. Each pairs the public
+ * directory with the invitation to join it.
+ */
+const GUIDE_ITEMS = [
+  { href: '/search', label: 'Browse guides' },
   { href: '/become-a-guide', label: 'Become a guide' },
 ];
 
-// Signed-in primary links — a focused set. Guides (with a listing) manage it instead of joining.
-function userLinksFor(hasListing?: boolean) {
-  return [
-    { href: '/search', label: 'Browse guides' },
-    hasListing
-      ? { href: '/manage-listing', label: 'Manage listing' }
-      : { href: '/become-a-guide', label: 'Become a guide' },
-    { href: '/my-tours', label: 'My tours' },
-  ];
-}
+const COUNSELOR_ITEMS = [
+  { href: '/browse-counselors', label: 'Browse college counselors' },
+  { href: '/become-a-counselor', label: 'Become a college counselor' },
+];
 
 const ABOUT_ITEMS = [
   { href: '/about', label: 'About us' },
@@ -155,19 +173,10 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthUser();
-  const userLinks = userLinksFor(user?.hasListing);
-
-  // Sync whether the user has a published listing (drives Become-a-guide ↔ Manage-listing).
-  useEffect(() => {
-    if (!user || user.hasListing !== undefined) return;
-    accountApi
-      .getMe()
-      .then((me) => {
-        const p = (me.profileJson ?? {}) as Record<string, unknown>;
-        updateSessionUser({ hasListing: !!p.guideListing });
-      })
-      .catch(() => {});
-  }, [user]);
+  // Signed-in links are the same for everyone now — "Manage listing" is always
+  // present and its page handles the no-profile-yet case — so the navbar no longer
+  // needs to know whether the user has published anything.
+  const userLinks = userLinksFor();
 
   function handleLogout() {
     setOpen(false);
@@ -217,6 +226,10 @@ export function Navbar() {
             </>
           ) : (
             <>
+              {/* Signed out: each marketplace is a submenu pairing Browse with Join.
+                  Signed in, those collapse into the flat links above. */}
+              <NavDropdown label="Guides" items={GUIDE_ITEMS} pathname={pathname} />
+              <NavDropdown label="College counselors" items={COUNSELOR_ITEMS} pathname={pathname} />
               <NavDropdown label="About" items={ABOUT_ITEMS} pathname={pathname} />
               <NavDropdown label="Help" items={HELP_ITEMS} pathname={pathname} />
               <Link
@@ -275,6 +288,30 @@ export function Navbar() {
                     </Link>
                   </li>
                 ))}
+
+                {/* Signed out only — the same two submenus as desktop, flattened into
+                    labelled groups. Signed in, those links are already flat above. */}
+                {!user &&
+                  ([
+                    { title: 'Guides', items: GUIDE_ITEMS },
+                    { title: 'College counselors', items: COUNSELOR_ITEMS },
+                  ] as const).map((group) => (
+                    <li key={group.title}>
+                      <p className="mt-3 px-4 pb-1 text-[0.65rem] font-semibold uppercase tracking-widest text-ink-400">
+                        {group.title}
+                      </p>
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900"
+                        >
+                          {item.label}
+                          <ChevronRight size={16} className="text-ink-400" />
+                        </Link>
+                      ))}
+                    </li>
+                  ))}
 
                 {!user && (
                   <>

@@ -25,7 +25,7 @@ import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { cn, humanize } from '@/lib/utils';
 import { type Question, type QuestionType } from '@/lib/data';
-import { useQuestionnaire, useQuestionnaireActions } from '@/lib/queries';
+import { useQuestionnaire, useQuestionnaireActions, type ApplicantKind } from '@/lib/queries';
 
 const TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
   { value: 'SHORT_TEXT', label: 'Short text' },
@@ -48,9 +48,25 @@ const typeToApi = (t: QuestionType): 'TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'M
         ? 'MULTI_CHOICE'
         : t;
 
+const KINDS: { value: ApplicantKind; label: string; description: string }[] = [
+  {
+    value: 'GUIDE',
+    label: 'Guide questionnaire',
+    description: 'Shown on Become a guide. Changes take effect immediately.',
+  },
+  {
+    value: 'COUNSELOR',
+    label: 'Counselor questionnaire',
+    description: 'Shown on Become a college counselor. Changes take effect immediately.',
+  },
+];
+
 export default function QuestionnairePage() {
-  const { data: questionnaire, isLoading } = useQuestionnaire();
-  const { addQuestion, updateQuestion, deleteQuestion, reorderQuestions, setPhotos } = useQuestionnaireActions();
+  // Two independent questionnaires behind one screen. Everything below — questions,
+  // ordering, the editor — is scoped to the selected kind.
+  const [kind, setKind] = useState<ApplicantKind>('GUIDE');
+  const { data: questionnaire, isLoading } = useQuestionnaire(kind);
+  const { addQuestion, updateQuestion, deleteQuestion, reorderQuestions, setPhotos } = useQuestionnaireActions(kind);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Question | null>(null);
@@ -141,7 +157,7 @@ export default function QuestionnairePage() {
       <div className="space-y-6">
         <PageHeader
           title="Questionnaire"
-          description="Build the guide application questionnaire. Changes take effect immediately."
+          description={KINDS.find((k) => k.value === kind)?.description}
           actions={
             <Can perm="questionnaires.manage">
               <Button
@@ -157,6 +173,38 @@ export default function QuestionnairePage() {
             </Can>
           }
         />
+
+        {/* Which application flow is being edited. */}
+        <div
+          role="tablist"
+          aria-label="Questionnaire type"
+          className="inline-flex w-full gap-1 overflow-x-auto rounded-xl border border-ink-200 bg-surface-2 p-1 sm:w-auto"
+        >
+          {KINDS.map((k) => {
+            const active = kind === k.value;
+            return (
+              <button
+                key={k.value}
+                role="tab"
+                aria-selected={active}
+                type="button"
+                onClick={() => {
+                  setKind(k.value);
+                  setEditorOpen(false);
+                  setEditing(null);
+                }}
+                className={cn(
+                  'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-ink-600 hover:bg-surface-3 hover:text-ink-900',
+                )}
+              >
+                {k.label}
+              </button>
+            );
+          })}
+        </div>
 
         {isLoading ? (
           <TableSkeleton />

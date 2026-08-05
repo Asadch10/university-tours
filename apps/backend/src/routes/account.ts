@@ -1,5 +1,6 @@
 // 7.2 Profile, devices & guides  +  7.3 Onboarding & applications
 import { Router } from 'express';
+import type { ApplicantKind } from '@ucpt/db';
 import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { imageUpload, uploadUrl } from '../lib/uploads.js';
@@ -30,6 +31,16 @@ usersRouter.post('/me/guide-listing', requireAuth, asyncHandler(async (req, res)
 
 usersRouter.delete('/me/guide-listing', requireAuth, asyncHandler(async (req, res) => {
   res.json(await svc.deleteGuideListing(req.user!.id));
+}));
+
+// Counselor equivalents of the two routes above.
+usersRouter.post('/me/counselor-listing', requireAuth, asyncHandler(async (req, res) => {
+  const listing = (req.body ?? {}) as Record<string, unknown>;
+  res.status(201).json(await svc.saveCounselorListing(req.user!.id, listing));
+}));
+
+usersRouter.delete('/me/counselor-listing', requireAuth, asyncHandler(async (req, res) => {
+  res.json(await svc.deleteCounselorListing(req.user!.id));
 }));
 
 // ─── Saved cards (Stripe Customer + SetupIntent) ──────────────────────────────
@@ -138,24 +149,36 @@ sellersRouter.post('/me/connect/cashout', requireAuth, asyncHandler(async (req, 
 
 export const applicationsRouter = Router();
 
-applicationsRouter.get('/questionnaire/active', requireAuth, requireRole('SELLER'), asyncHandler(async (_req, res) => {
-  res.json(await svc.getActiveQuestionnaire());
+/**
+ * Which application flow the request is for, from `?kind=` or the body.
+ *
+ * Absent or unrecognised means GUIDE. That default is load-bearing: the shipped
+ * mobile app calls these endpoints with no `kind` at all, and must keep getting the
+ * guide questionnaire and the guide application.
+ */
+function kindOf(req: { query: Record<string, unknown>; body?: unknown }): ApplicantKind {
+  const raw = (req.query['kind'] ?? (req.body as { kind?: unknown } | undefined)?.kind);
+  return String(raw ?? '').toUpperCase() === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE';
+}
+
+applicationsRouter.get('/questionnaire/active', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
+  res.json(await svc.getActiveQuestionnaire(kindOf(req)));
 }));
 
 applicationsRouter.post('/', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
   const { answers } = req.body as { answers?: { questionId: string; answer: string }[] };
   if (!answers?.length) throw new HttpError(400, 'validation_error', 'answers[] required');
-  res.status(201).json(await svc.submitApplication(req.user!.id, answers));
+  res.status(201).json(await svc.submitApplication(req.user!.id, answers, kindOf(req)));
 }));
 
 applicationsRouter.get('/me', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
-  res.json(await svc.getMyApplication(req.user!.id));
+  res.json(await svc.getMyApplication(req.user!.id, kindOf(req)));
 }));
 
 applicationsRouter.patch('/me', requireAuth, requireRole('SELLER'), asyncHandler(async (req, res) => {
   const { answers } = req.body as { answers?: { questionId: string; answer: string }[] };
   if (!answers?.length) throw new HttpError(400, 'validation_error', 'answers[] required');
-  res.json(await svc.resubmitApplication(req.user!.id, answers));
+  res.json(await svc.resubmitApplication(req.user!.id, answers, kindOf(req)));
 }));
 
 applicationsRouter.post('/me/documents', requireAuth, requireRole('SELLER'), asyncHandler(async (_req, res) => {

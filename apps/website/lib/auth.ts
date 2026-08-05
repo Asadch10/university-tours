@@ -17,6 +17,8 @@ export interface AuthUser {
   email: string;
   role: Role | null;
   hasListing?: boolean;
+  /** Tracked separately from `hasListing`: a user can be both a guide and a counselor. */
+  hasCounselorListing?: boolean;
 }
 
 const AUTH_EVENT = 'ucpt-auth-change';
@@ -28,7 +30,13 @@ function notify() {
 export function getAuthUser(): AuthUser | null {
   const u = tokenStore.user;
   if (!u) return null;
-  return { name: u.name ?? '', email: u.email ?? '', role: u.role ?? null, hasListing: u.hasListing };
+  return {
+    name: u.name ?? '',
+    email: u.email ?? '',
+    role: u.role ?? null,
+    hasListing: u.hasListing,
+    hasCounselorListing: u.hasCounselorListing,
+  };
 }
 
 /** Persist a fresh session after login / register, then notify listeners. */

@@ -95,9 +95,18 @@ export function useApplications() {
         id: a.id,
         applicant: a.seller.name,
         email: a.seller.email,
-        school: a.seller.sellerProfile?.school?.name ?? '—',
-        major: a.seller.sellerProfile?.major ?? '—',
-        gradYear: a.seller.sellerProfile?.gradYear ?? 0,
+        kind: a.kind ?? 'GUIDE',
+        // Counselors have no school/major/grad year — show their practice instead so
+        // the columns stay meaningful for both kinds.
+        school:
+          a.kind === 'COUNSELOR'
+            ? (a.seller.counselorProfile?.organization ?? 'Independent')
+            : (a.seller.sellerProfile?.school?.name ?? '—'),
+        major:
+          a.kind === 'COUNSELOR'
+            ? (a.seller.counselorProfile?.headline ?? '—')
+            : (a.seller.sellerProfile?.major ?? '—'),
+        gradYear: a.kind === 'COUNSELOR' ? 0 : (a.seller.sellerProfile?.gradYear ?? 0),
         status: appStatus(a.status),
         submittedAt: a.submittedAt,
         enrollmentDoc: 'enrollment.pdf',
@@ -129,11 +138,12 @@ export interface GuideApplication {
 const guideAppStatus = (s: string): GuideApplication['status'] =>
   s === 'PUBLISHED' ? 'APPROVED' : s === 'SUSPENDED' ? 'REJECTED' : 'PENDING';
 
-export function useGuideApplications() {
+export function useGuideApplications(kind: ApplicantKind = 'GUIDE') {
   return useQuery({
-    queryKey: ['guide-applications'],
+    // Keyed by kind so the guide and counselor queues don't share a cache entry.
+    queryKey: ['guide-applications', kind],
     queryFn: async (): Promise<GuideApplication[]> => {
-      const res = await adminApi.listings();
+      const res = await adminApi.listings({ kind });
       return res.data
         .filter((l) => l.status !== 'DRAFT') // drafts aren't submitted applications
         .map((l) => ({
@@ -155,15 +165,15 @@ export function useGuideApplications() {
   });
 }
 
-export function useGuideApplicationActions() {
+export function useGuideApplicationActions(kind: ApplicantKind = 'GUIDE') {
   const qc = useQueryClient();
   const inv = () => {
-    qc.invalidateQueries({ queryKey: ['guide-applications'] });
+    qc.invalidateQueries({ queryKey: ['guide-applications', kind] });
     qc.invalidateQueries({ queryKey: ['listings'] });
   };
   return {
-    approve: useMutation({ mutationFn: (id: string) => adminApi.listingModerate(id, 'PUBLISHED'), onSuccess: inv }),
-    reject: useMutation({ mutationFn: (id: string) => adminApi.listingModerate(id, 'SUSPENDED'), onSuccess: inv }),
+    approve: useMutation({ mutationFn: (id: string) => adminApi.listingModerate(id, 'PUBLISHED', kind), onSuccess: inv }),
+    reject: useMutation({ mutationFn: (id: string) => adminApi.listingModerate(id, 'SUSPENDED', kind), onSuccess: inv }),
   };
 }
 
@@ -179,11 +189,29 @@ export function useApplicationActions() {
 
 // ─── Questionnaire (singleton) ────────────────────────────────────────────────
 
-export function useQuestionnaire() {
+export type ApplicantKind = 'GUIDE' | 'COUNSELOR';
+
+/**
+ * Human-facing reference prefixes.
+ *
+ * Guides and counselors are numbered independently (each queue is fetched and indexed
+ * on its own), so the prefix is what keeps "L-1" the guide listing and "C-1" the
+ * counselor one. Internally both still key off the user id — this is display only.
+ */
+export const LISTING_PREFIX: Record<ApplicantKind, string> = { GUIDE: 'L', COUNSELOR: 'C' };
+export const APPLICATION_PREFIX: Record<ApplicantKind, string> = { GUIDE: 'ID', COUNSELOR: 'CA' };
+
+/** Resolve an application reference like "CA-3" back to its queue. */
+export function kindFromApplicationRef(ref: string): ApplicantKind {
+  return ref.trim().toUpperCase().startsWith(`${APPLICATION_PREFIX.COUNSELOR}-`) ? 'COUNSELOR' : 'GUIDE';
+}
+
+export function useQuestionnaire(kind: ApplicantKind = 'GUIDE') {
   return useQuery({
-    queryKey: ['questionnaire'],
+    // Keyed by kind so switching tabs doesn't serve the other questionnaire's cache.
+    queryKey: ['questionnaire', kind],
     queryFn: async (): Promise<Questionnaire> => {
-      const q = await adminApi.questionnaire();
+      const q = await adminApi.questionnaire(kind);
       return {
         id: q.id,
         updatedAt: nowIso(),
@@ -200,9 +228,9 @@ export function useQuestionnaire() {
   });
 }
 
-export function useQuestionnaireActions() {
+export function useQuestionnaireActions(kind: ApplicantKind = 'GUIDE') {
   const qc = useQueryClient();
-  const inv = () => qc.invalidateQueries({ queryKey: ['questionnaire'] });
+  const inv = () => qc.invalidateQueries({ queryKey: ['questionnaire', kind] });
   return {
     addQuestion: useMutation({
       mutationFn: ({ id, question }: { id: string; question: { type: string; label: string; required: boolean; options?: string[] } }) =>
@@ -270,11 +298,12 @@ export function useUserActions() {
 
 // ─── Listings ─────────────────────────────────────────────────────────────────
 
-export function useListings() {
+export function useListings(kind: ApplicantKind = 'GUIDE') {
   return useQuery({
-    queryKey: ['listings'],
+    // Keyed by kind — guide and counselor listings are separate queues.
+    queryKey: ['listings', kind],
     queryFn: async (): Promise<Listing[]> => {
-      const res = await adminApi.listings();
+      const res = await adminApi.listings({ kind });
       return res.data
         .map((l) => ({
           id: l.id,
@@ -298,10 +327,10 @@ export function useListings() {
   });
 }
 
-export function useListingDetail(id: string) {
+export function useListingDetail(id: string, kind: ApplicantKind = 'GUIDE') {
   return useQuery({
-    queryKey: ['listings', id],
-    queryFn: () => adminApi.listingDetail(id),
+    queryKey: ['listings', id, kind],
+    queryFn: () => adminApi.listingDetail(id, kind),
     enabled: !!id,
   });
 }
@@ -314,12 +343,17 @@ export function useUserDetail(id: string) {
   });
 }
 
-export function useListingActions() {
+export function useListingActions(kind: ApplicantKind = 'GUIDE') {
   const qc = useQueryClient();
-  const inv = () => qc.invalidateQueries({ queryKey: ['listings'] });
+  const inv = () => {
+    qc.invalidateQueries({ queryKey: ['listings', kind] });
+    qc.invalidateQueries({ queryKey: ['guide-applications', kind] });
+  };
   return {
     moderate: useMutation({
-      mutationFn: (v: { id: string; status: ListingStatus }) => adminApi.listingModerate(v.id, v.status),
+      // `kind` tells the backend which profileJson listing to moderate, and keeps the
+      // counselor profile's approval status in step.
+      mutationFn: (v: { id: string; status: ListingStatus }) => adminApi.listingModerate(v.id, v.status, kind),
       onSuccess: inv,
     }),
   };

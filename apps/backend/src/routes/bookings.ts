@@ -23,7 +23,7 @@ bookingsRouter.post('/guide', requireAuth, asyncHandler(async (req, res) => {
   const body = req.body as {
     sellerId?: string; serviceType?: string; scheduledDate?: string; scheduledTime?: string;
     guestCount?: number; durationMinutes?: number; priceCents?: number; listingTitle?: string;
-    schoolName?: string; noteForGuide?: string;
+    schoolName?: string; noteForGuide?: string; kind?: string;
   };
   if (!body.sellerId || !body.serviceType || !body.scheduledDate || typeof body.priceCents !== 'number') {
     throw new HttpError(400, 'validation_error', 'sellerId, serviceType, scheduledDate and priceCents are required');
@@ -39,6 +39,7 @@ bookingsRouter.post('/guide', requireAuth, asyncHandler(async (req, res) => {
     listingTitle: body.listingTitle,
     schoolName: body.schoolName,
     noteForGuide: body.noteForGuide,
+    kind: String(body.kind ?? '').toUpperCase() === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE',
   }));
 }));
 
@@ -50,9 +51,12 @@ bookingsRouter.post('/:id/confirm-payment', requireAuth, asyncHandler(async (req
 
 bookingsRouter.get('/', requireAuth, asyncHandler(async (req, res) => {
   const { page, limit, as } = req.query as Record<string, string>;
-  // ?as=guide → tours I host (seller); default ?as=guest → tours I booked (buyer).
-  const perspective = as === 'guide' ? 'seller' : 'buyer';
-  res.json(await svc.listBookings(req.user!.id, perspective, page ? +page : 1, limit ? +limit : 50));
+  // ?as=guide | ?as=counselor → sessions I host (seller), narrowed to that marketplace;
+  // default ?as=guest → everything I booked (buyer).
+  const seller = as === 'guide' || as === 'counselor';
+  const perspective = seller ? 'seller' : 'buyer';
+  const kind = as === 'counselor' ? 'COUNSELOR' : as === 'guide' ? 'GUIDE' : undefined;
+  res.json(await svc.listBookings(req.user!.id, perspective, page ? +page : 1, limit ? +limit : 50, kind));
 }));
 
 bookingsRouter.get('/:id', requireAuth, asyncHandler(async (req, res) => {

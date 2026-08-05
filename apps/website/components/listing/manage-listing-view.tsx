@@ -94,7 +94,7 @@ interface GuideListing {
 /* Photos are object URLs during the session; they don't survive a reload. */
 const usablePhoto = (p?: string) => (p && !p.startsWith('blob:') ? p : null);
 
-export function ManageListingView() {
+export function ManageListingView({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
@@ -150,7 +150,14 @@ export function ManageListingView() {
   const submitted = !!listing && !isDraft;
 
   return (
-    <main className="min-h-dvh bg-canvas pb-24 pt-[calc(var(--header-h)+2.5rem)]">
+    <main
+      className={cn(
+        'min-h-dvh bg-canvas pb-24',
+        // When rendered under the Guide/Counselor tabs the wrapper already clears the
+        // fixed header, so adding the offset again would double the gap.
+        embedded ? 'pt-8' : 'pt-[calc(var(--header-h)+2.5rem)]',
+      )}
+    >
       <div className="mx-auto w-full max-w-7xl px-6 sm:px-10">
         {/* ── Page header ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -420,7 +427,7 @@ function SubmittedState({ listing, name }: { listing: GuideListing; name: string
 
 /* ═══ Photo slider — prev / next + dots ════════════════════════════════ */
 
-function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; status: string; fallbackInitial: string }) {
+export function PhotoSlider({ photos, status, fallbackInitial }: { photos: string[]; status: string; fallbackInitial: string }) {
   const [i, setI] = useState(0);
   const count = photos.length;
   const idx = count ? ((i % count) + count) % count : 0;
@@ -917,7 +924,7 @@ const asText = (v: unknown): string =>
       : '';
 
 /** A titled white card used for each résumé section. */
-function CvSection({ title, children }: { title: string; children: React.ReactNode }) {
+export function CvSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl border border-ink-200/70 bg-surface p-6 shadow-card sm:p-7">
       <p className="mb-4 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-ink-400">{title}</p>
@@ -1095,7 +1102,7 @@ function StatusChip({ status }: { status: string }) {
 }
 
 /* Status explainer with a 3-step review timeline */
-function StatusPanel({
+export function StatusPanel({
   status,
   submittedAt,
   publishedAt,

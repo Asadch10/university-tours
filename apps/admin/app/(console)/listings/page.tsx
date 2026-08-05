@@ -17,16 +17,23 @@ import { TourTypeBadges } from '@/components/listings/listing-details';
 import { useToast } from '@/lib/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import type { Listing, ListingStatus } from '@/lib/data';
-import { useListings, useListingActions } from '@/lib/queries';
-import { formatDate } from '@/lib/utils';
+import { useListings, useListingActions, LISTING_PREFIX, type ApplicantKind } from '@/lib/queries';
+import { cn, formatDate } from '@/lib/utils';
 import { TOUR_TYPE_LABEL } from '@/lib/tour-types';
 
 type StatusFilter = 'all' | ListingStatus;
 
+const KIND_TABS: { value: ApplicantKind; label: string }[] = [
+  { value: 'GUIDE', label: 'Guides' },
+  { value: 'COUNSELOR', label: 'College counselors' },
+];
+
 export default function ListingsPage() {
   const router = useRouter();
-  const { data: rows = [], isLoading: loading } = useListings();
-  const { moderate } = useListingActions();
+  // Guide and counselor listings are separate queues behind one screen.
+  const [kind, setKind] = useState<ApplicantKind>('GUIDE');
+  const { data: rows = [], isLoading: loading } = useListings(kind);
+  const { moderate } = useListingActions(kind);
 
   const toast = useToast();
   const confirm = useConfirm();
@@ -60,7 +67,9 @@ export default function ListingsPage() {
     [rows],
   );
 
-  const openDetails = (l: Listing) => router.push(`/listings/${l.id}`);
+  // Carry the queue through, so the detail page loads the right profileJson listing
+  // for a user who holds both a guide and a counselor profile.
+  const openDetails = (l: Listing) => router.push(`/listings/${l.id}?kind=${kind}`);
 
   async function handlePublish(l: Listing) {
     const { confirmed } = await confirm({
@@ -81,7 +90,7 @@ export default function ListingsPage() {
     const { confirmed, reason } = await confirm({
       title: `Suspend “${l.title}”?`,
       description:
-        'Suspending removes this listing from the public website immediately. The guide will be notified.',
+        `Suspending removes this listing from the public website immediately. The ${kind === 'COUNSELOR' ? 'counselor' : 'guide'} will be notified.`,
       confirmLabel: 'Suspend listing',
       tone: 'danger',
       reason: { label: 'Reason (shown in the audit log)', placeholder: 'e.g. Misleading title or policy violation', required: false },
@@ -100,7 +109,11 @@ export default function ListingsPage() {
       key: 'listingNo',
       header: 'ID',
       hideOnMobile: true,
-      cell: (l) => <span className="font-mono text-xs font-semibold text-brand-900">L-{l.listingNo}</span>,
+      cell: (l) => (
+        <span className="font-mono text-xs font-semibold text-brand-900">
+          {LISTING_PREFIX[kind]}-{l.listingNo}
+        </span>
+      ),
     },
     {
       key: 'title',
@@ -115,7 +128,7 @@ export default function ListingsPage() {
     },
     {
       key: 'guide',
-      header: 'Guide',
+      header: kind === 'COUNSELOR' ? 'Counselor' : 'Guide',
       hideOnMobile: true,
       cell: (l) => (
         <div className="flex items-center gap-2.5">
@@ -129,13 +142,13 @@ export default function ListingsPage() {
     },
     {
       key: 'school',
-      header: 'School',
+      header: kind === 'COUNSELOR' ? 'Practice' : 'School',
       hideOnMobile: true,
       cell: (l) => <span className="text-ink-700">{l.school}</span>,
     },
     {
       key: 'tourTypes',
-      header: 'Tour types',
+      header: kind === 'COUNSELOR' ? 'Specialties' : 'Tour types',
       cell: (l) => <TourTypeBadges tourTypes={l.tourTypes} />,
     },
     {
@@ -208,8 +221,45 @@ export default function ListingsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Listings"
-          description="Review guide listings submitted on the website — approve them to publish, or suspend anything that breaks policy."
+          description={
+            kind === 'COUNSELOR'
+              ? 'Review college counselor profiles submitted on the website — approve them to publish, or suspend anything that breaks policy.'
+              : 'Review guide listings submitted on the website — approve them to publish, or suspend anything that breaks policy.'
+          }
         />
+
+        {/* Which listing queue is being moderated. */}
+        <div
+          role="tablist"
+          aria-label="Listing type"
+          className="inline-flex w-full gap-1 overflow-x-auto rounded-xl border border-ink-200 bg-surface-2 p-1 sm:w-auto"
+        >
+          {KIND_TABS.map((k) => {
+            const active = kind === k.value;
+            return (
+              <button
+                key={k.value}
+                role="tab"
+                aria-selected={active}
+                type="button"
+                onClick={() => {
+                  setKind(k.value);
+                  setStatus('all');
+                  setQuery('');
+                  setTourType('all');
+                }}
+                className={cn(
+                  'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-ink-600 hover:bg-surface-3 hover:text-ink-900',
+                )}
+              >
+                {k.label}
+              </button>
+            );
+          })}
+        </div>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Tabs tabs={tabs} value={status} onChange={(v) => setStatus(v as StatusFilter)} />
