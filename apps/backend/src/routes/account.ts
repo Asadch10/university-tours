@@ -3,7 +3,7 @@ import { Router } from 'express';
 import type { ApplicantKind } from '@ucpt/db';
 import { asyncHandler, HttpError } from '../lib/http.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { imageUpload, uploadUrl } from '../lib/uploads.js';
+import { imageUpload, uploadUrl, optimizeUpload } from '../lib/uploads.js';
 import * as svc from '../services/account.service.js';
 import * as connect from '../services/connect.service.js';
 import * as cards from '../services/payment-method.service.js';
@@ -88,7 +88,11 @@ usersRouter.post('/me/uploads', requireAuth, (req, res, next) => {
       next(new HttpError(400, 'no_file', 'No file was uploaded'));
       return;
     }
-    res.status(201).json({ url: uploadUrl(req.file.filename), filename: req.file.filename });
+    // Downscale/re-encode before handing back the URL, so the stored file is the
+    // optimised one and clients never see the original.
+    void optimizeUpload(req.file.filename)
+      .then((stored) => res.status(201).json({ url: uploadUrl(stored), filename: stored }))
+      .catch(() => res.status(201).json({ url: uploadUrl(req.file!.filename), filename: req.file!.filename }));
   });
 });
 

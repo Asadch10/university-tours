@@ -316,8 +316,19 @@ export function communityGuideToProfile(dto: CommunityGuideDto): GuideProfile {
   const base = communityGuideToGuide(dto);
   const uni = universities.find((u) => u.name === base.university);
   const realPhotos = (Array.isArray(gl.photos) ? gl.photos : []).filter(httpPhoto);
-  const gallery = [base.photo, ...realPhotos, uni?.image].filter(
-    (p): p is string => typeof p === 'string' && !!p,
+  // `base.photo` IS realPhotos[0] (guidePhoto picks the first uploaded photo), so
+  // listing both showed the first image twice in the gallery. Dedupe rather than drop
+  // base.photo, because it falls back to a generated avatar when nothing was uploaded.
+  //
+  // The university stock image is only appended when the guide uploaded nothing — it's
+  // a placeholder, not part of their gallery, and padding real galleries with stock
+  // photography misrepresents what the guide actually shared.
+  const gallery = Array.from(
+    new Set(
+      (realPhotos.length ? [base.photo, ...realPhotos] : [base.photo, uni?.image]).filter(
+        (p): p is string => typeof p === 'string' && !!p,
+      ),
+    ),
   );
   const fn = firstName(base.name);
   const majors = [...splitList(gl.majors), ...splitList(gl.minors).map((m) => `Minor in ${m}`)];

@@ -103,6 +103,14 @@ function Gallery({ g }: { g: GuideProfile }) {
         <img
           src={g.gallery[active]}
           alt={`${g.name} photo ${active + 1}`}
+          width={520}
+          height={520}
+          /* The visible photo is this page's largest contentful paint — it should
+             load eagerly and at high priority. Decoding off the main thread keeps
+             the arrows and thumbnails responsive while a large file decodes. */
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="aspect-square w-full object-contain"
         />
 
@@ -147,7 +155,17 @@ function Gallery({ g }: { g: GuideProfile }) {
             )}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt="" className="h-full w-full object-cover" />
+            <img
+              src={src}
+              alt=""
+              width={80}
+              height={64}
+              /* Thumbnails sit below the fold on most screens and are rendered at
+                 80x64 — no reason to block the page on them. */
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
           </button>
         ))}
       </div>
