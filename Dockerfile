@@ -1,0 +1,101 @@
+# Multi-target build for the whole monorepo. One file, three images:
+#
+#   docker build --target backend -t ucpt-backend .
+#   docker build --target website -t ucpt-website .
+#   docker build --target admin   -t ucpt-admin   .
+#
+# Node 22, not 20: expo-server-sdk and other deps have moved to syntax Node 20.5
+# cannot parse, which previously crash-looped the API on boot.
+#
+# `deps` is shared by all three targets, so the (slow) pnpm install happens once
+# per build context rather than three times.
+
+# ─── Shared dependency layer ─────────────────────────────────────────────────
+FROM node:22-slim AS deps
+# openssl: required by Prisma's query engine. python3/make/g++: sharp falls back to
+# building from source if no prebuilt binary matches.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      openssl ca-certificates python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+WORKDIR /app
+
+# Copy only manifests first so a source-only change doesn't reinstall everything.
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/backend/package.json      apps/backend/
+COPY apps/website/package.json      apps/website/
+COPY apps/admin/package.json        apps/admin/
+COPY packages/db/package.json       packages/db/
+COPY packages/types/package.json    packages/types/
+COPY packages/validation/package.json packages/validation/
+COPY packages/sdk/package.json      packages/sdk/
+COPY packages/config/package.json   packages/config/
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+# The Prisma client is generated code — it must exist before anything typechecks.
+RUN pnpm --filter @ucpt/db exec prisma generate
+
+# ─── Backend ─────────────────────────────────────────────────────────────────
+FROM deps AS backend-build
+RUN pnpm --filter @ucpt/backend build
+
+FROM node:22-slim AS backend
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+WORKDIR /app
+# node_modules is copied wholesale: pnpm's symlinked store means a partial copy breaks.
+COPY --from=backend-build /app/node_modules ./node_modules
+COPY --from=backend-build /app/packages ./packages
+COPY --from=backend-build /app/apps/backend/node_modules ./apps/backend/node_modules
+COPY --from=backend-build /app/apps/backend/dist ./apps/backend/dist
+COPY --from=backend-build /app/apps/backend/package.json ./apps/backend/
+# Maintenance scripts run inside this container (e.g. the uploads optimiser), so they
+# have to be in the image — dist alone is not enough.
+COPY --from=backend-build /app/apps/backend/scripts ./apps/backend/scripts
+WORKDIR /app/apps/backend
+# Uploads are a mounted volume; create the dir so the app can boot before it's mounted.
+RUN mkdir -p uploads
+EXPOSE 4000
+CMD ["node", "dist/index.js"]
+
+# ─── Website ─────────────────────────────────────────────────────────────────
+# NEXT_PUBLIC_* is inlined into the client bundle at BUILD time, so these must be
+# build args — setting them only at runtime has no effect.
+FROM deps AS website-build
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
+RUN pnpm --filter @ucpt/website build
+
+FROM node:22-slim AS website
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
+WORKDIR /app
+COPY --from=website-build /app/node_modules ./node_modules
+COPY --from=website-build /app/packages ./packages
+COPY --from=website-build /app/apps/website ./apps/website
+WORKDIR /app/apps/website
+EXPOSE 3000
+CMD ["node_modules/.bin/next", "start", "-p", "3000"]
+
+# ─── Admin ───────────────────────────────────────────────────────────────────
+FROM deps AS admin-build
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
+RUN pnpm --filter @ucpt/admin build
+
+FROM node:22-slim AS admin
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
+WORKDIR /app
+COPY --from=admin-build /app/node_modules ./node_modules
+COPY --from=admin-build /app/packages ./packages
+COPY --from=admin-build /app/apps/admin ./apps/admin
+WORKDIR /app/apps/admin
+EXPOSE 3001
+CMD ["node_modules/.bin/next", "start", "-p", "3001"]

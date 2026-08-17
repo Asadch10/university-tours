@@ -1,0 +1,98 @@
+# Deployment stack for the Hostinger VPS.
+#
+# The box already runs Postiz and vanuat behind a shared Traefik. Traefik owns ports
+# 80/443, so this stack publishes NO host ports — it joins Traefik's network and is
+# routed by the labels below. That keeps it fully isolated from the existing apps:
+# its own MySQL, its own volumes, nothing shared but the proxy.
+#
+# Set TRAEFIK_NETWORK to the network Traefik is actually on (see DEPLOY.md).
+#
+#   docker compose --env-file .env.deploy up -d --build
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    # MySQL 8.4 keeps caching_sha2_password. Inside the compose network the
+    # connection is trusted, so Prisma's handshake works without the cold-cache
+    # problem seen over plain TCP to an external host.
+    volumes:
+      - db-data:/var/lib/mysql
+    networks: [internal]
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD}']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      target: backend
+    restart: unless-stopped
+    env_file: [.env.backend]
+    depends_on:
+      db: { condition: service_healthy }
+    volumes:
+      # User uploads must outlive the container — never bake them into the image.
+      - uploads:/app/apps/backend/uploads
+    networks: [internal, proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK}
+      - traefik.http.routers.ucpt-api.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.ucpt-api.entrypoints=websecure
+      - traefik.http.routers.ucpt-api.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.services.ucpt-api.loadbalancer.server.port=4000
+
+  website:
+    build:
+      context: .
+      target: website
+      args:
+        NEXT_PUBLIC_API_BASE_URL: https://${API_DOMAIN}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    restart: unless-stopped
+    depends_on: [backend]
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK}
+      - traefik.http.routers.ucpt-web.rule=Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)
+      - traefik.http.routers.ucpt-web.entrypoints=websecure
+      - traefik.http.routers.ucpt-web.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.services.ucpt-web.loadbalancer.server.port=3000
+
+  admin:
+    build:
+      context: .
+      target: admin
+      args:
+        NEXT_PUBLIC_API_BASE_URL: https://${API_DOMAIN}
+    restart: unless-stopped
+    depends_on: [backend]
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK}
+      - traefik.http.routers.ucpt-admin.rule=Host(`${ADMIN_DOMAIN}`)
+      - traefik.http.routers.ucpt-admin.entrypoints=websecure
+      - traefik.http.routers.ucpt-admin.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.services.ucpt-admin.loadbalancer.server.port=3001
+
+volumes:
+  db-data:
+  uploads:
+
+networks:
+  # Private to this stack — the database is not reachable from the other apps.
+  internal:
+  # Traefik's existing network, created outside this stack.
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK}

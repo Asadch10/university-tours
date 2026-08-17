@@ -1,386 +1,189 @@
-# Deployment — Cloudways (website + admin + backend + MySQL)
+# Deploying to the Hostinger VPS
 
-Live domain: `https://phpstack-1510285-6494046.cloudwaysapps.com`
+Target: `srv1746742.hstgr.cloud` (2.25.194.37), KVM 2 — Ubuntu, Docker, shared Traefik.
 
-All three apps run as Node processes managed by **PM2**; the Cloudways **Nginx
-reverse proxy** serves them under one domain. The database is **MySQL** (native
-to Cloudways — no external DB).
+The box already runs **Postiz** (8 containers) and **vanuat** (4 containers) behind that
+Traefik. This stack is deliberately isolated: its own MySQL, its own volumes, its own
+containers. It publishes **no host ports** — Traefik discovers it via Docker labels — so
+nothing about the existing apps is touched.
 
+---
+
+## 0. Read this first: memory
+
+The VPS was at **62% memory** with just Postiz and vanuat running (KVM 2 = 8 GB, so
+~3 GB free). Runtime is fine — the four new containers need roughly 1.2–1.5 GB. The
+risk is the **build**: `next build` can peak above 2 GB, and there are two of them.
+
+Add swap before building, or the build will be OOM-killed halfway:
+
+```bash
+sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h
 ```
-https://<domain>/          →  website   (127.0.0.1:3000)
-https://<domain>/admin     →  admin     (127.0.0.1:3001, next basePath=/admin)
-https://<domain>/api/...   →  backend   (127.0.0.1:4000, Express /api/v1)
-https://<domain>/uploads/  →  backend   (uploaded images)
+
+Build the images **one at a time** (step 5). Do not run a parallel build.
+
+## 1. Get the code on the server
+
+```bash
+ssh root@2.25.194.37
+mkdir -p /opt && cd /opt
+git clone https://github.com/Asadch10/university-tours.git ucpt && cd ucpt
 ```
 
-Key files in this repo:
+## 2. Find Traefik's network and cert resolver
 
-| File | Purpose |
+The compose file needs both. Read them off the running Traefik:
+
+```bash
+docker ps --filter name=traefik --format '{{.Names}}'
+docker inspect $(docker ps -qf name=traefik) \
+  --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}'
+# Which entrypoint/resolver names it uses:
+docker inspect $(docker ps -qf name=traefik) --format '{{json .Args}}' | tr ',' '\n' | grep -iE 'entrypoint|certresolver|acme'
+```
+
+Also confirm the entrypoint name. The compose file assumes `websecure`; Hostinger
+templates sometimes use `https`. If it differs, change `entrypoints=` in
+`docker-compose.yml` to match — a wrong name means Traefik silently ignores the router.
+
+## 3. DNS
+
+Point A records at **2.25.194.37** and wait for propagation *before* step 5 — Traefik
+requests certificates on first request, and it can only validate a domain that already
+resolves to this box.
+
+| Record | Value |
 |---|---|
-| `ecosystem.config.cjs` | PM2 process definitions (backend :4000, website :3000, admin :3001) |
-| `deploy/nginx-cloudways.conf` | Reverse-proxy `location` blocks for the Nginx vhost |
+| `yourdomain.com` | 2.25.194.37 |
+| `www` | 2.25.194.37 |
+| `admin` | 2.25.194.37 |
+| `api` | 2.25.194.37 |
 
----
+Check with `dig +short api.yourdomain.com`.
 
-## Prerequisites (once per server)
-
-- A Cloudways **Custom App / Node** application. Note from the panel:
-  - **Access Details** → SSH master user + password, and **DB Name / DB User / DB Password**
-    (MySQL host `localhost`, port `3306`).
-  - App path on the server: `~/applications/YOUR_APP/public_html`.
-- SSH access (PuTTY, Windows Terminal, or WinSCP's built-in terminal — `Ctrl+P`).
-- Install the toolchain on the server (first time only). No sudo on Cloudways,
-  so global npm packages go into your **home directory**:
+## 4. Configuration
 
 ```bash
-node -v && npm -v        # sanity check — Node ≥ 20.6 needed (seed uses --env-file)
-
-mkdir -p ~/.npm-global
-npm config set prefix ~/.npm-global
-echo 'export PATH=$HOME/.npm-global/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
-
-npm install -g pnpm@9.15.0 pm2
-pnpm -v && pm2 -v        # both must print a version before continuing
+cp .env.deploy.example  .env.deploy
+cp .env.backend.example .env.backend
+nano .env.deploy    # Traefik network, cert resolver, domains, DB passwords
+nano .env.backend   # DATABASE_URL password, Stripe, mail, fresh JWT secrets
+chmod 600 .env.deploy .env.backend
 ```
 
-> The `PATH` line in `~/.bashrc` only applies to interactive shells — cron jobs
-> must use the full path, e.g. `@reboot $HOME/.npm-global/bin/pm2 resurrect`.
-
-> **Application user vs master user:** if you SSH with *application* credentials
-> (e.g. `vanuat`), writing `~/.bashrc` fails with "Operation not permitted" —
-> the install still works, but you must run
-> `export PATH=$HOME/.npm-global/bin:$PATH` at the start of **every** SSH
-> session (or use full paths like `~/.npm-global/bin/pnpm`). SSH as the
-> **master user** (Server → Master Credentials) to make the PATH permanent.
-
----
-
-## Step 1 — Get the code onto the server
-
-Pick **one** of the two methods. Either way the code must land in
-`~/applications/YOUR_APP/public_html` (the repo root, containing `package.json`
-and `pnpm-workspace.yaml`).
-
-### Option A — WinSCP (SFTP upload from Windows)
-
-1. Connect: protocol **SFTP**, host = server IP, port 22, the **master
-   credentials** from Access Details.
-2. Remote directory: `/home/master/applications/YOUR_APP/public_html`.
-3. Upload the project **with this exclusion mask** (Transfer settings →
-   Edit → Exclude):
-
-   ```
-   node_modules/; .next/; dist/; .git/; .turbo/; .env; .env.*; apps/mobile/; .pnpm-store/
-   ```
-
-   Why each exclusion is required:
-   - `node_modules/` — **never upload it.** It is huge over SFTP and contains
-     Windows-native binaries (Prisma engines, esbuild, sharp) that will not run
-     on Linux. Dependencies are installed on the server in Step 3.
-   - `.next/`, `dist/`, `.turbo/` — builds happen **on the server** (Step 5);
-     local Windows builds bake in localhost env values.
-   - `.env`, `.env.*` — protects the **production** env files on the server
-     (Step 2) from being overwritten by local dev ones on every sync.
-   - `apps/mobile/` — not deployed on this server; skipping saves time.
-4. **Redeploys:** use **Commands → Synchronize** (target = remote, same
-   exclusion mask) — only changed files are uploaded.
-
-### Option B — Git (clone/pull on the server)
+Generate fresh secrets rather than copying the Cloudways ones:
 
 ```bash
-cd ~/applications/YOUR_APP/public_html
-git clone https://github.com/Asadch10/university-tours.git .
-# already cloned?  run instead:  git pull
+for k in JWT_ACCESS_SECRET JWT_REFRESH_SECRET EMAIL_VERIFY_SECRET PASSWORD_RESET_SECRET; do
+  echo "$k=$(openssl rand -hex 32)"
+done
 ```
 
-> **All remaining commands run from this repo root** — it's a pnpm monorepo, so
-> one `pnpm install` here installs every app, and `pnpm --filter @ucpt/<app>`
-> targets individual packages from the root. Do **not** `cd` into `apps/*`.
+Rotating the JWT secrets logs everyone out once, which is the correct behaviour for a
+host migration.
 
----
-
-## Step 2 — Environment files (BEFORE building)
-
-`NEXT_PUBLIC_*` values are baked in at **build time** — these four files must
-exist before Step 5. Create them **on the server** with the heredocs below (SSH
-terminal), or with WinSCP's editor — if you use WinSCP, save with **LF line
-endings, not CRLF** (a stray `\r` at the end of `DATABASE_URL` or a secret
-causes confusing DB/auth failures).
-
-### 2a. Backend — `apps/backend/.env`
-
-Fill DB_USER / DB_PASS / DB_NAME from Access Details. **URL-encode special
-chars in the password** (`@` → `%40`, `#` → `%23`, `/` → `%2F`). Cloudways
-MySQL listens on TCP, so the host is `localhost:3306` (no socket needed).
-Replace every `change-me-strong` with a long random string (`openssl rand -hex 32`).
+## 5. Build and start
 
 ```bash
-cat > apps/backend/.env <<'EOF'
-NODE_ENV=production
-API_PORT=4000
-DATABASE_URL=mysql://DB_USER:DB_PASS@localhost:3306/DB_NAME
-APP_WEB_URL=https://phpstack-1510285-6494046.cloudwaysapps.com
-CORS_ALLOWLIST=https://phpstack-1510285-6494046.cloudwaysapps.com
-JWT_ACCESS_SECRET=change-me-strong
-JWT_REFRESH_SECRET=change-me-strong
-EMAIL_VERIFY_SECRET=change-me-strong
-PASSWORD_RESET_SECRET=change-me-strong
-MAIL_HOST=smtp.resend.com
-MAIL_PORT=465
-MAIL_USERNAME=resend
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxx
-MAIL_FROM_ADDRESS=no-reply@ahmadnaeem.com
-MAIL_FROM_NAME=University Campus Private Tours
-STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxxxxxxx
-STRIPE_PUBLISHABLE_KEY=pk_live_xxxxxxxxxxxxxxxxx
-STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxx
-STRIPE_CURRENCY=usd
-EOF
+cd /opt/ucpt
+docker compose --env-file .env.deploy build backend    # sequential — see step 0
+docker compose --env-file .env.deploy build website
+docker compose --env-file .env.deploy build admin
+docker compose --env-file .env.deploy up -d
+docker compose --env-file .env.deploy ps
 ```
 
-> **Stripe webhook:** Stripe Dashboard → Developers → Webhooks → add an
-> endpoint pointing at `https://<domain>/api/v1/webhooks/stripe` (the
-> `payment_intent.*` / checkout events the backend handles), then paste the
-> signing secret into `STRIPE_WEBHOOK_SECRET` above.
+## 6. Database schema and seed
 
-### 2b. Prisma — `packages/db/.env`  ⚠️ required
-
-The Prisma CLI + seed read **this** file (not the backend's), so it needs the
-**same** `DATABASE_URL` or `prisma db push` / `seed` will fail.
+There are **no Prisma migration files** in this project — the schema is applied with
+`db push`. Both commands run inside the backend container:
 
 ```bash
-cat > packages/db/.env <<'EOF'
-DATABASE_URL=mysql://DB_USER:DB_PASS@localhost:3306/DB_NAME
-EOF
+docker compose --env-file .env.deploy exec -w /app backend \
+  node_modules/.bin/prisma db push --schema packages/db/prisma/schema.prisma
 ```
 
-### 2c. Website — `apps/website/.env.production`
+Then either **import the Cloudways data** (step 7) or seed a fresh database:
 
 ```bash
-cat > apps/website/.env.production <<'EOF'
-NEXT_PUBLIC_API_URL=https://phpstack-1510285-6494046.cloudwaysapps.com
-NEXT_PUBLIC_API_BASE_URL=https://phpstack-1510285-6494046.cloudwaysapps.com
-EOF
+docker compose --env-file .env.deploy exec -w /app backend \
+  node_modules/.bin/tsx packages/db/prisma/seed.ts
 ```
 
-### 2d. Admin — `apps/admin/.env.production`
+(The seed is TypeScript run through `tsx` — there is no compiled `dist`. `DATABASE_URL`
+already comes from `.env.backend`, so no `--env-file` is needed here.)
+
+> The seed creates the **counselor questionnaire**. Skip it on a fresh DB and
+> `/become-a-counselor` renders an empty form.
+
+## 7. Migrate data from Cloudways
+
+Two things move: the database and the uploads directory. **`uploads/` is not in git** —
+miss it and every guide photo 404s.
+
+On Cloudways:
+```bash
+mysqldump -u DBUSER -p --single-transaction --no-tablespaces DBNAME > ~/ucpt.sql
+tar czf ~/uploads.tar.gz -C ~/public_html/apps/backend uploads
+```
+
+From your Mac:
+```bash
+scp cloudways@CLOUDWAYS_IP:~/ucpt.sql ~/ucpt.sql
+scp cloudways@CLOUDWAYS_IP:~/uploads.tar.gz ~/uploads.tar.gz
+scp ~/ucpt.sql ~/uploads.tar.gz root@2.25.194.37:/opt/ucpt/
+```
+
+On the VPS:
+```bash
+cd /opt/ucpt
+# Database
+docker compose --env-file .env.deploy exec -T db \
+  mysql -u root -p"$MYSQL_ROOT_PASSWORD" university_tours < ucpt.sql
+# Uploads into the named volume
+tar xzf uploads.tar.gz
+docker compose --env-file .env.deploy cp uploads/. backend:/app/apps/backend/uploads/
+docker compose --env-file .env.deploy exec backend ls /app/apps/backend/uploads | wc -l
+# Shrink them (safe to re-run; keeps filenames so stored URLs still resolve)
+docker compose --env-file .env.deploy exec -w /app/apps/backend backend \
+  node scripts/optimize-existing-uploads.mjs --apply
+rm -f ucpt.sql uploads.tar.gz && rm -rf uploads
+```
+
+Then re-run `db push` (step 6) so the imported schema picks up any newer columns.
+
+## 8. Verify before cutting over
 
 ```bash
-cat > apps/admin/.env.production <<'EOF'
-NEXT_PUBLIC_API_URL=https://phpstack-1510285-6494046.cloudwaysapps.com
-EOF
+curl -s -o /dev/null -w '%{http_code}\n' https://api.yourdomain.com/api/v1/schools
+curl -s https://api.yourdomain.com/api/v1/search/counselors | head -c 200
+docker compose --env-file .env.deploy logs --tail=40 backend
 ```
 
-Both frontends point at the **same domain** — the browser calls
-`https://<domain>/api/v1/...` and Nginx routes it to port 4000 locally. Same
-origin → no CORS pain, no ports exposed publicly.
+Then by hand: admin login, a guide photo loading, and one test booking.
 
----
+## 9. Post-cutover
 
-## Step 3 — Install dependencies
+- **Stripe webhook** — create a new endpoint for `https://api.yourdomain.com`, put its
+  signing secret in `.env.backend`, restart `backend`. The old secret will not verify,
+  and payments fail silently if this is missed.
+- **Mobile app** — still points at the Cloudways URL. Update `EXPO_PUBLIC_API_BASE_URL`
+  in `apps/mobile/eas.json` and `extra.apiBaseUrl` in `app.json`, then rebuild the APK.
+- Keep Cloudways running until DNS has fully propagated and the checks above pass.
+
+## Updating later
 
 ```bash
-cd ~/applications/YOUR_APP/public_html
-pnpm install --frozen-lockfile
+cd /opt/ucpt && git pull
+docker compose --env-file .env.deploy build backend && \
+docker compose --env-file .env.deploy build website && \
+docker compose --env-file .env.deploy build admin
+docker compose --env-file .env.deploy up -d
 ```
 
----
-
-## Step 4 — Database (Prisma)
-
-Generate the client and create/update the MySQL tables (uses `packages/db/.env`):
-
-```bash
-pnpm --filter @ucpt/db generate
-pnpm --filter @ucpt/db exec prisma db push
-pnpm --filter @ucpt/db seed        # optional starter data (fresh DB only)
-```
-
-> **Node < 20.6** errors with `bad option: --env-file` on the seed. Either bump
-> the Node version in the Cloudways panel, or load the env manually and run
-> the seed without the flag:
-> ```bash
-> set -a; . packages/db/.env; set +a
-> pnpm --filter @ucpt/db exec tsx prisma/seed.ts
-> ```
-
----
-
-## Step 5 — Build the frontends
-
-```bash
-pnpm --filter @ucpt/website build
-pnpm --filter @ucpt/admin build
-```
-
-The **backend needs no build** — PM2 runs it via `tsx` straight from TypeScript
-source (`apps/backend/src/index.ts`), because the workspace packages
-(`@ucpt/db` / `types` / `validation`) ship raw `.ts` that plain `node` cannot
-import (crashes with `ERR_UNKNOWN_FILE_EXTENSION`).
-
----
-
-## Step 6 — Start with PM2
-
-```bash
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 status
-```
-
-`pm2 startup` needs sudo, which the Cloudways master user doesn't have.
-Instead, add a Cloudways **cron job** (Application Settings → Cron Job
-Management, or `crontab -e`) so the apps come back after a server reboot
-(full path — cron doesn't read `~/.bashrc`):
-
-```
-@reboot $HOME/.npm-global/bin/pm2 resurrect
-```
-
-Verify the processes locally **before** touching Nginx:
-
-```bash
-curl -s  localhost:4000/health          # {"ok":true,...}
-curl -sI localhost:3000       | head -1 # HTTP/1.1 200 OK
-curl -sI localhost:3001/admin | head -1 # HTTP/1.1 200 OK
-```
-
----
-
-## Step 7 — Nginx reverse-proxy rules
-
-The rules live in `deploy/nginx-cloudways.conf` — five `location` blocks
-(`/api/`, `/uploads/`, `/admin`, `/_next/`, then the catch-all `/`).
-
-Your Cloudways user has **no sudo**, so you cannot edit the vhost yourself.
-Open a Cloudways **support ticket**, attach that file's contents, and ask for:
-
-1. These `location` blocks added to the application's Nginx server block,
-   **keeping the `^~` modifiers exactly as written** — Cloudways PHP-stack
-   vhosts have a regex location that serves `.js`/`.css`/images straight from
-   disk, and without `^~` it hijacks `/_next/` chunks and `/admin` assets
-   (symptom: pages render but JS chunks 400/404, `ChunkLoadError` in the
-   browser, `/admin` falls through to the website's 404 page).
-2. **Varnish disabled** for this application (or these paths excluded) — it
-   caches HTML that references build chunks deleted by the next redeploy.
-
-The config already handles the other easy-to-miss details:
-`client_max_body_size 10m` on `/api/` (photo/ID uploads) and
-`Upgrade`/`Connection` headers (websockets).
-
----
-
-## Step 8 — Domain + SSL
-
-SSL terminates at Cloudways' Nginx — the Node apps never see certificates.
-
-1. Point the domain's DNS **A record** at the server IP.
-2. Cloudways → app → **Domain Management** → add the domain as primary.
-3. **SSL Certificate** → Let's Encrypt → install; enable **auto-renew** and the
-   **force-HTTPS redirect**.
-
-The proxy passes `X-Forwarded-Proto`, so the apps know requests are HTTPS.
-One domain = one certificate covers website, admin, and API.
-
-> **Switching from the `*.cloudwaysapps.com` staging URL to a real domain?**
-> The domain appears in **three env files** (2a: `APP_WEB_URL` +
-> `CORS_ALLOWLIST`; 2c and 2d: the `NEXT_PUBLIC_*` URLs) **and** the Stripe
-> webhook endpoint. Update all of them, rebuild website + admin (Step 5), and
-> `pm2 restart ecosystem.config.cjs`.
-
----
-
-## Step 9 — Verify the live domain
-
-```bash
-curl -sI https://phpstack-1510285-6494046.cloudwaysapps.com/        # 200 website
-curl -sI https://phpstack-1510285-6494046.cloudwaysapps.com/admin   # 200 admin login
-curl -s  https://phpstack-1510285-6494046.cloudwaysapps.com/api/v1/search/community-guides  # JSON
-```
-
-Then in a browser: the website at `/`, the admin login at `/admin`, and a test
-booking end-to-end (Stripe checkout → webhook → booking status).
-
----
-
-## Redeploy after a code change
-
-```bash
-cd ~/applications/YOUR_APP/public_html
-
-# 1. Update the code — one of:
-git pull                                     # git method
-# …or WinSCP: Commands → Synchronize (remote target, same exclusion mask)
-
-# 2. Rebuild + restart:
-pnpm install --frozen-lockfile               # only if package.json / lockfile changed
-pnpm --filter @ucpt/db exec prisma db push   # only if schema.prisma changed
-pnpm --filter @ucpt/website build            # rebuild only the frontend(s) you changed
-pnpm --filter @ucpt/admin build              # (backend has no build — tsx runs the source)
-pm2 restart ecosystem.config.cjs
-```
-
-**Env-change cheat-sheet:**
-
-| What changed | What's needed |
-|---|---|
-| `apps/backend/.env` | `pm2 restart ucpt-backend` only |
-| any `NEXT_PUBLIC_*` value | **rebuild** that frontend, then `pm2 restart` — a restart alone is NOT enough (baked at build time) |
-| `schema.prisma` | `prisma db push` + backend rebuild + restart |
-
----
-
-## Day-2 operations
-
-```bash
-pm2 status                    # process list + uptime/restarts
-pm2 logs ucpt-backend         # live logs (also: ucpt-website, ucpt-admin)
-pm2 monit                     # CPU / memory
-pm2 restart ucpt-backend      # restart a single app
-pm2 install pm2-logrotate     # once — keep logs from filling the disk
-```
-
-- **Backups:** enable Cloudways scheduled server backups (Server → Backups) and
-  take an on-demand backup before schema changes — `prisma db push` has no
-  down-migration.
-- **Uploads** are on local disk (`apps/backend/uploads/`, served at `/uploads`).
-  They survive restarts but are **not in git** — never delete that directory,
-  and include it in backups. Move to S3/Cloudinary later for durable storage
-  (only `lib/uploads.ts` + the static mount change).
-
----
-
-## Troubleshooting
-
-| Symptom | Likely cause / fix |
-|---|---|
-| `prisma db push` / seed fails to connect | `packages/db/.env` missing or its `DATABASE_URL` differs from the backend's (2b) |
-| DB auth error with correct password | special chars in the password not URL-encoded (`@` → `%40`, `#` → `%23`, `/` → `%2F`) |
-| Backend crashes with `ERR_UNKNOWN_FILE_EXTENSION ".ts"` (502 on `/api`) | Backend was started with plain `node` — the workspace packages ship raw `.ts`. PM2 must run it via `tsx` (see `ecosystem.config.cjs`); after changing the config: `pm2 delete ucpt-backend && pm2 start ecosystem.config.cjs --only ucpt-backend && pm2 save --force` |
-| Backend rejects logins / odd JWT errors | env file saved with CRLF — recreate it with LF endings (or via the heredocs) |
-| Frontend calls `localhost:4000` in production | `.env.production` created **after** the build — fix the file, rebuild (Step 5) |
-| 502 on `/`, `/admin`, or `/api` | that PM2 process is down (`pm2 status`, `pm2 logs <name>`) or the Nginx rules aren't in place (Step 7) |
-| Pages render but JS chunks 400/404 (`ChunkLoadError`), or `/admin` shows the website's 404 | Nginx rules missing or added without `^~` — the PHP-stack static-file regex intercepts `/_next/` and `/admin` assets; re-open the ticket with `deploy/nginx-cloudways.conf` as-is (Step 7). Also disable Varnish |
-| Site breaks right after a redeploy, fixed by hard-refresh | Varnish (or browser) cached HTML referencing old build chunks — disable Varnish for this app |
-| Apps gone after server reboot | `@reboot pm2 resurrect` cron missing, or `pm2 save` never ran |
-| `EADDRINUSE` in `pm2 logs`; site serves a **stale build** (chunk 400s, old pages) | An old process still holds the port. `pm2 update && pm2 delete all`, confirm ports are free with `ss -tlnp \| grep -E ':(3000\|3001\|4000)'` (kill any orphan PID — as master user if needed), then `pm2 start ecosystem.config.cjs && pm2 save --force` |
-| Stripe payments stuck in PENDING_PAYMENT | webhook endpoint not registered, or `STRIPE_WEBHOOK_SECRET` wrong (2a) |
-| Prisma "engine not found" after WinSCP upload | Windows `node_modules` was uploaded — delete it on the server and re-run `pnpm install --frozen-lockfile` |
-| `pnpm install` fails with `EPERM ... chmod` | pnpm's store is in the shared `/home/master` and contains files owned by another user. Fix (from `public_html`): `rm -rf node_modules && pnpm config set store-dir "$PWD/.pnpm-store" && pnpm install --frozen-lockfile` — the app user can usually only write inside `public_html`. Still failing? `pnpm config set package-import-method copy` and reinstall |
-| WinSCP Synchronize wants to re-upload everything | PC/server clock drift — switch sync criteria to file size |
-
----
-
-## Notes
-
-- **Database:** MySQL is native to Cloudways — no external DB, no sudo. Get the
-  connection details from the panel (Access Details).
-- **Two env files hold `DATABASE_URL`** and must match: `apps/backend/.env`
-  (runtime) and `packages/db/.env` (Prisma CLI + seed).
-- **`prisma db push`** builds/updates tables straight from `schema.prisma` — no
-  migration files needed for a fresh database.
-- **Admin** lives entirely under `/admin` (Next `basePath` in
-  `apps/admin/next.config.mjs`) — log in at `https://<domain>/admin`.
-- **Secrets never go in git or WinSCP syncs** — all four env files are
-  server-only; `ecosystem.config.cjs` deliberately contains no secrets.
+`NEXT_PUBLIC_*` values are inlined at build time, so changing a domain means a rebuild,
+not just a restart.

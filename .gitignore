@@ -36,3 +36,7 @@ coverage/
 # eas-cli writes a stub `{"expo":{}}` here whenever it runs from the repo root
 # instead of apps/mobile. It is not config — the real one is apps/mobile/app.json.
 /app.json
+
+# Server deployment secrets (templates are committed as .example)
+/.env.deploy
+/.env.backend
