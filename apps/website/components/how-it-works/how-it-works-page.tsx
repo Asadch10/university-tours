@@ -54,7 +54,7 @@ const PROCESS = {
       },
       {
         title: 'Host tours, get paid',
-        body: 'Meet your guest on campus or connect over video. Talk openly about your college experience and earn $40/hour, paid out after every tour.',
+        body: 'Meet your guest on campus or connect over video. Talk openly about your college experience and get paid after every tour.',
       },
     ],
   },
@@ -95,7 +95,7 @@ const FAQ_GROUPS = [
     items: [
       { q: 'How do student ambassadors join?', a: 'Sign up with your school email, complete a short profile, and start accepting tour requests in minutes — it’s free.' },
       { q: 'How are guides verified?', a: 'We confirm current enrollment for every guide before they can host, so families always meet a real student.' },
-      { q: 'How do guides get paid?', a: 'Guides earn $40/hour, paid securely to their bank account shortly after each completed tour.' },
+      { q: 'How do guides get paid?', a: 'Guides are paid securely to their bank account shortly after each completed tour.' },
     ],
   },
 ];

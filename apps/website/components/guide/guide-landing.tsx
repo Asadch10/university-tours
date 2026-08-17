@@ -78,13 +78,13 @@ const STEPS = [
   },
   {
     title: 'Host tours, get paid',
-    body: 'Meet your guest on campus or connect over video. Talk openly about your college experience and earn $40/hour.',
+    body: 'Meet your guest on campus or connect over video. Talk openly about your college experience and get paid for every tour.',
   },
 ];
 
 const FAQS = [
   { q: 'How do I become a guide?', a: 'Sign up with your school email, complete a short profile about your studies and interests, and you’ll be ready to accept tour requests in minutes.' },
-  { q: 'How much do I get paid?', a: 'Guides earn $40/hour for both in-person campus tours and video consultations. You keep the majority of every booking.' },
+  { q: 'How much do I get paid?', a: 'Guides are paid an hourly rate for both in-person campus tours and video consultations, and you keep the majority of every booking. You’ll see the exact rate for each tour type before your listing goes live.' },
   { q: 'When do I get paid?', a: 'Payouts are sent to your bank account shortly after each completed tour — typically within a few business days.' },
   { q: 'How do I get booked?', a: 'Families browse guides by school and book directly. A complete profile with photos and a friendly headline gets the most requests.' },
   { q: 'Do I need to set my availability in advance?', a: 'No. You accept or decline each request based on your schedule — there’s no minimum commitment.' },
@@ -119,7 +119,7 @@ function Hero() {
           Become a guide
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-ink-600">
-          Earn $40/hour in your free time.
+          Get paid in your free time.
           <br />
           Get started in 2 minutes.
         </p>

@@ -674,7 +674,7 @@ export function GuideApplication() {
           {step === 'paid' && (
             <div className="max-w-4xl">
               <h1 className="font-display text-3xl font-semibold text-ink-900 sm:text-4xl">
-                Earn $40/hour as a University Campus Private Tours guide
+                Get paid as a Campus Private Tours guide
               </h1>
               <p className="mt-3 max-w-3xl text-ink-600">
                 University Campus Private Tours is a great way to earn extra money in college. After each tour,

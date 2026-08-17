@@ -5,7 +5,7 @@ import { BecomeGuideGate } from '@/components/guide/become-guide-gate';
 export const metadata: Metadata = {
   title: 'Become a guide',
   description:
-    'Earn $40/hour in your free time. Sign up in 2 minutes, host private campus tours and video consultations, and get paid to share your school.',
+    'Get paid in your free time. Sign up in 2 minutes, host private campus tours and video consultations, and get paid to share your school.',
 };
 
 export default function BecomeAGuidePage() {
