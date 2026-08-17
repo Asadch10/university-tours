@@ -70,9 +70,14 @@ CMD ["node_modules/.bin/tsx", "src/index.ts"]
 # NEXT_PUBLIC_* is inlined into the client bundle at BUILD time, so these must be
 # build args — setting them only at runtime has no effect.
 FROM deps AS website-build
+# The two apps read DIFFERENT variable names for the same value: admin uses
+# NEXT_PUBLIC_API_URL, website prefers it and falls back to NEXT_PUBLIC_API_BASE_URL.
+# Both are set in both builds so neither can silently fall back to localhost.
+ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
@@ -90,8 +95,13 @@ CMD ["node_modules/.bin/next", "start", "-p", "3000"]
 
 # ─── Admin ───────────────────────────────────────────────────────────────────
 FROM deps AS admin-build
+# apps/admin/lib/api.ts reads NEXT_PUBLIC_API_URL and has NO fallback to
+# NEXT_PUBLIC_API_BASE_URL — omitting it makes the built bundle call localhost:4000,
+# which surfaces in the browser as a misleading CORS error.
+ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 RUN pnpm --filter @ucpt/admin build
