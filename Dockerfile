@@ -22,14 +22,20 @@ WORKDIR /app
 
 # Copy only manifests first so a source-only change doesn't reinstall everything.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY apps/backend/package.json      apps/backend/
-COPY apps/website/package.json      apps/website/
+# EVERY workspace member's manifest must be present, not just the ones being built:
+# pnpm-workspace.yaml globs apps/* and packages/*, and --frozen-lockfile fails if the
+# lockfile references an importer whose package.json is missing. (apps/mobile and
+# apps/worker are installed but never built here — that's the price of a valid lockfile
+# check, and it's only a one-off install cost.)
 COPY apps/admin/package.json        apps/admin/
+COPY apps/backend/package.json      apps/backend/
+COPY apps/mobile/package.json       apps/mobile/
+COPY apps/website/package.json      apps/website/
+COPY apps/worker/package.json       apps/worker/
 COPY packages/db/package.json       packages/db/
+COPY packages/sdk/package.json      packages/sdk/
 COPY packages/types/package.json    packages/types/
 COPY packages/validation/package.json packages/validation/
-COPY packages/sdk/package.json      packages/sdk/
-COPY packages/config/package.json   packages/config/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
