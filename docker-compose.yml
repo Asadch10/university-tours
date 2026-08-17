@@ -50,7 +50,7 @@ services:
       # routes under /api/v1 and /uploads, and the admin app is built with
       # basePath: '/admin', so each service expects to see its own prefix.
       - traefik.enable=true
-      - traefik.http.routers.ucpt-api.rule=Host(`${WEB_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`))
+      - traefik.http.routers.ucpt-api.rule=(Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)) && (PathPrefix(`/api`) || PathPrefix(`/uploads`))
       - traefik.http.routers.ucpt-api.entrypoints=websecure
       - traefik.http.routers.ucpt-api.tls.certresolver=letsencrypt
       # Explicit priority: Traefik orders by rule length by default, which happens to
@@ -72,7 +72,7 @@ services:
     labels:
       - traefik.enable=true
       # Catch-all: anything not matched by the /api, /uploads or /admin routers above.
-      - traefik.http.routers.ucpt-web.rule=Host(`${WEB_DOMAIN}`)
+      - traefik.http.routers.ucpt-web.rule=Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)
       - traefik.http.routers.ucpt-web.entrypoints=websecure
       - traefik.http.routers.ucpt-web.tls.certresolver=letsencrypt
       - traefik.http.routers.ucpt-web.priority=1
@@ -90,7 +90,7 @@ services:
     networks: [ucpt]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ucpt-admin.rule=Host(`${WEB_DOMAIN}`) && PathPrefix(`/admin`)
+      - traefik.http.routers.ucpt-admin.rule=(Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)) && PathPrefix(`/admin`)
       - traefik.http.routers.ucpt-admin.entrypoints=websecure
       - traefik.http.routers.ucpt-admin.tls.certresolver=letsencrypt
       - traefik.http.routers.ucpt-admin.priority=100
