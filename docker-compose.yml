@@ -1,11 +1,13 @@
 # Deployment stack for the Hostinger VPS.
 #
-# The box already runs Postiz and vanuat behind a shared Traefik. Traefik owns ports
-# 80/443, so this stack publishes NO host ports — it joins Traefik's network and is
-# routed by the labels below. That keeps it fully isolated from the existing apps:
-# its own MySQL, its own volumes, nothing shared but the proxy.
+# The box already runs Postiz and two vanuat stacks. Traefik owns ports 80/443, so this
+# stack publishes NO host ports and is routed by the labels below — fully isolated from
+# the existing apps: its own MySQL, its own volumes, its own network.
 #
-# Set TRAEFIK_NETWORK to the network Traefik is actually on (see DEPLOY.md).
+# Traefik on this box runs in HOST network mode, so there is NO shared proxy network to
+# join: it reaches containers directly on their own private bridge network. Verified
+# against the working vanuat stack, which uses exactly this pattern — one private
+# network, entrypoint `websecure`, cert resolver `letsencrypt`.
 #
 #   docker compose --env-file .env.deploy up -d --build
 
@@ -23,7 +25,7 @@ services:
     # problem seen over plain TCP to an external host.
     volumes:
       - db-data:/var/lib/mysql
-    networks: [internal]
+    networks: [ucpt]
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD}']
       interval: 10s
@@ -41,13 +43,12 @@ services:
     volumes:
       # User uploads must outlive the container — never bake them into the image.
       - uploads:/app/apps/backend/uploads
-    networks: [internal, proxy]
+    networks: [ucpt]
     labels:
       - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_NETWORK}
       - traefik.http.routers.ucpt-api.rule=Host(`${API_DOMAIN}`)
       - traefik.http.routers.ucpt-api.entrypoints=websecure
-      - traefik.http.routers.ucpt-api.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.routers.ucpt-api.tls.certresolver=letsencrypt
       - traefik.http.services.ucpt-api.loadbalancer.server.port=4000
 
   website:
@@ -59,13 +60,12 @@ services:
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
     restart: unless-stopped
     depends_on: [backend]
-    networks: [proxy]
+    networks: [ucpt]
     labels:
       - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_NETWORK}
       - traefik.http.routers.ucpt-web.rule=Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)
       - traefik.http.routers.ucpt-web.entrypoints=websecure
-      - traefik.http.routers.ucpt-web.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.routers.ucpt-web.tls.certresolver=letsencrypt
       - traefik.http.services.ucpt-web.loadbalancer.server.port=3000
 
   admin:
@@ -76,13 +76,12 @@ services:
         NEXT_PUBLIC_API_BASE_URL: https://${API_DOMAIN}
     restart: unless-stopped
     depends_on: [backend]
-    networks: [proxy]
+    networks: [ucpt]
     labels:
       - traefik.enable=true
-      - traefik.docker.network=${TRAEFIK_NETWORK}
       - traefik.http.routers.ucpt-admin.rule=Host(`${ADMIN_DOMAIN}`)
       - traefik.http.routers.ucpt-admin.entrypoints=websecure
-      - traefik.http.routers.ucpt-admin.tls.certresolver=${CERT_RESOLVER}
+      - traefik.http.routers.ucpt-admin.tls.certresolver=letsencrypt
       - traefik.http.services.ucpt-admin.loadbalancer.server.port=3001
 
 volumes:
@@ -90,9 +89,6 @@ volumes:
   uploads:
 
 networks:
-  # Private to this stack — the database is not reachable from the other apps.
-  internal:
-  # Traefik's existing network, created outside this stack.
-  proxy:
-    external: true
-    name: ${TRAEFIK_NETWORK}
+  # Private to this stack. The database is not reachable from Postiz or vanuat, and
+  # host-mode Traefik can still route into it — same as vanuat_vanuat.
+  ucpt:

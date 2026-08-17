@@ -34,21 +34,17 @@ mkdir -p /opt && cd /opt
 git clone https://github.com/Asadch10/university-tours.git ucpt && cd ucpt
 ```
 
-## 2. Find Traefik's network and cert resolver
+## 2. Traefik — nothing to configure
 
-The compose file needs both. Read them off the running Traefik:
+Verified on this VPS: Traefik runs in **host network mode**, so there is no shared proxy
+network to join — it reaches containers directly on their own bridge network. The
+entrypoint (`websecure`) and cert resolver (`letsencrypt`) are already hardcoded in
+`docker-compose.yml`, matching the working `vanuat` stack:
 
-```bash
-docker ps --filter name=traefik --format '{{.Names}}'
-docker inspect $(docker ps -qf name=traefik) \
-  --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}'
-# Which entrypoint/resolver names it uses:
-docker inspect $(docker ps -qf name=traefik) --format '{{json .Args}}' | tr ',' '\n' | grep -iE 'entrypoint|certresolver|acme'
 ```
-
-Also confirm the entrypoint name. The compose file assumes `websecure`; Hostinger
-templates sometimes use `https`. If it differs, change `entrypoints=` in
-`docker-compose.yml` to match — a wrong name means Traefik silently ignores the router.
+traefik.http.routers.vanuat.entrypoints    = websecure
+traefik.http.routers.vanuat.tls.certresolver = letsencrypt
+```
 
 ## 3. DNS
 
