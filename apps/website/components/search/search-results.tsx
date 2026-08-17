@@ -31,7 +31,10 @@ function GuideCard({ g }: { g: Guide }) {
         <img
           src={g.photo}
           alt={g.name}
+          width={288}
+          height={288}
           loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover"
         />
         <span className="pointer-events-none absolute left-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-800 opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100">

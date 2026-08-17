@@ -49,7 +49,15 @@ function CounselorCard({ c }: { c: Counselor }) {
     <Link href={`/browse-counselors/${c.id}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-2xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.photo} alt={c.name} loading="lazy" className="h-full w-full object-cover" />
+        <img
+          src={c.photo}
+          alt={c.name}
+          width={288}
+          height={288}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
         <span className="pointer-events-none absolute left-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-800 opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100">
           <ChevronLeft size={16} />
         </span>

@@ -74,7 +74,18 @@ export function CounselorDetail({ id }: { id: string }) {
           <div className="flex flex-wrap items-start gap-5">
             <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full border border-ink-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={c.photo} alt={c.name} className="h-full w-full object-cover" />
+              <img
+                src={c.photo}
+                alt={c.name}
+                width={96}
+                height={96}
+                /* Above the fold and the page's largest image — same treatment as the
+                   guide gallery's main photo. */
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <h1 className="font-display text-3xl font-bold text-ink-900">{c.name}</h1>
