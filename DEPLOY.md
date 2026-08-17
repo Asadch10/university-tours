@@ -100,19 +100,20 @@ There are **no Prisma migration files** in this project — the schema is applie
 `db push`. Both commands run inside the backend container:
 
 ```bash
-docker compose --env-file .env.deploy exec -w /app backend \
-  node_modules/.bin/prisma db push --schema packages/db/prisma/schema.prisma
+docker compose --env-file .env.deploy exec -w /app/packages/db backend \
+  node_modules/.bin/prisma db push --schema prisma/schema.prisma
 ```
 
 Then either **import the Cloudways data** (step 7) or seed a fresh database:
 
 ```bash
-docker compose --env-file .env.deploy exec -w /app backend \
-  node_modules/.bin/tsx packages/db/prisma/seed.ts
+docker compose --env-file .env.deploy exec -w /app/packages/db backend \
+  node_modules/.bin/tsx prisma/seed.ts
 ```
 
-(The seed is TypeScript run through `tsx` — there is no compiled `dist`. `DATABASE_URL`
-already comes from `.env.backend`, so no `--env-file` is needed here.)
+(The seed is TypeScript run through `tsx` — there is no compiled `dist`. Both binaries
+live in `packages/db/node_modules/.bin`, not the workspace root: pnpm does not hoist
+them. `DATABASE_URL` already comes from `.env.backend`, so no `--env-file` is needed.)
 
 > The seed creates the **counselor questionnaire**. Skip it on a fresh DB and
 > `/become-a-counselor` renders an empty form.

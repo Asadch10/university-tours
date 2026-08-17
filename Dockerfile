@@ -61,7 +61,10 @@ WORKDIR /app/apps/backend
 # Uploads are a mounted volume; create the dir so the app can boot before it's mounted.
 RUN mkdir -p uploads
 EXPOSE 4000
-CMD ["../../node_modules/.bin/tsx", "src/index.ts"]
+# tsx is a devDependency of apps/backend, so pnpm puts its bin in
+# apps/backend/node_modules/.bin — NOT hoisted to the workspace root. WORKDIR is
+# already /app/apps/backend, so this relative path is the correct one.
+CMD ["node_modules/.bin/tsx", "src/index.ts"]
 
 # ─── Website ─────────────────────────────────────────────────────────────────
 # NEXT_PUBLIC_* is inlined into the client bundle at BUILD time, so these must be
