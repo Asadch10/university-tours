@@ -37,28 +37,25 @@ COPY . .
 RUN pnpm --filter @ucpt/db exec prisma generate
 
 # ─── Backend ─────────────────────────────────────────────────────────────────
-FROM deps AS backend-build
-RUN pnpm --filter @ucpt/backend build
-
+# Deliberately NOT compiled to dist and run with plain node. The workspace packages
+# (@ucpt/db, @ucpt/types, @ucpt/validation) export raw TypeScript — their package.json
+# main is ./src/index.ts — so node dies with ERR_UNKNOWN_FILE_EXTENSION on the first
+# `import '@ucpt/db'`, even if apps/backend itself is compiled. The repo's existing pm2
+# config hit exactly this and documents the same conclusion: run the source via tsx.
 FROM node:22-slim AS backend
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 WORKDIR /app
 # node_modules is copied wholesale: pnpm's symlinked store means a partial copy breaks.
-COPY --from=backend-build /app/node_modules ./node_modules
-COPY --from=backend-build /app/packages ./packages
-COPY --from=backend-build /app/apps/backend/node_modules ./apps/backend/node_modules
-COPY --from=backend-build /app/apps/backend/dist ./apps/backend/dist
-COPY --from=backend-build /app/apps/backend/package.json ./apps/backend/
-# Maintenance scripts run inside this container (e.g. the uploads optimiser), so they
-# have to be in the image — dist alone is not enough.
-COPY --from=backend-build /app/apps/backend/scripts ./apps/backend/scripts
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages ./packages
+COPY --from=deps /app/apps/backend ./apps/backend
 WORKDIR /app/apps/backend
 # Uploads are a mounted volume; create the dir so the app can boot before it's mounted.
 RUN mkdir -p uploads
 EXPOSE 4000
-CMD ["node", "dist/index.js"]
+CMD ["../../node_modules/.bin/tsx", "src/index.ts"]
 
 # ─── Website ─────────────────────────────────────────────────────────────────
 # NEXT_PUBLIC_* is inlined into the client bundle at BUILD time, so these must be

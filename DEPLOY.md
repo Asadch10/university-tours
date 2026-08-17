@@ -11,16 +11,17 @@ nothing about the existing apps is touched.
 
 ## 0. Read this first: memory
 
-The VPS was at **62% memory** with just Postiz and vanuat running (KVM 2 = 8 GB, so
-~3 GB free). Runtime is fine — the four new containers need roughly 1.2–1.5 GB. The
+Measured on the box: 7.8 GB total, **2.8 GB available** with Postiz and the two vanuat
+stacks running. Runtime is fine — the four new containers need roughly 1.2–1.5 GB. The
 risk is the **build**: `next build` can peak above 2 GB, and there are two of them.
 
-Add swap before building, or the build will be OOM-killed halfway:
+There is already 2 GB of swap. Top it up to 4 GB before building (note the distinct
+filename — do not overwrite a live swap file):
 
 ```bash
-sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
-sudo mkswap /swapfile && sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+[ -f /swapfile2 ] || { fallocate -l 2G /swapfile2 && chmod 600 /swapfile2 \
+  && mkswap /swapfile2 && swapon /swapfile2 \
+  && echo '/swapfile2 none swap sw 0 0' >> /etc/fstab; }
 free -h
 ```
 
