@@ -56,31 +56,52 @@ export function BecomeGuide() {
 
             {/* Left: heading + text + CTAs */}
             <div className="flex flex-col justify-center px-6 py-12 sm:px-14 sm:py-16 lg:px-16 xl:px-20">
+              <p className="mb-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-white/50">
+                Two ways to join
+              </p>
+
               <h2
                 className="font-display font-bold leading-[1.08] text-white"
                 style={{ fontSize: 'clamp(1.75rem, 5vw, 3.6rem)' }}
               >
                 Become a tour guide
+                <span className="block text-white/45">or college counselor</span>
               </h2>
 
-              <p className="mt-5 max-w-[22rem] text-sm leading-relaxed text-white/60 sm:text-base">
-                Join thousands of students earning $40/hour hosting private college tours
-              </p>
+              {/* One line per role, so each opportunity is stated plainly rather than
+                  merged into a sentence that describes neither properly. */}
+              <div className="mt-6 max-w-[26rem] space-y-2.5">
+                <p className="text-sm leading-relaxed text-white/60 sm:text-base">
+                  <span className="font-semibold text-white/85">Students</span> — earn $40/hour
+                  hosting private college tours at your school.
+                </p>
+                <p className="text-sm leading-relaxed text-white/60 sm:text-base">
+                  <span className="font-semibold text-white/85">Counselors</span> — advise families
+                  as a verified admissions professional.
+                </p>
+              </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
                   href="/become-a-guide"
                   className="inline-flex items-center justify-center rounded-xl bg-maroon-900 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
                 >
-                  Get started
+                  Become a guide
                 </Link>
                 <Link
-                  href="/how-it-works"
+                  href="/become-a-counselor"
                   className="inline-flex items-center justify-center rounded-xl border border-white/30 px-7 py-3 text-sm font-semibold text-white transition-colors hover:border-white/60 hover:bg-white/10"
                 >
-                  Learn more
+                  Become a counselor
                 </Link>
               </div>
+
+              <Link
+                href="/how-it-works"
+                className="mt-5 inline-flex text-sm font-semibold text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline"
+              >
+                Learn how it works
+              </Link>
             </div>
 
             {/* Right: floating guide avatar circles over the visible background */}

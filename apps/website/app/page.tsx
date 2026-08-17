@@ -1,6 +1,7 @@
 import { Hero } from '@/components/home/hero';
 import { TrustedReviews } from '@/components/home/trusted-reviews';
 import { FeaturedGuides } from '@/components/home/featured-guides';
+import { FeaturedCounselors } from '@/components/home/featured-counselors';
 import { PersonalWay } from '@/components/home/personal-way';
 import { ExploreMap } from '@/components/home/explore-map';
 import { BecomeGuide } from '@/components/home/become-guide';
@@ -18,6 +19,8 @@ export default function HomePage() {
       <PersonalWay />
 
       <FeaturedGuides />
+
+      <FeaturedCounselors />
 
       <ExploreMap />
 
