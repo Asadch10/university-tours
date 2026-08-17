@@ -49,18 +49,22 @@ traefik.http.routers.vanuat.tls.certresolver = letsencrypt
 
 ## 3. DNS
 
-Point A records at **2.25.194.37** and wait for propagation *before* step 5 — Traefik
-requests certificates on first request, and it can only validate a domain that already
-resolves to this box.
+**One** A record, because a single domain serves all three apps, split by path:
+
+| Path | Goes to |
+|---|---|
+| `/` | website |
+| `/admin` | admin console (built with `basePath: '/admin'`) |
+| `/api`, `/uploads` | backend |
 
 | Record | Value |
 |---|---|
 | `yourdomain.com` | 2.25.194.37 |
-| `www` | 2.25.194.37 |
-| `admin` | 2.25.194.37 |
-| `api` | 2.25.194.37 |
+| `www` (optional) | 2.25.194.37 |
 
-Check with `dig +short api.yourdomain.com`.
+Point it at the VPS *before* step 5 — Traefik requests the certificate on the first
+request and can only validate a domain that already resolves here. Check with
+`dig +short yourdomain.com`.
 
 ## 4. Configuration
 

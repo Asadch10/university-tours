@@ -45,10 +45,17 @@ services:
       - uploads:/app/apps/backend/uploads
     networks: [ucpt]
     labels:
+      # One domain serves all three apps, split by path — the same layout the previous
+      # nginx setup used. No path stripping anywhere: the backend already mounts its
+      # routes under /api/v1 and /uploads, and the admin app is built with
+      # basePath: '/admin', so each service expects to see its own prefix.
       - traefik.enable=true
-      - traefik.http.routers.ucpt-api.rule=Host(`${API_DOMAIN}`)
+      - traefik.http.routers.ucpt-api.rule=Host(`${WEB_DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`))
       - traefik.http.routers.ucpt-api.entrypoints=websecure
       - traefik.http.routers.ucpt-api.tls.certresolver=letsencrypt
+      # Explicit priority: Traefik orders by rule length by default, which happens to
+      # work here, but stating it means a later rule edit can't silently reorder them.
+      - traefik.http.routers.ucpt-api.priority=100
       - traefik.http.services.ucpt-api.loadbalancer.server.port=4000
 
   website:
@@ -56,17 +63,19 @@ services:
       context: .
       target: website
       args:
-        NEXT_PUBLIC_API_URL: https://${API_DOMAIN}
-        NEXT_PUBLIC_API_BASE_URL: https://${API_DOMAIN}
+        NEXT_PUBLIC_API_URL: https://${WEB_DOMAIN}
+        NEXT_PUBLIC_API_BASE_URL: https://${WEB_DOMAIN}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
     restart: unless-stopped
     depends_on: [backend]
     networks: [ucpt]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ucpt-web.rule=Host(`${WEB_DOMAIN}`) || Host(`www.${WEB_DOMAIN}`)
+      # Catch-all: anything not matched by the /api, /uploads or /admin routers above.
+      - traefik.http.routers.ucpt-web.rule=Host(`${WEB_DOMAIN}`)
       - traefik.http.routers.ucpt-web.entrypoints=websecure
       - traefik.http.routers.ucpt-web.tls.certresolver=letsencrypt
+      - traefik.http.routers.ucpt-web.priority=1
       - traefik.http.services.ucpt-web.loadbalancer.server.port=3000
 
   admin:
@@ -74,16 +83,17 @@ services:
       context: .
       target: admin
       args:
-        NEXT_PUBLIC_API_URL: https://${API_DOMAIN}
-        NEXT_PUBLIC_API_BASE_URL: https://${API_DOMAIN}
+        NEXT_PUBLIC_API_URL: https://${WEB_DOMAIN}
+        NEXT_PUBLIC_API_BASE_URL: https://${WEB_DOMAIN}
     restart: unless-stopped
     depends_on: [backend]
     networks: [ucpt]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ucpt-admin.rule=Host(`${ADMIN_DOMAIN}`)
+      - traefik.http.routers.ucpt-admin.rule=Host(`${WEB_DOMAIN}`) && PathPrefix(`/admin`)
       - traefik.http.routers.ucpt-admin.entrypoints=websecure
       - traefik.http.routers.ucpt-admin.tls.certresolver=letsencrypt
+      - traefik.http.routers.ucpt-admin.priority=100
       - traefik.http.services.ucpt-admin.loadbalancer.server.port=3001
 
 volumes:
