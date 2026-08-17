@@ -44,8 +44,8 @@ export function BecomeGuide() {
                   merged into a sentence that describes neither properly. */}
               <div className="mt-6 max-w-[26rem] space-y-2.5">
                 <p className="text-sm leading-relaxed text-white/60 sm:text-base">
-                  <span className="font-semibold text-white/85">Students</span> — earn $40/hour
-                  hosting private college tours at your school.
+                  <span className="font-semibold text-white/85">Students</span> — get paid to host
+                  private college tours at your school.
                 </p>
                 <p className="text-sm leading-relaxed text-white/60 sm:text-base">
                   <span className="font-semibold text-white/85">Counselors</span> — advise families
