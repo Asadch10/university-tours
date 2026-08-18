@@ -111,82 +111,16 @@ async function main() {
     schools[s.slug] = school.id;
   }
 
-  // --- Buyer users ---
-  const buyerHash = await argon2.hash('Buyer@123');
-  const buyerData = [
-    { email: 'karen.d@example.com', name: 'Karen Davis' },
-    { email: 'marcus.t@example.com', name: 'Marcus Thompson' },
-    { email: 'alvarez@example.com', name: 'The Alvarez Family' },
-    { email: 'wei.lin@example.com', name: 'Wei Lin' },
-    { email: 'rachel.g@example.com', name: 'Rachel Green' },
-  ];
-  const buyers: Record<string, string> = {};
-  for (const b of buyerData) {
-    const u = await prisma.user.upsert({ where: { email: b.email }, update: {}, create: { ...b, role: UserRole.BUYER, passwordHash: buyerHash, emailVerifiedAt: new Date() } });
-    buyers[b.email] = u.id;
-  }
-
-  // --- Seller users + profiles ---
-  const sellerHash = await argon2.hash('Seller@123');
-  const sellerData = [
-    { email: 'maya.r@stanford.edu', name: 'Maya Robinson', schoolSlug: 'stanford', major: 'Computer Science', gradYear: 2026 },
-    { email: 'daniel.o@harvard.edu', name: 'Daniel Okafor', schoolSlug: 'harvard', major: 'Government', gradYear: 2026 },
-    { email: 'sofia.m@ucla.edu', name: 'Sofia Martinez', schoolSlug: 'ucla', major: 'Communications', gradYear: 2026 },
-    { email: 'aiden.c@nyu.edu', name: 'Aiden Chen', schoolSlug: 'nyu', major: 'Film', gradYear: 2026 },
-    { email: 'priya.nair@umich.edu', name: 'Priya Nair', schoolSlug: 'umich', major: 'Pre-Med', gradYear: 2027 },
-    { email: 'jordan.b@utexas.edu', name: 'Jordan Blake', schoolSlug: 'utexas', major: 'Computer Science', gradYear: 2026 },
-  ];
-  const sellers: Record<string, string> = {};
-  for (const s of sellerData) {
-    const u = await prisma.user.upsert({
-      where: { email: s.email }, update: {},
-      create: { email: s.email, name: s.name, role: UserRole.SELLER, passwordHash: sellerHash, emailVerifiedAt: new Date() },
-    });
-    sellers[s.email] = u.id;
-    await prisma.sellerProfile.upsert({
-      where: { userId: u.id }, update: {},
-      create: {
-        userId: u.id,
-        schoolId: schools[s.schoolSlug],
-        major: s.major,
-        gradYear: s.gradYear,
-        applicationStatus: 'APPROVED',
-        approvedAt: new Date('2025-09-01'),
-        ratingAvg: 4.8,
-        ratingCount: 20,
-        bio: `${s.name} is a current student at their university.`,
-      },
-    });
-  }
-
-  // --- Listings ---
-  const listingData = [
-    { sellerEmail: 'maya.r@stanford.edu', schoolSlug: 'stanford', serviceType: ServiceType.CAMPUS_TOUR, title: 'The unofficial Stanford tour', description: 'See the real campus beyond the official tour.', options: [{ durationMinutes: 60, priceCents: 6500 }, { durationMinutes: 120, priceCents: 11000 }] },
-    { sellerEmail: 'daniel.o@harvard.edu', schoolSlug: 'harvard', serviceType: ServiceType.VIDEO_CONSULTATION, title: 'Harvard admissions & houses Q&A', description: 'Honest answers about Harvard life.', options: [{ durationMinutes: 30, priceCents: 4000 }, { durationMinutes: 60, priceCents: 7000 }] },
-    { sellerEmail: 'sofia.m@ucla.edu', schoolSlug: 'ucla', serviceType: ServiceType.CAMPUS_TOUR, title: 'A behind-the-scenes UCLA walk', description: 'The parts of UCLA the official tour skips.', options: [{ durationMinutes: 60, priceCents: 5000 }, { durationMinutes: 90, priceCents: 7000 }] },
-    { sellerEmail: 'priya.nair@umich.edu', schoolSlug: 'umich', serviceType: ServiceType.VIDEO_CONSULTATION, title: 'Pre-med & engineering at Michigan', description: 'Real talk on Michigan academics and campus life.', options: [{ durationMinutes: 45, priceCents: 4500 }, { durationMinutes: 60, priceCents: 5500 }] },
-    { sellerEmail: 'jordan.b@utexas.edu', schoolSlug: 'utexas', serviceType: ServiceType.CAMPUS_TOUR, title: "Hook 'em: the real UT Austin", description: 'Austin campus life beyond the Tower.', options: [{ durationMinutes: 60, priceCents: 4000 }, { durationMinutes: 120, priceCents: 7000 }] },
-  ];
-
-  const listingIds: string[] = [];
-  for (const l of listingData) {
-    const existing = await prisma.listing.findFirst({ where: { sellerId: sellers[l.sellerEmail], schoolId: schools[l.schoolSlug], serviceType: l.serviceType } });
-    if (!existing) {
-      const listing = await prisma.listing.create({
-        data: {
-          sellerId: sellers[l.sellerEmail]!,
-          schoolId: schools[l.schoolSlug]!,
-          serviceType: l.serviceType,
-          title: l.title,
-          description: l.description,
-          status: 'ACTIVE',
-          options: { create: l.options },
-        },
-        include: { options: true },
-      });
-      listingIds.push(listing.id);
-    }
-  }
+  // NOTE: no demo users are seeded.
+  //
+  // This used to create 5 fake buyers (@example.com) and 6 fake student guides
+  // (@stanford.edu, @harvard.edu, …) plus 5 listings they owned. Because the seed
+  // runs against real environments, those accounts showed up in the live admin
+  // console as if they were customers, and their listings were publicly bookable.
+  //
+  // Real users now come from real sign-ups only. If you want demo data for local
+  // development, seed it from a separate script rather than adding it back here —
+  // anything in this file can reach production.
 
   // --- Active guide questionnaire ---
   // Versions are numbered per kind now, so every lookup here is scoped by kind too.
