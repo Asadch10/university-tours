@@ -87,7 +87,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 24, scale: 0.96 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-ink-200/70 bg-white p-3.5 shadow-lift"
+                className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-ink-200/70 bg-surface p-3.5 shadow-lift"
               >
                 <Icon size={20} className={cn('mt-0.5 shrink-0', ACCENT[t.variant])} />
                 <div className="min-w-0 flex-1">

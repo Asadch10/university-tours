@@ -32,7 +32,7 @@ const ICONS = { success: CheckCircle2, error: AlertCircle, info: Info, warning: 
 const ACCENT = {
   success: 'text-verified',
   error: 'text-red-600',
-  info: 'text-maroon-800',
+  info: 'text-brand',
   warning: 'text-gold-600',
 } as const;
 
@@ -79,7 +79,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 24, scale: 0.96 }}
                 transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-ink-200/70 bg-white p-3.5 shadow-lift"
+                className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-ink-200/70 bg-surface p-3.5 shadow-lift"
               >
                 <Icon size={20} className={cn('mt-0.5 shrink-0', ACCENT[t.variant])} />
                 <div className="min-w-0 flex-1">
@@ -89,7 +89,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     <Link
                       href={t.action.href}
                       onClick={() => remove(t.id)}
-                      className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-maroon-800 hover:underline"
+                      className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand hover:underline"
                     >
                       {t.action.label} <ArrowRight size={14} />
                     </Link>
