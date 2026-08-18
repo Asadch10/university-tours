@@ -2,7 +2,7 @@
 // Mounted at /api/v1/admin/questionnaires by the admin router.
 import { Router } from 'express';
 import { asyncHandler, HttpError } from '../../lib/http.js';
-import { requirePermission } from '../../middleware/auth.js';
+import { requireAdmin } from '../../middleware/auth.js';
 import * as svc from '../../services/admin.service.js';
 
 export const questionnaireApiRouter = Router({ mergeParams: true });
@@ -10,7 +10,7 @@ export const questionnaireApiRouter = Router({ mergeParams: true });
 // PUT /photos — set how many profile photos a guide must upload (global setting).
 questionnaireApiRouter.put(
   '/photos',
-  requirePermission('questionnaires.manage'),
+  requireAdmin,
   asyncHandler(async (req, res) => {
     const { requiredPhotos } = req.body as { requiredPhotos?: number };
     res.json(await svc.setRequiredPhotos(Number(requiredPhotos), req.user!.id));
@@ -21,7 +21,7 @@ questionnaireApiRouter.put(
 // is not matched as a :qid param.
 questionnaireApiRouter.put(
   '/:id/questions/reorder',
-  requirePermission('questionnaires.manage'),
+  requireAdmin,
   asyncHandler(async (req, res) => {
     const { orderedIds } = req.body as { orderedIds?: string[] };
     if (!Array.isArray(orderedIds) || orderedIds.length === 0)
@@ -33,7 +33,7 @@ questionnaireApiRouter.put(
 // POST /:id/questions — add a question to an existing questionnaire
 questionnaireApiRouter.post(
   '/:id/questions',
-  requirePermission('questionnaires.manage'),
+  requireAdmin,
   asyncHandler(async (req, res) => {
     const body = req.body as { type?: string; label?: string; required?: boolean; options?: string[] };
     if (!body.type || !body.label) throw new HttpError(400, 'validation_error', 'type and label required');
@@ -44,7 +44,7 @@ questionnaireApiRouter.post(
 // PUT /:id/questions/:qid — update an existing question
 questionnaireApiRouter.put(
   '/:id/questions/:qid',
-  requirePermission('questionnaires.manage'),
+  requireAdmin,
   asyncHandler(async (req, res) => {
     res.json(
       await svc.updateQuestion(
@@ -59,7 +59,7 @@ questionnaireApiRouter.put(
 // DELETE /:id/questions/:qid — remove a question
 questionnaireApiRouter.delete(
   '/:id/questions/:qid',
-  requirePermission('questionnaires.manage'),
+  requireAdmin,
   asyncHandler(async (req, res) => {
     res.json(await svc.deleteQuestion(req.params['id'] as string, req.params['qid'] as string));
   }),

@@ -1,4 +1,5 @@
 import { prisma, Prisma, type ApplicantKind } from '@ucpt/db';
+import { ADMIN_ROLE_NAME } from '@ucpt/types';
 import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
 import { config } from '../config.js';
@@ -1474,12 +1475,19 @@ export async function listAdmins() {
   });
 }
 
-export async function createAdmin(data: { name: string; email: string; password: string; adminRoleName: string }, createdByAdminId: string) {
+export async function createAdmin(data: { name: string; email: string; password: string; adminRoleName?: string }, createdByAdminId: string) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) throw new HttpError(409, 'email_in_use', 'Email already registered');
+  // Single-admin mode: there is exactly one kind of admin and it has full access.
+  // The caller used to be able to pass any role name straight through, which minted
+  // an account *labelled* MANAGER/SUPPORT while still holding every power — a
+  // label that lies about what the account can do.
+  if (data.adminRoleName && data.adminRoleName !== ADMIN_ROLE_NAME) {
+    throw new HttpError(400, 'unsupported_role', 'Only a full admin can be created — there are no restricted admin roles');
+  }
   const passwordHash = await argon2.hash(data.password);
   const user = await prisma.user.create({
-    data: { name: data.name, email: data.email, role: 'ADMIN', adminRoleName: data.adminRoleName as never, passwordHash, emailVerifiedAt: new Date() },
+    data: { name: data.name, email: data.email, role: 'ADMIN', adminRoleName: ADMIN_ROLE_NAME, passwordHash, emailVerifiedAt: new Date() },
     select: { id: true, name: true, email: true, adminRoleName: true, status: true },
   });
   await prisma.auditLog.create({ data: { adminId: createdByAdminId, action: 'admin.create', entity: `users/${user.id} (${data.email})`, ip: '127.0.0.1' } });
@@ -1489,6 +1497,20 @@ export async function createAdmin(data: { name: string; email: string; password:
 export async function updateAdmin(id: string, data: { adminRoleName?: string; status?: string }, adminId: string) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user || user.role !== 'ADMIN') throw new HttpError(404, 'not_found', 'Admin not found');
+  if (data.adminRoleName && data.adminRoleName !== ADMIN_ROLE_NAME) {
+    throw new HttpError(400, 'unsupported_role', 'There are no restricted admin roles to switch to');
+  }
+  // Don't let the console lock itself out: the last admin who can still sign in
+  // must stay signed-in-able. Without this, one PATCH can leave nobody able to
+  // administer the site, and there is no self-service way back in.
+  if (data.status && data.status !== 'ACTIVE') {
+    const otherActive = await prisma.user.count({
+      where: { role: 'ADMIN', status: 'ACTIVE', id: { not: id } },
+    });
+    if (otherActive === 0) {
+      throw new HttpError(409, 'last_admin', 'This is the only active admin — suspending it would lock everyone out');
+    }
+  }
   const updated = await prisma.user.update({ where: { id }, data: data as never, select: { id: true, name: true, email: true, adminRoleName: true, status: true } });
   await prisma.auditLog.create({ data: { adminId, action: 'admin.update', entity: `users/${id} (${user.email})`, afterJson: data as never, ip: '127.0.0.1' } });
   return updated;

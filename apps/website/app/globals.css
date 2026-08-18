@@ -211,6 +211,17 @@
    so filtering the tile pane is the standard approach. */
 .leaflet-container {
   background: rgb(var(--canvas)) !important;
+
+  /* Leaflet's stylesheet stacks its own chrome high — panes at z-index 400,
+     controls at 800, the corner containers at 1000 — and the map element itself
+     creates no stacking context, so those values escape into the root one and
+     paint over the fixed header (z-50): the navbar dropdowns rendered *behind*
+     the map. `isolation: isolate` traps all of it inside the map, which then
+     sits at z-0 like any other block. Overlays anchored to the map only need to
+     beat 0 now, so they use the normal scale (see explore-screen/explore-map). */
+  position: relative !important;
+  z-index: 0 !important;
+  isolation: isolate !important;
 }
 
 :root:not(.light) .leaflet-tile-pane {

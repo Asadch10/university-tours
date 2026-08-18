@@ -1,6 +1,7 @@
 import * as argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@ucpt/db';
+import { ADMIN_PERMISSIONS } from '@ucpt/types';
 import { config } from '../config.js';
 import { HttpError } from '../lib/http.js';
 import { logger } from '../lib/logger.js';
@@ -172,11 +173,18 @@ export async function resetPassword(token: string, newPassword: string) {
   return { ok: true as const };
 }
 
-async function getPermissions(adminRoleName: string | null | undefined): Promise<string[]> {
+/**
+ * Single-admin mode: an admin holds every permission, full stop.
+ *
+ * This used to read `admin_roles.permissions_json`, which made the token depend
+ * on a seeded row. If the row was missing the admin silently got `[]`, and when
+ * the row drifted from the console's list the token was quietly incomplete
+ * (that is exactly what happened — `contact.view` was absent in production).
+ * Deriving from the shared constant removes both failure modes.
+ */
+function getPermissions(adminRoleName: string | null | undefined): string[] {
   if (!adminRoleName) return [];
-  const { AdminRoleName } = await import('@ucpt/db');
-  const role = await prisma.adminRole.findUnique({ where: { role: adminRoleName as never } });
-  return (role?.permissionsJson as string[]) ?? [];
+  return [...ADMIN_PERMISSIONS];
 }
 
 export async function login(email: string, password: string) {
@@ -189,7 +197,7 @@ export async function login(email: string, password: string) {
   if (user.status === 'SUSPENDED') throw new HttpError(403, 'account_suspended', 'Account suspended');
   if (user.status === 'BANNED') throw new HttpError(403, 'account_banned', 'Account banned');
 
-  const permissions = await getPermissions(user.adminRoleName);
+  const permissions = getPermissions(user.adminRoleName);
 
   const accessPayload: JwtPayload = {
     sub: user.id,
@@ -261,7 +269,7 @@ export async function refresh(token: string) {
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user || user.status !== 'ACTIVE') throw new HttpError(401, 'user_inactive', 'User not active');
 
-  const permissions = await getPermissions(user.adminRoleName);
+  const permissions = getPermissions(user.adminRoleName);
   const accessToken = issueAccessToken({ sub: user.id, role: user.role, adminRoleName: user.adminRoleName ?? undefined, permissions });
   const { token: newRefreshToken } = issueRefreshToken(user.id);
 
@@ -280,7 +288,7 @@ export async function logout(token: string) {
 export async function getMe(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new HttpError(404, 'not_found', 'User not found');
-  const permissions = await getPermissions(user.adminRoleName);
+  const permissions = getPermissions(user.adminRoleName);
   return {
     id: user.id,
     email: user.email,

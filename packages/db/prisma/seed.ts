@@ -14,31 +14,13 @@ import {
   CampaignStatus,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { ADMIN_PERMISSIONS } from '@ucpt/types';
 
 const prisma = new PrismaClient();
 
-const ALL_PERMISSIONS = [
-  'dashboard.view',
-  'reports.view',
-  'applications.decide',
-  'questionnaires.manage',
-  'commission.set',
-  'transactions.view',
-  'payouts.record',
-  'refunds.issue',
-  'users.manage',
-  'listings.moderate',
-  'bookings.view',
-  'bookings.forcecancel',
-  'reviews.moderate',
-  'universities.manage',
-  'cms.edit',
-  'appconfig.manage',
-  'campaigns.send',
-  'templates.edit',
-  'admins.manage',
-  'audit.view',
-];
+// Single source of truth lives in @ucpt/types so the seed, the backend token and
+// the console's nav can never drift apart again.
+const ALL_PERMISSIONS = [...ADMIN_PERMISSIONS];
 
 
 async function main() {

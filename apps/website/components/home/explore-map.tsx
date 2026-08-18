@@ -187,19 +187,20 @@ export function ExploreMap() {
               panelWidth={400}
             />
 
-            {/* Dim scrim — fades map when detail panel is open.
-                z must sit ABOVE Leaflet's panes/controls (which go up to 1000). */}
+            {/* Dim scrim — fades map when detail panel is open. Leaflet is
+                isolated to its own stacking context (globals.css), so plain
+                z-10 clears the tiles and controls. */}
             <div
-              className={`pointer-events-none absolute inset-0 z-[1000] bg-black/20 transition-opacity duration-300 ${
+              className={`pointer-events-none absolute inset-0 z-10 bg-black/20 transition-opacity duration-300 ${
                 selected ? 'opacity-100' : 'opacity-0'
               }`}
               aria-hidden
             />
 
             {/* ── Detail panel — slides in from right on pin / list click ──
-                z-[1100] keeps it above the Leaflet zoom control + tiles. */}
+                z-20 keeps it above the scrim; both stay under the header. */}
             <div
-              className={`absolute inset-y-0 right-0 z-[1100] flex w-full max-w-[420px] flex-col overflow-y-auto bg-surface shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              className={`absolute inset-y-0 right-0 z-20 flex w-full max-w-[420px] flex-col overflow-y-auto bg-surface shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 selected ? 'translate-x-0' : 'translate-x-full'
               }`}
               aria-hidden={!selected}

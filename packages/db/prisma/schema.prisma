@@ -27,10 +27,11 @@ enum UserStatus {
   BANNED
 }
 
+// Single-admin mode: one admin role with full access. MANAGER and SUPPORT were
+// removed — the console never enforced them, so an account carrying one of those
+// labels still had every power, which made the label actively misleading.
 enum AdminRoleName {
   SUPER_ADMIN
-  MANAGER
-  SUPPORT
 }
 
 enum ServiceType {

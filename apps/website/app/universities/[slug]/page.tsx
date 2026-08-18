@@ -29,7 +29,7 @@ interface SchoolDetail {
   image: string | null;
   location: string | null;
   state: string | null;
-  tags: string[];
+  tags: string[] | null;
   toursFromCents: number | null;
   seoContent: string | null;
   enabled: boolean;
@@ -64,10 +64,21 @@ export async function generateMetadata({
   const { slug } = await params;
   const u = await fetchSchool(slug);
   if (!u) return { title: 'University not found' };
+  const title = `${u.name} — campus tours & student guides`;
+  const description = `${blurbFor(u)} Book a private tour or video consultation with a verified ${u.name} student.`;
   return {
-    title: `${u.name} — campus tours & student guides`,
-    description: `${blurbFor(u)} Book a private tour or video consultation with a verified ${u.name} student.`,
+    title,
+    description,
     alternates: { canonical: `/universities/${u.slug}` },
+    // Without these the root layout's generic site-wide OG tags win, so every
+    // school shared the same link preview.
+    openGraph: {
+      title,
+      description,
+      url: `/universities/${u.slug}`,
+      type: 'website',
+    },
+    twitter: { title, description },
   };
 }
 
@@ -103,6 +114,7 @@ export default async function UniversityDetailPage({
   const ambassadors = u._count?.sellerProfiles ?? 0;
   const blurb = blurbFor(u);
   const location = u.location ?? '';
+  const tags = u.tags ?? []; // the API omits tags entirely for schools that have none
 
   return (
     <div className="bg-surface pt-[var(--header-h)]">
@@ -185,13 +197,13 @@ export default async function UniversityDetailPage({
               {blurb}
             </p>
 
-            {u.tags.length > 0 && (
+            {tags.length > 0 && (
               <>
                 <h2 className="mt-9 font-display text-lg font-bold text-ink-900">
                   Popular programs
                 </h2>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {u.tags.map((t) => (
+                  {tags.map((t) => (
                     <span
                       key={t}
                       className="rounded-full border border-ink-200 bg-surface px-3.5 py-1.5 text-sm text-ink-700"

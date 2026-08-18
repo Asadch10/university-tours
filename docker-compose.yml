@@ -66,6 +66,8 @@ services:
         NEXT_PUBLIC_API_URL: https://${WEB_DOMAIN}
         NEXT_PUBLIC_API_BASE_URL: https://${WEB_DOMAIN}
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        # www is what's linked and shared, so canonicals/sitemap point there.
+        NEXT_PUBLIC_SITE_URL: https://www.${WEB_DOMAIN}
     restart: unless-stopped
     depends_on: [backend]
     networks: [ucpt]

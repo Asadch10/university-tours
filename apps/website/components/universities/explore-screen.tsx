@@ -155,7 +155,7 @@ export function ExploreScreen() {
 
         {/* Dim scrim — above Leaflet panes/controls */}
         <div
-          className={`pointer-events-none absolute inset-0 z-[1000] bg-black/20 transition-opacity duration-300 ${
+          className={`pointer-events-none absolute inset-0 z-10 bg-black/20 transition-opacity duration-300 ${
             selected ? 'opacity-100' : 'opacity-0'
           }`}
           aria-hidden
@@ -163,7 +163,7 @@ export function ExploreScreen() {
 
         {/* Detail panel */}
         <div
-          className={`absolute inset-y-0 right-0 z-[1100] flex w-full flex-col overflow-y-auto bg-surface shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:w-[380px] xl:w-[440px] ${
+          className={`absolute inset-y-0 right-0 z-20 flex w-full flex-col overflow-y-auto bg-surface shadow-[-8px_0_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:w-[380px] xl:w-[440px] ${
             selected ? 'translate-x-0' : 'translate-x-full'
           }`}
           aria-hidden={!selected}
@@ -272,7 +272,7 @@ export function ExploreScreen() {
         <button
           type="button"
           onClick={() => setView((v) => (v === 'list' ? 'map' : 'list'))}
-          className="absolute bottom-5 left-1/2 z-[1050] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-maroon-gradient px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors hover:brightness-110 lg:hidden"
+          className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-maroon-gradient px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition-colors hover:brightness-110 lg:hidden"
         >
           {view === 'list' ? (
             <>

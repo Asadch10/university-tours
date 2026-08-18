@@ -63,3 +63,46 @@ export interface EarningsSummary {
   netCents: Cents;
   balanceCents: Cents;
 }
+
+// --- Admin access model (single-admin mode) ------------------------------------
+/**
+ * The product ships ONE kind of admin: a single account with full access to the
+ * whole console. There are deliberately no Manager/Support tiers.
+ *
+ * The permission vocabulary below is kept because the console's nav and route
+ * guards are typed against it, and because it documents what each area of the
+ * console does — but every admin holds every permission. Nothing filters on it.
+ *
+ * This is the ONLY place the list is defined. It used to be duplicated between
+ * the seed and the admin app, which silently drifted (the seed was missing
+ * `contact.view`, so live tokens carried 20 of 21 permissions).
+ */
+export const ADMIN_PERMISSIONS = [
+  'dashboard.view',
+  'reports.view',
+  'applications.decide',
+  'questionnaires.manage',
+  'commission.set',
+  'transactions.view',
+  'payouts.record',
+  'refunds.issue',
+  'users.manage',
+  'listings.moderate',
+  'bookings.view',
+  'bookings.forcecancel',
+  'reviews.moderate',
+  'universities.manage',
+  'cms.edit',
+  'contact.view',
+  'appconfig.manage',
+  'campaigns.send',
+  'templates.edit',
+  'admins.manage',
+  'audit.view',
+] as const;
+
+export type Permission = (typeof ADMIN_PERMISSIONS)[number];
+
+/** The one admin role that exists. Stored on `User.adminRoleName`. */
+export const ADMIN_ROLE_NAME = 'SUPER_ADMIN' as const;
+export type AdminRoleNameValue = typeof ADMIN_ROLE_NAME;

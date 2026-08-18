@@ -42,11 +42,17 @@ export function requireRole(...roles: string[]) {
   };
 }
 
-/** Single-admin mode: any authenticated ADMIN passes all permission checks. */
-export function requirePermission(_permission: string) {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    if (!req.user) return next(unauthorized());
-    if (req.user.role !== 'ADMIN') return next(forbidden('Admin only'));
-    return next();
-  };
+/**
+ * The console guard. Single-admin mode: there is one kind of admin and it can do
+ * everything, so being an authenticated ADMIN *is* the whole check.
+ *
+ * This replaced `requirePermission('some.permission')`, which took a permission
+ * name and then ignored it. The behaviour was correct for single-admin mode but
+ * the name promised a granular check that was never performed — anyone reading a
+ * route saw an access rule that did not exist.
+ */
+export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) return next(unauthorized());
+  if (req.user.role !== 'ADMIN') return next(forbidden('Admin only'));
+  return next();
 }

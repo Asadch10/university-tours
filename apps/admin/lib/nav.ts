@@ -37,7 +37,10 @@ export interface NavSection {
 
 /**
  * The fifteen functional modules (Part II §5), grouped for the sidebar.
- * Each module's `permissions` drives navigation gating; pages re-check on mount.
+ * Single-admin mode: the one admin holds every permission, so nothing is filtered
+ * out of the nav. `permissions` is retained as documentation of what each module
+ * covers. (This line used to claim the nav gated on it and that pages re-checked
+ * on mount — neither has ever happened.)
  */
 export const NAV: NavSection[] = [
   {

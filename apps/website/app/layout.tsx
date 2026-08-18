@@ -9,9 +9,13 @@ import { ChromeGate } from '@/components/layout/site-chrome';
 import { ToastProvider } from '@/lib/toast';
 import { ThemeProvider, THEME_SCRIPT } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { SITE_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ucpt.example'),
+  // Every relative canonical/OG URL resolves against this — it was a placeholder
+  // domain, so canonicals pointed at a host that doesn't exist.
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: '/' },
   title: {
     default: 'University Campus Private Tours — Private tours led by real students',
     template: '%s · University Campus Private Tours',
@@ -27,9 +31,12 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: 'website',
+    url: '/',
     title: 'University Campus Private Tours',
     description: 'Private campus tours and video consultations with verified current students.',
     siteName: 'University Campus Private Tours',
+    locale: 'en_US',
+    // images comes from app/opengraph-image.tsx
   },
   twitter: { card: 'summary_large_image' },
 };
