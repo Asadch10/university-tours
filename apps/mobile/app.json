@@ -65,7 +65,7 @@
       "expo-font"
     ],
     "extra": {
-      "apiBaseUrl": "https://phpstack-1510285-6494046.cloudwaysapps.com",
+      "apiBaseUrl": "https://www.university.tours",
       "eas": {
         "projectId": "998998d6-11fd-473b-8b90-fa7fa131df46"
       }

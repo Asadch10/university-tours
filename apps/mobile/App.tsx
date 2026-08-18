@@ -42,7 +42,7 @@ function useNavTheme(): Theme {
 //   ucpt://verify-email?token=…   →  VerifyEmail screen (with route.params.token)
 // The https prefix is here for a future universal-link setup on the web domain.
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['ucpt://', 'https://phpstack-1510285-6494046.cloudwaysapps.com'],
+  prefixes: ['ucpt://', 'https://www.university.tours'],
   config: {
     screens: {
       VerifyEmail: 'verify-email',

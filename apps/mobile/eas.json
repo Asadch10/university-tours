@@ -17,13 +17,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://phpstack-1510285-6494046.cloudwaysapps.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://www.university.tours"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://phpstack-1510285-6494046.cloudwaysapps.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://www.university.tours"
       }
     }
   },
