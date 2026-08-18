@@ -7,6 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { font, colors, radius, spacing } from '../theme';
 import { session, friendlyError } from '../api/auth';
 import { accountApi } from '../api/account';
+import { INTENT_OPTIONS, intentApi, type IntentKey } from '../api/intent';
 import { registerForPush } from '../api/push';
 import { fetchUniversities, type UniversityPin } from '../api/schools';
 import { useToast } from '../components/Toast';
@@ -17,11 +18,9 @@ import type { Palette } from '../theme';
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 type Step = 'intent' | 'schools';
 
-const OPTIONS = [
-  { key: 'book', label: 'Book a private tour' },
-  { key: 'guide', label: 'Become a guide and host tours' },
-  { key: 'other', label: 'Other' },
-];
+// Same three choices, same `key` strings, as the website's onboarding — the value
+// is persisted as profileJson.intent and the backend maps it to the account role.
+const OPTIONS = INTENT_OPTIONS;
 
 /** First-run welcome: pick an intent, then (for buyers) the schools you're interested in. */
 export function OnboardingScreen({ navigation }: Props) {
@@ -29,7 +28,7 @@ export function OnboardingScreen({ navigation }: Props) {
   const styles = useStyles(makeStyles);
   const toast = useToast();
   const [firstName, setFirstName] = useState('');
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState<IntentKey | ''>('');
   const [step, setStep] = useState<Step>('intent');
   const [saving, setSaving] = useState(false);
 
@@ -49,10 +48,10 @@ export function OnboardingScreen({ navigation }: Props) {
     navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
   }
 
-  async function finish(intent: string, chosenSchools?: string[]) {
+  async function finish(intent: IntentKey, chosenSchools?: string[]) {
     setSaving(true);
     try {
-      const res = await accountApi.completeOnboarding(intent, chosenSchools);
+      const res = await intentApi.save(intent, chosenSchools);
       if (res.role) await session.setUser({ role: res.role });
       goMain();
     } catch (e) {
@@ -62,7 +61,9 @@ export function OnboardingScreen({ navigation }: Props) {
   }
 
   function intentContinue() {
-    if (selected === 'book') {
+    if (!selected) return;
+    // Guests get the schools-of-interest step; guides and counselors are done here.
+    if (selected === 'guest') {
       setStep('schools');
       return;
     }
@@ -71,7 +72,7 @@ export function OnboardingScreen({ navigation }: Props) {
 
   function schoolsContinue() {
     const customList = custom.split(',').map((s) => s.trim()).filter(Boolean);
-    finish('book', Array.from(new Set([...schools, ...customList])));
+    finish('guest', Array.from(new Set([...schools, ...customList])));
   }
 
   const toggleSchool = (name: string) =>
@@ -99,7 +100,10 @@ export function OnboardingScreen({ navigation }: Props) {
                     <View style={[styles.radio, active && styles.radioActive]}>
                       {active && <View style={styles.radioDot} />}
                     </View>
-                    <Text style={styles.optionLabel}>{o.label}</Text>
+                    <View style={styles.optionText}>
+                      <Text style={styles.optionLabel}>{o.label}</Text>
+                      <Text style={styles.optionDescription}>{o.description}</Text>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -198,7 +202,11 @@ const makeStyles = (tc: Palette) =>
   },
   radioActive: { borderColor: tc.maroon800 },
   radioDot: { height: 10, width: 10, borderRadius: 5, backgroundColor: tc.maroon800 },
-  optionLabel: { flex: 1, fontSize: font(15), fontWeight: '600', color: tc.ink900 },
+  // The label + its description sit in a column; flex lives on the column so the
+  // radio stays pinned left and long descriptions wrap instead of overflowing.
+  optionText: { flex: 1 },
+  optionLabel: { fontSize: font(15), fontWeight: '600', color: tc.ink900 },
+  optionDescription: { fontSize: font(13), lineHeight: 18, color: tc.ink500, marginTop: 2 },
 
   chosenRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2), marginTop: spacing(5) },
   chosenChip: {

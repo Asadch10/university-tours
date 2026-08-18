@@ -61,9 +61,17 @@ export interface CreateGuideBookingResult extends BookingDto {
   publishableKey: string | null;
 }
 
+/** The three ways to look at a booking list — mirrors the website's My Tours. */
+export type BookingPerspective = 'guest' | 'guide' | 'counselor';
+
 export const bookingsApi = {
   // as: 'guest' (tours I booked) | 'guide' (tours I host)
-  list: (as: 'guest' | 'guide') => api.request<Paged<BookingDto>>('GET', `/bookings?as=${as}`),
+  /**
+   * Bookings from one perspective. `guest` = what I booked (buyer side);
+   * `guide` / `counselor` = sessions I host (seller side), each narrowed to that
+   * marketplace so the two never bleed into one another.
+   */
+  list: (as: BookingPerspective) => api.request<Paged<BookingDto>>('GET', `/bookings?as=${as}`),
   // Book a community guide (requires sign-in). Creates the booking as PENDING_PAYMENT
   // and, when payments are enabled, returns a Stripe client secret to authorize the card.
   createGuide: (input: CreateGuideBookingInput) =>

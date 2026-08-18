@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { font, colors, radius, spacing } from '../../theme';
-import { accountApi, type MyProfileDto } from '../../api/account';
+import { type MyProfileDto } from '../../api/account';
+import { INTENT_OPTIONS, intentApi, intentOptionFor, type IntentKey } from '../../api/intent';
 import { friendlyError } from '../../api/auth';
 import { useToast } from '../../components/Toast';
 import { PrimaryButton } from './kit';
 import { useStyles } from '../../theme-context';
 import type { Palette } from '../../theme';
 
-const OPTIONS = [
-  { key: 'book', label: 'Book a private tour' },
-  { key: 'guide', label: 'Become a guide and host tours' },
-  { key: 'other', label: 'Other' },
-];
+// Shared with the onboarding screen so the two can't drift apart.
+const OPTIONS = INTENT_OPTIONS;
 
 export function CollegeStatusSection({
   profile,
@@ -22,22 +20,23 @@ export function CollegeStatusSection({
   onSaved?: (next: { role: MyProfileDto['role']; intent: string }) => void;
 }) {
   const styles = useStyles(makeStyles);
-  const [selected, setSelected] = useState('book');
+  const [selected, setSelected] = useState<IntentKey>('guest');
   const [saving, setSaving] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
     if (!profile) return;
     const p = (profile.profileJson ?? {}) as Record<string, unknown>;
-    if (p.intent === 'book' || p.intent === 'guide' || p.intent === 'other') setSelected(p.intent);
-    else if (profile.role === 'SELLER') setSelected('guide');
-    else if (profile.role === 'BUYER') setSelected('book');
+    // Accounts onboarded on an older build carry the legacy intents
+    // ('book' / 'other'); intentOptionFor folds those onto a current option so
+    // the section never renders with nothing selected.
+    setSelected(intentOptionFor(p.intent, profile.role).key);
   }, [profile]);
 
   async function save() {
     setSaving(true);
     try {
-      const res = await accountApi.completeOnboarding(selected);
+      const res = await intentApi.save(selected);
       // Sync BOTH the role and the saved intent up to the parent's cached profile,
       // so re-opening this section reflects the new choice instead of reverting.
       onSaved?.({ role: res.role ?? profile?.role ?? null, intent: selected });
@@ -64,7 +63,10 @@ export function CollegeStatusSection({
               <View style={[styles.radio, active && styles.radioActive]}>
                 {active && <View style={styles.radioDot} />}
               </View>
-              <Text style={styles.optionLabel}>{o.label}</Text>
+              <View style={styles.optionText}>
+                <Text style={styles.optionLabel}>{o.label}</Text>
+                <Text style={styles.optionDescription}>{o.description}</Text>
+              </View>
             </Pressable>
           );
         })}
@@ -103,5 +105,7 @@ const makeStyles = (tc: Palette) =>
   },
   radioActive: { borderColor: tc.maroon800 },
   radioDot: { height: 10, width: 10, borderRadius: 5, backgroundColor: tc.maroon800 },
+  optionText: { flex: 1 },
   optionLabel: { fontSize: font(15), fontWeight: '600', color: tc.ink900 },
+  optionDescription: { fontSize: font(13), lineHeight: 18, color: tc.ink500, marginTop: 2 },
 });

@@ -26,6 +26,7 @@ import {
   type BookingDto,
   type BookingStatus,
   type BookingServiceType,
+  type BookingPerspective,
 } from '../api/bookings';
 import { friendlyError } from '../api/auth';
 import { BookingCardSkeleton } from '../components/Skeleton';
@@ -33,13 +34,16 @@ import { SERVICE_LABEL } from '../tour-types';
 import { useStyles, useThemeColors } from '../theme-context';
 import type { Palette } from '../theme';
 
-type ViewKey = 'guest' | 'guide';
+type ViewKey = BookingPerspective;
 type TabKey = 'requests' | 'confirmed' | 'past' | 'canceled';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
+// Same three perspectives as the website's My Tours. 'guest' is the buyer side;
+// 'guide' and 'counselor' are both the seller side, split by marketplace.
 const VIEWS: { key: ViewKey; label: string }[] = [
   { key: 'guest', label: 'As guest' },
   { key: 'guide', label: 'As guide' },
+  { key: 'counselor', label: 'As counselor' },
 ];
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -198,8 +202,10 @@ export function MyToursScreen() {
               <Text style={styles.emptyTitle}>No tours yet</Text>
               <Text style={styles.emptyText}>
                 {view === 'guest'
-                  ? 'Tours you book with student guides will show up here.'
-                  : 'Tour requests from families will show up here once you’re listed as a guide.'}
+                  ? 'Tours and consultations you book will show up here.'
+                  : view === 'counselor'
+                    ? 'Consultation requests from families will show up here once you’re listed as a counselor.'
+                    : 'Tour requests from families will show up here once you’re listed as a guide.'}
               </Text>
             </View>
           }
@@ -294,9 +300,11 @@ function BookingDetail({
 
   const { icon, label: serviceLabel } = serviceMeta(b.serviceType);
   const st = statusStyles(tc)[b.status];
-  const isGuide = view === 'guide';
-  const canAcceptDecline = isGuide && b.status === 'PENDING';
-  const canComplete = isGuide && b.status === 'CONFIRMED';
+  // Both 'guide' and 'counselor' are the host side of a booking — only 'guest'
+  // is the buyer. Gating on 'guide' alone stranded counselors with no actions.
+  const isHost = view !== 'guest';
+  const canAcceptDecline = isHost && b.status === 'PENDING';
+  const canComplete = isHost && b.status === 'CONFIRMED';
   const needsLink = b.serviceType === 'VIDEO_CONSULTATION' || b.serviceType === 'CONSULTATION';
   const validLink = /^https?:\/\/.+/i.test(meetingLink.trim());
 
@@ -446,7 +454,7 @@ function BookingDetail({
           )}
 
           {/* Guest waiting note */}
-          {!isGuide && b.status === 'PENDING' && needsLink && (
+          {!isHost && b.status === 'PENDING' && needsLink && (
             <Text style={styles.note}>
               Once {otherFirst} confirms, your meeting link will appear here and in your email.
             </Text>
@@ -467,12 +475,12 @@ function BookingDetail({
             (existingReview ? (
               <View style={styles.inputBox}>
                 <Text style={styles.inputLabel}>
-                  <Ionicons name="star" size={14} color={tc.gold500} /> {isGuide ? `${otherFirst}’s review` : 'Your review'}
+                  <Ionicons name="star" size={14} color={tc.gold500} /> {isHost ? `${otherFirst}’s review` : 'Your review'}
                 </Text>
                 <StarsStatic value={existingReview.rating} />
                 {existingReview.text ? <Text style={styles.reviewText}>“{existingReview.text}”</Text> : null}
               </View>
-            ) : isGuide ? (
+            ) : isHost ? (
               <Text style={styles.note}>No review yet — {otherFirst} can leave one from their My tours.</Text>
             ) : (
               <View style={styles.inputBox}>
