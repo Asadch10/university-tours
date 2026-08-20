@@ -1,8 +1,10 @@
 // Barrel for screens — each root-tab screen lives in its own file.
-// Buyer tabs: Home / Explore / Guide / My Tours / Settings.
+// Buyer tabs: Home / Explore / Browse / My Tours / Settings.
+// Browse holds BOTH marketplaces behind a segmented switch, so adding
+// counselors didn't cost a sixth bottom tab.
 export { HomeScreen } from './HomeScreen';
 export { ExploreScreen } from './ExploreScreen';
-export { GuideScreen } from './GuideScreen';
+export { BrowseScreen } from './BrowseScreen';
 export { MyToursScreen } from './MyToursScreen';
 export { SettingsScreen } from './SettingsScreen';
 

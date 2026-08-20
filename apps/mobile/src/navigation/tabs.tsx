@@ -1,5 +1,5 @@
 // Role-aware bottom tabs (Part V §6).
-// Buyer: Home / Browse / Guide / My Tours / Profile.
+// Buyer: Home / Explore / Browse / My Tours / Settings.
 // Ambassador: Requests / Listings / Earnings / Messages / Profile.
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import type { ComponentProps } from 'react';
 import {
   HomeScreen,
   ExploreScreen,
-  GuideScreen,
+  BrowseScreen,
   MyToursScreen,
   SettingsScreen,
   MessagesScreen,
@@ -55,9 +55,9 @@ export function BuyerTabs() {
         options={{ tabBarIcon: tabIcon('compass-outline', 'compass') }}
       />
       <Tab.Screen
-        name="Guide"
-        component={GuideScreen}
-        options={{ tabBarIcon: tabIcon('school-outline', 'school') }}
+        name="Browse"
+        component={BrowseScreen}
+        options={{ tabBarIcon: tabIcon('search-outline', 'search') }}
       />
       <Tab.Screen
         name="My Tours"

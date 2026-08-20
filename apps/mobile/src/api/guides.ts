@@ -9,7 +9,7 @@ import { SERVICE_LABEL_SHORT } from '../tour-types';
 const API_BASE = API_BASE_URL.replace(/\/$/, '');
 
 /** Full http URL stays; a leading-slash path is prefixed with the API origin; else null. */
-function absPhoto(v: unknown): string | null {
+export function absPhoto(v: unknown): string | null {
   if (typeof v !== 'string' || !v) return null;
   if (/^https?:\/\//.test(v)) return v;
   if (v.startsWith('/')) return `${API_BASE}${v}`;
@@ -121,7 +121,7 @@ const sortTimes = (times: string[]): string[] =>
 const isDateStr = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** Defensively normalize per-tour-type availability from the listing JSON. */
-function parseAvailability(value: unknown): Availability {
+export function parseAvailability(value: unknown): Availability {
   const out: Availability = {};
   if (!value || typeof value !== 'object' || Array.isArray(value)) return out;
   const obj = value as Record<string, unknown>;
@@ -144,7 +144,7 @@ function parseAvailability(value: unknown): Availability {
  * display labels — renaming them would drop services from every existing listing.
  * See src/tour-types.ts.
  */
-function mapServices(tourTypes: unknown): GuideService[] {
+export function mapServices(tourTypes: unknown): GuideService[] {
   const t = strArr(tourTypes);
   const out: GuideService[] = [];
   if (t.includes('Campus tour')) out.push('CAMPUS_TOUR');
