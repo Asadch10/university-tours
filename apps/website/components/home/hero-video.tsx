@@ -45,6 +45,24 @@ const PLAYBACK_RATE = 0.75;
  */
 const FOCAL_Y = '28%';
 
+/**
+ * Every clip has a "PixVerse.ai" watermark burned into the top-right corner by the
+ * tool that generated it — measured at x 881-995, y 28-47 of the 1024x576 source,
+ * i.e. starting at 86% of the width. Scaling the player up and anchoring it to the
+ * left pushes that corner outside the container, which is overflow-hidden, so the
+ * mark is cropped away rather than covered up.
+ *
+ * 1.163 is the minimum that clears it; 1.18 leaves a margin so the mark can't creep
+ * back in if a clip is ever re-exported slightly differently. The 30% vertical
+ * anchor keeps most of the added crop off the BOTTOM, matching FOCAL_Y — the clips
+ * frame faces in the upper third.
+ *
+ * If the clips are ever re-generated without a watermark, drop this back to 1 and
+ * the framing returns to the original composition.
+ */
+const WATERMARK_ZOOM = 1.18;
+const WATERMARK_ZOOM_ORIGIN = '0% 30%';
+
 /** Fisher–Yates, optionally guaranteeing the first item isn't `avoid`. */
 function shuffle(list: string[], avoid?: string): string[] {
   const a = [...list];
@@ -187,6 +205,9 @@ export function HeroVideo({ poster }: { poster: string }) {
               // weight — a linear fade reads as a dip through the darker frame.
               transition: `opacity ${FADE_MS}ms cubic-bezier(0.4, 0, 0.6, 1)`,
               objectPosition: `50% ${FOCAL_Y}`,
+              // Crops the generator's watermark out of the top-right — see above.
+              transform: `scale(${WATERMARK_ZOOM})`,
+              transformOrigin: WATERMARK_ZOOM_ORIGIN,
               pointerEvents: 'none',
             }}
           />
