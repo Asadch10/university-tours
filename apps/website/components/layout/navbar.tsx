@@ -228,7 +228,7 @@ export function Navbar() {
             <>
               {/* Signed out: each marketplace is a submenu pairing Browse with Join.
                   Signed in, those collapse into the flat links above. */}
-              <NavDropdown label="Guides" items={GUIDE_ITEMS} pathname={pathname} />
+              <NavDropdown label="Tour Guide" items={GUIDE_ITEMS} pathname={pathname} />
               <NavDropdown label="College counselors" items={COUNSELOR_ITEMS} pathname={pathname} />
               <NavDropdown label="About" items={ABOUT_ITEMS} pathname={pathname} />
               <NavDropdown label="Help" items={HELP_ITEMS} pathname={pathname} />
@@ -293,7 +293,7 @@ export function Navbar() {
                     labelled groups. Signed in, those links are already flat above. */}
                 {!user &&
                   ([
-                    { title: 'Guides', items: GUIDE_ITEMS },
+                    { title: 'Tour Guide', items: GUIDE_ITEMS },
                     { title: 'College counselors', items: COUNSELOR_ITEMS },
                   ] as const).map((group) => (
                     <li key={group.title}>
