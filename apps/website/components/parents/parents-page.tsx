@@ -16,8 +16,7 @@ export function ParentsPage() {
         <img
           src={HERO}
           alt="A parent and child exploring a campus together"
-          className="absolute inset-0 h-full w-full object-cover object-[65%_center] sm:object-center"
-        />
+          className="absolute inset-0 h-full w-full object-cover object-[65%_center] sm:object-center" loading="eager" fetchPriority="high" decoding="async"/>
         {/* Mobile: bottom-up gradient keeps the heading readable */}
         <div
           className="absolute inset-0 sm:hidden"
@@ -75,8 +74,7 @@ export function ParentsPage() {
                 src={SPLIT_1}
                 alt="A father and son laughing together on campus"
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.03]"
-              />
+                className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.03]" decoding="async"/>
             </div>
           </Reveal>
           <Reveal delay={0.1}>
@@ -121,8 +119,7 @@ export function ParentsPage() {
                 src={SPLIT_2}
                 alt="A student and parent talking on campus"
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.03]"
-              />
+                className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.03]" decoding="async"/>
             </div>
           </Reveal>
         </div>

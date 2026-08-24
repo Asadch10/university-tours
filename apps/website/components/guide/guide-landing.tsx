@@ -145,8 +145,7 @@ function Hero() {
                 key={n}
                 src={`https://i.pravatar.cc/80?img=${n}`}
                 alt=""
-                className="h-9 w-9 rounded-full border-2 border-white object-cover"
-              />
+                className="h-9 w-9 rounded-full border-2 border-white object-cover" loading="lazy" decoding="async"/>
             ))}
           </div>
           <span className="text-sm font-medium text-ink-600">Join 1,000+ guides</span>
@@ -157,7 +156,7 @@ function Hero() {
       <div className="relative">
         <div className="overflow-hidden rounded-3xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={HERO_IMAGE} alt="Student guides on campus" className="aspect-[4/5] w-full object-cover sm:aspect-[4/3]" />
+          <img src={HERO_IMAGE} alt="Student guides on campus" className="aspect-[4/5] w-full object-cover sm:aspect-[4/3]" loading="eager" fetchPriority="high" decoding="async"/>
         </div>
 
         {/* New Tour Request */}
@@ -269,7 +268,7 @@ function MeetGuides() {
                     className="relative h-[420px] w-[75vw] max-w-[270px] shrink-0 snap-start overflow-hidden rounded-2xl sm:w-[270px]"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={t.photo} alt={t.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                    <img src={t.photo} alt={t.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async"/>
                     <div
                       className="absolute inset-0"
                       style={{
@@ -348,7 +347,7 @@ function BringSchoolToLife() {
               <div key={u.slug} data-card className="w-[60vw] max-w-[240px] shrink-0 snap-start sm:w-[240px]">
                 <div className="aspect-[4/3] overflow-hidden rounded-2xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u.image} alt={u.name} loading="lazy" className="h-full w-full object-cover" />
+                  <img src={u.image} alt={u.name} loading="lazy" className="h-full w-full object-cover" decoding="async"/>
                 </div>
                 <p className="mt-3 text-sm font-bold text-ink-900">{u.name}</p>
                 <p className="text-xs text-ink-500">{u.ambassadors} guides</p>
@@ -412,7 +411,7 @@ function HostingSection() {
         <div className="mt-12 grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
           <div className="relative aspect-square overflow-hidden rounded-3xl lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={STEP_IMAGE} alt="Student guides on campus" className="h-full w-full object-cover" />
+            <img src={STEP_IMAGE} alt="Student guides on campus" className="h-full w-full object-cover" loading="lazy" decoding="async"/>
           </div>
 
           <div className="space-y-2">

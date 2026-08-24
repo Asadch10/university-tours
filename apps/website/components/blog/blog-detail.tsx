@@ -48,8 +48,7 @@ export function BlogDetail({ post }: { post: BlogPost }) {
             <img
               src={post.author.avatar}
               alt={post.author.name}
-              className="h-11 w-11 rounded-full object-cover"
-            />
+              className="h-11 w-11 rounded-full object-cover" loading="lazy" decoding="async"/>
             <div>
               <p className="text-sm font-bold text-ink-900">{post.author.name}</p>
               <p className="text-xs text-ink-500">{post.author.role}</p>
@@ -62,7 +61,7 @@ export function BlogDetail({ post }: { post: BlogPost }) {
       <div className="container-page mt-10">
         <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl shadow-lift">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.image} alt={post.title} className="aspect-[16/9] w-full object-cover" />
+          <img src={post.image} alt={post.title} className="aspect-[16/9] w-full object-cover" loading="lazy" decoding="async"/>
         </div>
       </div>
 
@@ -125,9 +124,8 @@ export function BlogDetail({ post }: { post: BlogPost }) {
                     <img
                       src={p.image}
                       alt={p.title}
-                      loading="lazy"
-                      className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
-                    />
+                      loading="eager" fetchPriority="high"
+                      className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" decoding="async"/>
                   </div>
                   <h3 className="mt-3 font-display text-lg font-bold leading-snug text-ink-900 transition-colors group-hover:text-brand">
                     {p.title}

@@ -141,8 +141,7 @@ function Hero() {
           <img
             src={PHOTOS.consultation.src}
             alt={PHOTOS.consultation.alt}
-            className="aspect-[4/5] w-full object-cover sm:aspect-[4/3]"
-          />
+            className="aspect-[4/5] w-full object-cover sm:aspect-[4/3]" loading="eager" fetchPriority="high" decoding="async"/>
         </div>
 
         <div className="absolute left-4 top-4 hidden items-center gap-3 rounded-2xl bg-surface p-3 pr-5 shadow-lift sm:flex">

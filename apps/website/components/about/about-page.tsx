@@ -93,8 +93,7 @@ function Hero() {
         src={HERO_BG}
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover object-[70%_center] sm:object-center"
-      />
+        className="absolute inset-0 h-full w-full object-cover object-[70%_center] sm:object-center" loading="eager" fetchPriority="high" decoding="async"/>
       <div
         className="absolute inset-0"
         style={{
@@ -223,8 +222,7 @@ function ValueBlocks() {
                     src={b.image}
                     alt={b.alt}
                     loading="lazy"
-                    className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.03]"
-                  />
+                    className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.03]" decoding="async"/>
                 </div>
               </Reveal>
               <Reveal delay={0.1} className={reversed ? 'lg:order-1' : ''}>
@@ -296,8 +294,7 @@ function StudentExperiences() {
                   alt={s.title}
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
                     i === index ? 'opacity-100' : 'opacity-0'
-                  }`}
-                />
+                  }`} loading="lazy" decoding="async"/>
               ))}
               <div
                 className="absolute inset-0"
@@ -399,8 +396,7 @@ function DiscoverUniversity() {
                   src={c.src}
                   alt=""
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.05]"
-                />
+                  className="h-full w-full object-cover transition-transform duration-500 ease-premium hover:scale-[1.05]" decoding="async"/>
               </div>
             ))}
           </div>
@@ -437,8 +433,7 @@ function Resources() {
                   src={r.image}
                   alt=""
                   loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
-                />
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" decoding="async"/>
                 <div
                   className="absolute inset-0"
                   style={{

@@ -144,8 +144,7 @@ export function MapView({ universities, selectedId, onSelect, panelWidth = 400 }
             src="${u.image}"
             alt="${u.name}"
             style="width:252px;height:148px;object-fit:cover;display:block;"
-            onerror="this.style.display='none'"
-          />`
+            onerror="this.style.display='none'" loading="lazy" decoding="async"/>`
               : ''
           }
           <div style="padding:10px 14px 14px;background:${css('--surface')};">

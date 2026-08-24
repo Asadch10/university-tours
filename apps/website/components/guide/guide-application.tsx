@@ -614,7 +614,7 @@ export function GuideApplication() {
                     </>
                   ) : idPhoto ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={idPhoto} alt="Student ID" className="h-full w-full rounded-xl object-cover" />
+                    <img src={idPhoto} alt="Student ID" className="h-full w-full rounded-xl object-cover" loading="lazy" decoding="async"/>
                   ) : (
                     <>
                       <ImagePlus size={24} className="text-ink-400" />
@@ -688,7 +688,7 @@ export function GuideApplication() {
                     <div className="aspect-square overflow-hidden rounded-2xl bg-ink-100">
                       {gg.img && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={gg.img} alt="" className="h-full w-full object-cover" />
+                        <img src={gg.img} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async"/>
                       )}
                     </div>
                     <h2 className="mt-4 font-display text-xl font-semibold text-ink-900">{gg.title}</h2>
@@ -740,7 +740,7 @@ export function GuideApplication() {
                 {photos.map((src, i) => (
                   <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border border-ink-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                    <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async"/>
                     <button
                       type="button"
                       onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}

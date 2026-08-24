@@ -263,8 +263,7 @@ export function GuideSearchBar({
                     <img
                       src={u.image}
                       alt={u.name}
-                      className="h-12 w-12 shrink-0 rounded-xl object-cover"
-                    />
+                      className="h-12 w-12 shrink-0 rounded-xl object-cover" loading="lazy" decoding="async"/>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-ink-900">{u.name}</p>
                       <p className="truncate text-xs text-ink-500">{u.location}</p>

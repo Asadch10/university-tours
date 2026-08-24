@@ -68,7 +68,7 @@ export default async function GuideProfilePage({ params }: { params: Promise<{ i
           <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start">
             <div className="h-40 w-40 shrink-0 overflow-hidden rounded-2xl border border-ink-200 bg-ink-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={g.photo} alt={g.name} className="h-full w-full object-contain" />
+              <img src={g.photo} alt={g.name} className="h-full w-full object-contain" loading="eager" fetchPriority="high" decoding="async"/>
             </div>
             <div className="min-w-0">
               {g.university && (

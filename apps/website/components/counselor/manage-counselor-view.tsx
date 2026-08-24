@@ -591,7 +591,7 @@ function EditCounselorModal({
           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border border-ink-200 bg-canvas-alt">
             {photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="" className="h-full w-full object-cover" />
+              <img src={photo} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async"/>
             ) : (
               <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-ink-400">
                 Photo

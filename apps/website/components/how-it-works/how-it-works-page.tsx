@@ -160,7 +160,7 @@ function Process() {
           <Reveal>
             <div className="overflow-hidden rounded-3xl shadow-card lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={data.image} alt={data.alt} className="aspect-[4/5] w-full object-cover sm:aspect-square" />
+              <img src={data.image} alt={data.alt} className="aspect-[4/5] w-full object-cover sm:aspect-square" loading="eager" fetchPriority="high" decoding="async"/>
             </div>
           </Reveal>
 

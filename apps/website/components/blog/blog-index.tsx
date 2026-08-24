@@ -129,8 +129,7 @@ function FeaturedCard({ post }: { post: BlogPost }) {
           <img
             src={post.image}
             alt={post.title}
-            className="aspect-[16/11] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-[1.03]"
-          />
+            className="aspect-[16/11] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-[1.03]" loading="lazy" decoding="async"/>
           <div
             className="absolute inset-0"
             style={{
@@ -161,8 +160,7 @@ function SidebarItem({ post }: { post: BlogPost }) {
           src={post.image}
           alt=""
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
-        />
+          className="h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" decoding="async"/>
       </div>
       <div className="min-w-0">
         <h3 className="text-[0.95rem] font-bold leading-snug text-ink-900 transition-colors group-hover:text-brand">
@@ -183,8 +181,7 @@ function PostCard({ post }: { post: BlogPost }) {
           src={post.image}
           alt={post.title}
           loading="lazy"
-          className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
-        />
+          className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" decoding="async"/>
       </div>
       <div className="mt-4">
         <div className="flex items-center gap-3 text-xs text-ink-500">

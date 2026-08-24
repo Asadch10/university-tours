@@ -46,7 +46,7 @@ export function SimplePage({
 
           <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-ink-100 bg-ink-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt={imageAlt} className="h-full w-full object-cover" />
+            <img src={image} alt={imageAlt} className="h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
           </div>
         </div>
 

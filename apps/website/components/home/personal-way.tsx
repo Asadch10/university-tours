@@ -109,8 +109,7 @@ export function PersonalWay() {
                 className={cn(
                   'absolute inset-0 h-full w-full object-cover transition-opacity duration-500',
                   active === i ? 'opacity-100' : 'opacity-0',
-                )}
-              />
+                )} decoding="async"/>
             ))}
           </div>
         </div>

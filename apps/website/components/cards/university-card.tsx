@@ -34,8 +34,7 @@ export function UniversityCard({ u }: { u: University }) {
         <img
           src="/logo.svg"
           alt=""
-          className="absolute -right-4 -top-3 h-28 w-28 opacity-20 transition-transform duration-500 ease-premium group-hover:scale-110"
-        />
+          className="absolute -right-4 -top-3 h-28 w-28 opacity-20 transition-transform duration-500 ease-premium group-hover:scale-110" loading="lazy" decoding="async"/>
         <div className="absolute bottom-3 left-5 right-5 flex items-center justify-between">
           <Badge variant="light">{u.state}</Badge>
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-ivory ring-1 ring-inset ring-white/30 backdrop-blur transition-transform duration-300 group-hover:rotate-45">

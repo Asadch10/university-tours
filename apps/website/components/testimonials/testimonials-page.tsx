@@ -152,7 +152,7 @@ function ImageCard({ r }: { r: Review }) {
   return (
     <figure className="relative mb-5 break-inside-avoid overflow-hidden rounded-2xl">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={r.photo} alt={r.name} loading="lazy" className="w-full object-cover" />
+      <img src={r.photo} alt={r.name} loading="lazy" className="w-full object-cover" decoding="async"/>
       <div
         className="absolute inset-0"
         style={{
@@ -185,7 +185,7 @@ function TextCard({ r }: { r: Review }) {
       </blockquote>
       <figcaption className="mt-6 flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={r.photo} alt={r.name} className="h-10 w-10 rounded-full object-cover" />
+        <img src={r.photo} alt={r.name} className="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async"/>
         <div>
           <p className="text-sm font-bold text-ink-900">{r.name}</p>
           <p className="text-xs text-ink-500">{r.university}</p>

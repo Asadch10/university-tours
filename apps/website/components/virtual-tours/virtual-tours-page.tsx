@@ -78,7 +78,7 @@ function Hero() {
             <div className="flex -space-x-2.5">
               {[32, 45, 44].map((n) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={n} src={`https://i.pravatar.cc/80?img=${n}`} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                <img key={n} src={`https://i.pravatar.cc/80?img=${n}`} alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" loading="lazy" decoding="async"/>
               ))}
             </div>
             <span className="text-sm font-medium text-ink-600">Trusted by thousands of guests</span>
@@ -89,7 +89,7 @@ function Hero() {
       <Reveal delay={0.1}>
         <div className="overflow-hidden rounded-3xl shadow-lift">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={HERO} alt="A current student on a live video call" className="w-full object-cover" />
+          <img src={HERO} alt="A current student on a live video call" className="w-full object-cover" loading="lazy" decoding="async"/>
         </div>
       </Reveal>
     </section>
@@ -106,8 +106,7 @@ function BentoCard({ image, label, className }: { image: string; label: string; 
         src={image}
         alt={label}
         loading="lazy"
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
-      />
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" decoding="async"/>
       <div
         className="absolute inset-0"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 55%)' }}

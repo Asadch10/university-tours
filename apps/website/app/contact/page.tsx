@@ -51,8 +51,7 @@ export default function ContactPage() {
           src="https://sharetribe-assets.imgix.net/66bd8713-d668-473a-b949-d147109fe10b/raw/c7/c6221e02913f46d88b662b1fede3a3c98bf15c?auto=format&fit=clip&h=2400&w=2400&s=b0d38cccc08ec7ca71c7034a23861467"
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+          className="absolute inset-0 h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
         <div className="absolute inset-0 bg-blue-950/40" aria-hidden />
         <div className="container-page relative py-16 sm:py-24 lg:py-28">
           <div className="mx-auto max-w-3xl text-center">

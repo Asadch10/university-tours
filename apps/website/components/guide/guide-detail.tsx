@@ -50,7 +50,7 @@ export function GuideDetail({ g }: { g: GuideProfile }) {
 
               <div className="mt-5 flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={g.photo} alt={g.name} className="h-12 w-12 rounded-full object-cover ring-1 ring-ink-200" />
+                <img src={g.photo} alt={g.name} className="h-12 w-12 rounded-full object-cover ring-1 ring-ink-200" loading="lazy" decoding="async"/>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-ink-900">{g.name}</p>
                   <p className="truncate text-sm text-ink-600">{g.university}</p>
@@ -191,7 +191,7 @@ function UniversityRow({ g }: { g: GuideProfile }) {
     >
       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={g.universityImage} alt="" className="h-full w-full object-cover" />
+        <img src={g.universityImage} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async"/>
       </div>
       <div>
         <p className="font-bold text-ink-900">{g.university}</p>
@@ -351,8 +351,7 @@ function HostedBy({ g }: { g: GuideProfile }) {
         <img
           src={g.photo}
           alt={g.name}
-          className="h-24 w-24 shrink-0 rounded-full object-cover ring-1 ring-ink-200"
-        />
+          className="h-24 w-24 shrink-0 rounded-full object-cover ring-1 ring-ink-200" loading="lazy" decoding="async"/>
         <div>
           <p className="text-justify leading-relaxed text-ink-700 sm:text-left">{g.hostedBy}</p>
           <Link

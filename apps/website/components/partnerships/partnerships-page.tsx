@@ -107,7 +107,7 @@ function Hero() {
       <Reveal delay={0.15} className="container-page relative mt-14">
         <div className="overflow-hidden rounded-t-3xl shadow-lift">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={HERO_MOCKUP} alt="The platform on desktop and mobile" className="w-full object-cover" />
+          <img src={HERO_MOCKUP} alt="The platform on desktop and mobile" className="w-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
         </div>
       </Reveal>
     </section>
@@ -130,7 +130,7 @@ function Features() {
             <Reveal as="div" key={f.title}>
               <div className="overflow-hidden rounded-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.image} alt={f.title} loading="lazy" className="aspect-square w-full object-cover" />
+                <img src={f.image} alt={f.title} loading="lazy" className="aspect-square w-full object-cover" decoding="async"/>
               </div>
               <h3 className="mt-6 font-display text-2xl font-semibold text-ink-900">{f.title}</h3>
               <p className="mt-3 text-[1.05rem] leading-relaxed text-ink-600">
@@ -182,7 +182,7 @@ function PickGuide() {
             {PICK_GUIDES.map((g) => (
               <div key={g.name} className={cn('relative overflow-hidden rounded-2xl shadow-card', g.cls)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={g.photo} alt={g.name} loading="lazy" className="aspect-[3/4] w-full object-cover" />
+                <img src={g.photo} alt={g.name} loading="lazy" className="aspect-[3/4] w-full object-cover" decoding="async"/>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-4 pt-10">
                   <p className="text-sm font-bold text-white">{g.name}</p>
                   <p className="text-xs text-white/80">{g.university}</p>
@@ -243,7 +243,7 @@ function Impact() {
                     <Quote size={28} className="absolute right-5 top-5 text-gold-500" />
                     <div className="flex items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={t.avatar} alt={t.name} className="h-10 w-10 rounded-full object-cover" />
+                      <img src={t.avatar} alt={t.name} className="h-10 w-10 rounded-full object-cover" loading="lazy" decoding="async"/>
                       <div>
                         <p className="text-sm font-bold text-white">{t.name}</p>
                         <p className="text-xs text-white/60">{t.university}</p>

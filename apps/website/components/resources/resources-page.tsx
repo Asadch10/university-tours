@@ -75,7 +75,7 @@ export function ResourcesPage() {
       {/* Hero */}
       <section className="relative flex min-h-[46vh] items-center overflow-hidden pt-[var(--header-h)] sm:min-h-[58vh]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={HERO_BG} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+        <img src={HERO_BG} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
         <div className="absolute inset-0 bg-blue-950/25" aria-hidden />
         <div className="container-page relative py-16 text-center text-white sm:py-24">
           <h1 className="mx-auto max-w-3xl font-display text-4xl font-bold leading-[1.1] drop-shadow-sm sm:text-5xl">
@@ -117,8 +117,7 @@ export function ResourcesPage() {
                     src={r.image}
                     alt={r.title}
                     loading="lazy"
-                    className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105"
-                  />
+                    className="aspect-[16/10] w-full object-cover transition-transform duration-500 ease-premium group-hover:scale-105" decoding="async"/>
                 </div>
                 <h2 className="mt-5 font-display text-xl font-bold text-ink-900 transition-colors group-hover:text-brand">
                   {r.title}

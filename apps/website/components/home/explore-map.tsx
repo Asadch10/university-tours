@@ -150,8 +150,7 @@ export function ExploreMap() {
                         <img
                           src={u.image}
                           alt={u.name}
-                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                        />
+                          className="h-14 w-14 shrink-0 rounded-xl object-cover" loading="lazy" decoding="async"/>
                       ) : (
                         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-maroon-gradient font-display text-lg font-bold text-ivory">
                           {u.name.charAt(0)}
@@ -214,8 +213,7 @@ export function ExploreMap() {
                       <img
                         src={selected.image}
                         alt={selected.name}
-                        className="h-full w-full object-cover"
-                      />
+                        className="h-full w-full object-cover" loading="lazy" decoding="async"/>
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-maroon-gradient font-display text-5xl font-bold text-ivory">
                         {selected.name.charAt(0)}

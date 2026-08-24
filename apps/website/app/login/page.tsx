@@ -53,7 +53,7 @@ export default function LoginPage() {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-surface">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="University Campus Private Tours" className="h-24 w-auto animate-pulse" />
+        <img src="/logo.svg" alt="University Campus Private Tours" className="h-24 w-auto animate-pulse" loading="lazy" decoding="async"/>
         <p className="flex items-center gap-2 text-sm font-medium text-ink-500">
           <Loader2 size={16} className="animate-spin text-brand" /> Signing you in…
         </p>

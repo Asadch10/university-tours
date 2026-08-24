@@ -13,7 +13,7 @@ import Link from 'next/link';
  *
  * 1. The copy overlays the image only from `lg` up. Below that the gap is too narrow
  *    to hold a headline, so the copy returns to normal flow ABOVE the image and the
- *    panel's own background carries it. One <img>, two layouts.
+ *    panel's own background carries it. One <img loading="lazy" decoding="async">, two layouts.
  *
  * 2. Every text colour here is a fixed hex, NOT an ink-* theme token. The artwork is
  *    dark in both themes, so a token that flips to near-black in light mode would
@@ -118,8 +118,7 @@ export function BecomeGuide() {
                the empty sky and the ground, not the two floating cards near the top
                — centring here clips the "Tour Guide" card off entirely.
                min-h on lg guarantees room for the overlaid copy on short viewports. */
-            className="block max-h-[420px] w-full object-cover object-[50%_25%] sm:max-h-[480px] lg:max-h-[min(560px,70vh)] lg:min-h-[430px] xl:max-h-[min(620px,72vh)]"
-          />
+            className="block max-h-[420px] w-full object-cover object-[50%_25%] sm:max-h-[480px] lg:max-h-[min(560px,70vh)] lg:min-h-[430px] xl:max-h-[min(620px,72vh)]" decoding="async"/>
         </div>
       </div>
     </section>

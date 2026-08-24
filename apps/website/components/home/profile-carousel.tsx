@@ -37,8 +37,7 @@ function Card({ item }: { item: ProfileCard }) {
           src={item.photo}
           alt={item.name}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          loading="lazy"
-        />
+          loading="lazy" decoding="async"/>
       </div>
 
       <div className="px-1 py-4">

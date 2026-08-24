@@ -56,8 +56,7 @@ export default function TrustSafetyPage() {
             <img
               src={BANNER}
               alt="Students exploring a campus together"
-              className="aspect-[4/3] w-full object-cover sm:aspect-[21/9]"
-            />
+              className="aspect-[4/3] w-full object-cover sm:aspect-[21/9]" loading="eager" fetchPriority="high" decoding="async"/>
           </div>
         </Reveal>
       </section>
@@ -92,8 +91,7 @@ export default function TrustSafetyPage() {
                 src={IMG_MINORS}
                 alt="A parent walking through campus with two students"
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
-              />
+                className="aspect-[4/3] w-full object-cover" decoding="async"/>
             </div>
           </Reveal>
         </div>
@@ -106,8 +104,7 @@ export default function TrustSafetyPage() {
                 src={IMG_PLEDGE}
                 alt="A student messaging safely through the app"
                 loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
-              />
+                className="aspect-[4/3] w-full object-cover" decoding="async"/>
             </div>
           </Reveal>
           <Reveal delay={0.1}>

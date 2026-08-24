@@ -184,7 +184,7 @@ export default function ProfilePage() {
                   <span className="inline-flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl bg-maroon-gradient font-display text-4xl font-bold text-ivory shadow-lift ring-4 ring-white">
                     {photo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photo} alt="Your profile" className="h-full w-full object-cover" />
+                      <img src={photo} alt="Your profile" className="h-full w-full object-cover" loading="lazy" decoding="async"/>
                     ) : (
                       initials
                     )}

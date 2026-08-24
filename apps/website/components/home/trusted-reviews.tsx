@@ -138,8 +138,7 @@ function ImgCard({ card }: { card: ImageCard }) {
         src={card.photo}
         alt={card.name}
         className="absolute inset-0 h-full w-full object-cover"
-        loading="lazy"
-      />
+        loading="lazy" decoding="async"/>
       {/* Bottom gradient for text legibility */}
       <div
         className="absolute inset-0"

@@ -97,8 +97,7 @@ function Intro() {
             <img
               src={HERO_IMG}
               alt="Two friends chatting over coffee"
-              className="aspect-square w-full object-cover"
-            />
+              className="aspect-square w-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
           </div>
         </Reveal>
       </div>
@@ -128,8 +127,7 @@ function HowItWorks() {
                   src={s.image}
                   alt={s.title}
                   loading="lazy"
-                  className="aspect-square w-full object-cover"
-                />
+                  className="aspect-square w-full object-cover" decoding="async"/>
               </div>
               <h3 className="mt-6 font-display text-2xl font-semibold">{s.title}</h3>
               <p className="mt-3 leading-relaxed text-white/70">{s.body}</p>

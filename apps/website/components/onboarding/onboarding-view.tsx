@@ -128,7 +128,7 @@ export function OnboardingView() {
       <div className="absolute inset-0">
         {hero && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={hero} alt="" className="h-full w-full object-cover" />
+          <img src={hero} alt="" className="h-full w-full object-cover" loading="eager" fetchPriority="high" decoding="async"/>
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-canvas/75 via-maroon-950/65 to-maroon-950/85" />
         <div className="bg-grid absolute inset-0 opacity-20" aria-hidden />
@@ -142,7 +142,7 @@ export function OnboardingView() {
               <div className="relative h-52 bg-maroon-gradient">
                 {hero && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={hero} alt="" className="h-full w-full object-cover" />
+                  <img src={hero} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async"/>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-canvas/70 to-canvas/20" />
                 <div className="absolute inset-0 flex items-center justify-center px-6 text-center">

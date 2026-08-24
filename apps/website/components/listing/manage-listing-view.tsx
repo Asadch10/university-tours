@@ -436,7 +436,7 @@ export function PhotoSlider({ photos, status, fallbackInitial }: { photos: strin
     <div className="relative aspect-[16/10] overflow-hidden bg-ink-50">
       {count ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photos[idx]} alt={`Listing photo ${idx + 1}`} className="h-full w-full object-contain" />
+        <img src={photos[idx]} alt={`Listing photo ${idx + 1}`} className="h-full w-full object-contain" loading="lazy" decoding="async"/>
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-maroon-gradient font-display text-5xl font-bold text-ivory">
           {fallbackInitial}
@@ -790,7 +790,7 @@ function EditListingModal({
               {photos.map((src, i) => (
                 <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border border-ink-200 bg-ink-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                  <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" loading="lazy" decoding="async"/>
                   <button
                     type="button"
                     onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
@@ -835,7 +835,7 @@ function EditListingModal({
                 </>
               ) : idPhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={idPhoto} alt="Student ID" className="h-full w-full object-contain" />
+                <img src={idPhoto} alt="Student ID" className="h-full w-full object-contain" loading="lazy" decoding="async"/>
               ) : (
                 <>
                   <ImagePlus size={22} className="text-ink-400" />
@@ -1068,7 +1068,7 @@ function ListingResume({ listing, name }: { listing: GuideListing; name: string 
               className="block max-w-xs overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 transition-opacity hover:opacity-90"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={idPhoto} alt="Student ID" className="w-full object-contain" />
+              <img src={idPhoto} alt="Student ID" className="w-full object-contain" loading="lazy" decoding="async"/>
             </a>
           ) : (
             <p className="rounded-2xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-6 text-center text-sm text-ink-400">
