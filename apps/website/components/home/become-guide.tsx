@@ -5,93 +5,121 @@ import Link from 'next/link';
 /**
  * The "join us" banner, promoting both marketplace roles.
  *
- * The artwork is a finished 1400x1400 composition — a phone mockup ringed by avatar
- * circles on a black field — so it is shown whole (object-contain at its native
- * square ratio) rather than cropped to a wide strip. Cropping it to the panel with
- * object-cover left only a narrow middle band, which read as one giant face.
+ * The artwork is a single wide composition whose left ~37% is deliberately empty —
+ * a pale blue field the copy is laid over. So this is one full-bleed image with the
+ * text positioned into that gap, not the old two-column split panel.
  *
- * For the same reason there is no overlay of extra avatar circles: the image already
- * contains them, and a second set on top doubled them up.
+ * Two consequences worth knowing before editing:
  *
- * The panel is black to match the artwork's own background, so the image's edges
- * dissolve into the panel instead of sitting in a visible box — in both themes.
+ * 1. The copy overlays the image only from `lg` up. Below that the gap is too narrow
+ *    to hold a headline, so the copy returns to normal flow ABOVE the image and the
+ *    panel's own background carries it. One <img>, two layouts.
+ *
+ * 2. Every text colour here is a fixed hex, NOT an ink-* theme token. The artwork is
+ *    dark in both themes, so a token that flips to near-black in light mode would
+ *    render the headline invisible on top of it. Measured against the artwork's left
+ *    band (#020305): white is 20.3:1, the muted grey is 9.7:1, near-black is 1.14:1.
  */
 
-const BANNER_IMAGE = 'https://d3m810mf773mim.cloudfront.net/static/become-guide-mobile-bg.webp';
+const BANNER_IMAGE = '/photos/hero-black.webp';
+
+/** Sampled from the artwork's empty left band, so the panel and image are seamless. */
+const PANEL_BG = '#020305';
+
+const INK = '#FFFFFF';
+const INK_MUTED = '#A9B4C7';
+const INK_SOFT = '#7C8AA5';
 
 export function BecomeGuide() {
   return (
     <section className="py-10 sm:py-12">
       {/* Same edge margins as the hero video and map section */}
       <div className="mx-5 sm:mx-7 lg:mx-10">
-        <div className="relative overflow-hidden rounded-[2rem] bg-black">
-          <div className="grid items-center gap-2 lg:grid-cols-[6fr_5fr] xl:grid-cols-[7fr_6fr]">
-            {/* ── Left: copy + CTAs ─────────────────────────────────── */}
-            <div className="order-2 flex flex-col justify-center px-6 pb-12 pt-2 sm:px-14 sm:pb-16 lg:order-1 lg:px-16 lg:py-16 xl:px-20">
-              <p className="mb-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-white/50">
-                Two ways to join
+        <div
+          className="relative overflow-hidden rounded-[2rem]"
+          style={{ backgroundColor: PANEL_BG }}
+        >
+          {/* ── Copy — in flow on small screens, overlaid on the artwork's empty
+                 left band from lg up ─────────────────────────────────────────── */}
+          <div className="relative z-10 flex flex-col justify-center px-6 pb-8 pt-10 sm:px-10 lg:absolute lg:inset-y-0 lg:left-0 lg:w-[44%] lg:px-14 lg:py-0 xl:w-[42%] xl:px-16">
+            <p
+              className="mb-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em]"
+              style={{ color: INK_SOFT }}
+            >
+              Two ways to join
+            </p>
+
+            <h2
+              className="font-display font-bold leading-[1.08]"
+              style={{ fontSize: 'clamp(1.75rem, 3.6vw, 3rem)', color: INK }}
+            >
+              Become a tour guide
+              <span className="block" style={{ color: INK_SOFT }}>
+                or college counselor
+              </span>
+            </h2>
+
+            {/* One line per role, so each opportunity is stated plainly rather than
+                merged into a sentence that describes neither properly. */}
+            <div className="mt-6 max-w-[24rem] space-y-2.5">
+              <p className="text-sm leading-relaxed sm:text-[0.95rem]" style={{ color: INK_MUTED }}>
+                <span className="font-semibold" style={{ color: INK }}>
+                  Students
+                </span>{' '}
+                — get paid to host private college tours at your school.
               </p>
+              <p className="text-sm leading-relaxed sm:text-[0.95rem]" style={{ color: INK_MUTED }}>
+                <span className="font-semibold" style={{ color: INK }}>
+                  Counselors
+                </span>{' '}
+                — advise families as a verified admissions professional.
+              </p>
+            </div>
 
-              <h2
-                className="font-display font-bold leading-[1.08] text-white"
-                style={{ fontSize: 'clamp(1.75rem, 4.4vw, 3.4rem)' }}
-              >
-                Become a tour guide
-                <span className="block text-white/45">or college counselor</span>
-              </h2>
-
-              {/* One line per role, so each opportunity is stated plainly rather than
-                  merged into a sentence that describes neither properly. */}
-              <div className="mt-6 max-w-[26rem] space-y-2.5">
-                <p className="text-sm leading-relaxed text-white/60 sm:text-base">
-                  <span className="font-semibold text-white/85">Students</span> — get paid to host
-                  private college tours at your school.
-                </p>
-                <p className="text-sm leading-relaxed text-white/60 sm:text-base">
-                  <span className="font-semibold text-white/85">Counselors</span> — advise families
-                  as a verified admissions professional.
-                </p>
-              </div>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/become-a-guide"
-                  className="inline-flex items-center justify-center rounded-xl bg-maroon-900 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
-                >
-                  Become a guide
-                </Link>
-                <Link
-                  href="/become-a-counselor"
-                  className="inline-flex items-center justify-center rounded-xl border border-white/30 px-7 py-3 text-sm font-semibold text-white transition-colors hover:border-white/60 hover:bg-white/10"
-                >
-                  Become a counselor
-                </Link>
-              </div>
-
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
-                href="/how-it-works"
-                className="mt-5 inline-flex text-sm font-semibold text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline"
+                href="/become-a-guide"
+                className="inline-flex items-center justify-center rounded-xl bg-maroon-900 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-maroon-800"
               >
-                Learn how it works
+                Become a guide
+              </Link>
+              <Link
+                href="/become-a-counselor"
+                className="inline-flex items-center justify-center rounded-xl border px-7 py-3 text-sm font-semibold transition-colors hover:border-white/60 hover:bg-white/10"
+                style={{ borderColor: 'rgba(255,255,255,0.3)', color: INK }}
+              >
+                Become a counselor
               </Link>
             </div>
 
-            {/* ── Right: the artwork, uncropped ─────────────────────── */}
-            <div className="order-1 lg:order-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={BANNER_IMAGE}
-                alt="Student guides and counselors on Campus Private Tours"
-                width={1400}
-                height={1400}
-                loading="lazy"
-                /* aspect-square + object-contain keeps the native 1:1 composition
-                   intact at every breakpoint; the height cap stops it dominating the
-                   panel on wide screens. */
-                className="mx-auto aspect-square w-full max-w-[420px] object-contain lg:max-h-[520px] lg:max-w-none xl:max-h-[600px]"
-              />
-            </div>
+            <Link
+              href="/how-it-works"
+              className="mt-5 inline-flex text-sm font-semibold underline-offset-4 transition-colors hover:underline"
+              style={{ color: INK_MUTED }}
+            >
+              Learn how it works
+            </Link>
           </div>
+
+          {/* ── Artwork ───────────────────────────────────────────────────────
+              alt="" because the image is decorative here: it carries no text of
+              its own and the copy beside it already says everything it depicts. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={BANNER_IMAGE}
+            alt=""
+            width={1771}
+            height={888}
+            loading="lazy"
+            /* The source is ~2:1, so at full width on a wide screen it renders
+               ~900px tall and the section no longer fits the viewport. Capping the
+               height and letting object-cover crop keeps the banner on-screen.
+               object-position sits at 25% rather than centre so the crop comes off
+               the empty sky and the ground, not the two floating cards near the top
+               — centring here clips the "Tour Guide" card off entirely.
+               min-h on lg guarantees room for the overlaid copy on short viewports. */
+            className="block max-h-[420px] w-full object-cover object-[50%_25%] sm:max-h-[480px] lg:max-h-[min(560px,70vh)] lg:min-h-[430px] xl:max-h-[min(620px,72vh)]"
+          />
         </div>
       </div>
     </section>
