@@ -21,7 +21,7 @@ const CAMPUS_PHOTOS: Record<string, string> = {
   nyu: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Washington_Square_Park_in_2012.jpg/960px-Washington_Square_Park_in_2012.jpg',
 };
 
-const GENERIC_CAMPUS = '/photos/campus-exterior.jpg';
+const GENERIC_CAMPUS = '/photos/campus-exterior.webp';
 
 /* ─── Component ──────────────────────────────────────────────────────── */
 
@@ -97,8 +97,7 @@ export function PopularSchools() {
                         src={school.image ?? CAMPUS_PHOTOS[school.id] ?? GENERIC_CAMPUS}
                         alt={school.name}
                         loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                      />
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" decoding="async"/>
                     </div>
 
                     {/* Name below card */}

@@ -10,8 +10,9 @@
  * Source: Unsplash (Unsplash Licence — free for commercial use, no attribution required).
  * Photographer credits are kept below as a courtesy and as a record of provenance.
  *
- * Originals are 3–7 MB at up to 6000px; they are downscaled to ≤1920px and re-encoded at
- * quality 72, which took the set from 24 MB to 2.6 MB. Re-run that step for anything new.
+ * Originals are 3–7 MB at up to 6000px; they are downscaled to ≤1920px and served as
+ * WebP at quality 78, which took the set from 24 MB to ~1.1 MB. Re-run that step for
+ * anything new — add the .webp, not the .jpg, or the saving is lost.
  */
 
 export interface SitePhoto {
@@ -28,38 +29,38 @@ export interface SitePhoto {
 export const PHOTOS = {
   /** Two people reviewing an application together at a desk. */
   consultation: {
-    src: '/photos/consultation.jpg',
+    src: '/photos/consultation.webp',
     alt: 'An adviser and a student reviewing an application together',
     credit: 'Amy Hirschi',
   },
   /** Warm, low-lit library — reads especially well on the dark theme. */
   library: {
-    src: '/photos/library.jpg',
+    src: '/photos/library.webp',
     alt: 'A quiet university library with reading chairs',
     credit: 'Denise Jans',
   },
   /** Five students walking together past brick buildings. */
   studentsGroup: {
-    src: '/photos/students-group.jpg',
+    src: '/photos/students-group.webp',
     alt: 'A group of students walking together near campus',
     credit: 'Eliott Reyna',
   },
   /** Group walking at golden hour, shot from behind. */
   groupTours: {
-    src: '/photos/group-tours.jpg',
+    src: '/photos/group-tours.webp',
     alt: 'A group walking together at golden hour',
     credit: 'Luke Porter',
   },
   /** Students with backpacks crossing campus. Portrait — use in cards, not banners. */
   campusTour: {
-    src: '/photos/campus-tour.jpg',
+    src: '/photos/campus-tour.webp',
     alt: 'Students with backpacks walking across a university campus',
     credit: 'Meredith Spencer',
     portrait: true,
   },
   /** University buildings across a reflecting pond. */
   campusExterior: {
-    src: '/photos/campus-exterior.jpg',
+    src: '/photos/campus-exterior.webp',
     alt: 'University buildings reflected in a campus pond',
     credit: 'Arinal Izzah',
   },
