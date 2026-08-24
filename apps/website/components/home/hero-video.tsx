@@ -79,6 +79,14 @@ export function HeroVideo({ poster }: { poster: string }) {
   // the client different markup and trip a hydration mismatch.
   const [srcs, setSrcs] = useState<[string, string]>([HERO_VIDEOS[0]!, HERO_VIDEOS[1]!]);
   const [active, setActive] = useState(0);
+  /**
+   * Both players used to carry preload="auto", so TWO clips were fetched before
+   * the page had rendered anything — the single biggest item on the hero's
+   * critical path. The standby now stays at preload="none" until the visible clip
+   * is actually playing, which takes ~500KB out of first load. It still has the
+   * full clip duration (~7s at 0.75x) to buffer before the crossfade needs it.
+   */
+  const [primed, setPrimed] = useState(false);
 
   const refs = [useRef<HTMLVideoElement>(null), useRef<HTMLVideoElement>(null)];
   /** Remaining clips in the current pass; refilled (reshuffled) when exhausted. */
@@ -161,6 +169,15 @@ export function HeroVideo({ poster }: { poster: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, srcs]);
 
+  // Changing the preload attribute is advisory; browsers don't consistently act on
+  // it after the element exists. An explicit load() makes the buffering deterministic.
+  useEffect(() => {
+    if (!primed) return;
+    const standby = refs[1 - active]?.current;
+    if (standby && standby.readyState === 0) standby.load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primed]);
+
   /**
    * Start the fade FADE_MS before the clip ends so both players are still moving
    * through the transition. `onEnded` is only a backstop — if timeupdate resolution
@@ -189,8 +206,10 @@ export function HeroVideo({ poster }: { poster: string }) {
             muted
             playsInline
             autoPlay
-            preload="auto"
+            preload={isActive || primed ? 'auto' : 'none'}
             aria-hidden="true"
+            // Only the first clip reaching "playing" releases the standby to buffer.
+            onPlaying={isActive && !primed ? () => setPrimed(true) : undefined}
             onTimeUpdate={isActive ? onTimeUpdate : undefined}
             onEnded={isActive ? advance : undefined}
             // A clip that fails to load must not freeze the rotation.
