@@ -5,6 +5,7 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import * as svc from '../services/admin.service.js';
 import * as contactSvc from '../services/contact.service.js';
 import { questionnaireApiRouter } from './api/questionnaire.js';
+import { adminVerificationRouter } from './verification.js';
 import { imageUpload, uploadUrl } from '../lib/uploads.js';
 
 export const adminRouter = Router();
@@ -13,6 +14,7 @@ adminRouter.use(requireAuth);
 // Question-level CRUD (add/edit/delete/reorder) — must be registered before
 // the broader /questionnaires routes so sub-paths are matched first.
 adminRouter.use('/questionnaires', questionnaireApiRouter);
+adminRouter.use('/verifications', adminVerificationRouter);
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 

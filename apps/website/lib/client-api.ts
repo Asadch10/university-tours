@@ -354,6 +354,43 @@ export interface PublicQuestionnaire {
   requiredPhotos: number;
 }
 
+// ─── Identity verification (Stripe Identity today, ID.me later) ───────────────
+//
+// Note what this proves: Stripe Identity confirms a government ID is genuine and
+// matches a selfie. It does NOT confirm the applicant is an enrolled student —
+// enrolment still rests on the uploaded document and admin review.
+
+export type VerificationStatus = 'PENDING' | 'PROCESSING' | 'VERIFIED' | 'FAILED' | 'CANCELED';
+export type VerificationMethod = 'MANUAL' | 'STRIPE_IDENTITY' | 'IDME';
+
+export interface VerificationDto {
+  id: string;
+  kind: 'GUIDE' | 'COUNSELOR';
+  method: VerificationMethod;
+  status: VerificationStatus;
+  lastError: string | null;
+  verifiedAt: string | null;
+}
+
+export interface StartVerificationResult {
+  id: string;
+  clientSecret: string | null;
+  url: string | null;
+  status: VerificationStatus;
+}
+
+const kindQuery = (kind?: 'GUIDE' | 'COUNSELOR') => (kind === 'COUNSELOR' ? '?kind=COUNSELOR' : '');
+
+export const verificationApi = {
+  mine: (kind?: 'GUIDE' | 'COUNSELOR') =>
+    request<VerificationDto | null>('GET', `/verification/me${kindQuery(kind)}`),
+  startStripe: (kind?: 'GUIDE' | 'COUNSELOR') =>
+    request<StartVerificationResult>('POST', `/verification/stripe/start${kindQuery(kind)}`),
+  // Safety net for a missed webhook — re-reads the provider's own status.
+  refresh: (kind?: 'GUIDE' | 'COUNSELOR') =>
+    request<VerificationDto | null>('POST', `/verification/refresh${kindQuery(kind)}`),
+};
+
 export const questionnaireApi = {
   // `kind` selects which application form's questions come back. Omitted = guide,
   // matching the backend default.

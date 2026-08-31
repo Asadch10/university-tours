@@ -327,6 +327,40 @@ export function useListings(kind: ApplicantKind = 'GUIDE') {
   });
 }
 
+// ─── Identity verification ────────────────────────────────────────────────────
+
+export function useVerifications(status?: string, kind?: string) {
+  return useQuery({
+    queryKey: ['verifications', status ?? 'ALL', kind ?? 'ALL'],
+    queryFn: async () => (await adminApi.verifications({ status, kind })).data,
+  });
+}
+
+/** One applicant's check, read out of the same list so both stay in one cache entry. */
+export function useVerification(userId: string, kind: ApplicantKind = 'GUIDE') {
+  const q = useVerifications();
+  return {
+    ...q,
+    data: q.data?.find((v) => v.userId === userId && v.kind === kind) ?? null,
+  };
+}
+
+export function useVerificationActions(kind: ApplicantKind = 'GUIDE') {
+  const qc = useQueryClient();
+  const inv = () => qc.invalidateQueries({ queryKey: ['verifications'] });
+  return {
+    // Re-reads the provider's own status — the fix when a webhook was missed.
+    refresh: useMutation({ mutationFn: (userId: string) => adminApi.verificationRefresh(userId, kind), onSuccess: inv }),
+    // Manual override. Automated checks reject plenty of legitimate applicants
+    // (non-US IDs especially), so an admin must always be able to decide.
+    decide: useMutation({
+      mutationFn: (v: { userId: string; verified: boolean; note?: string }) =>
+        adminApi.verificationManual(v.userId, v.verified, v.note, kind),
+      onSuccess: inv,
+    }),
+  };
+}
+
 export function useListingDetail(id: string, kind: ApplicantKind = 'GUIDE') {
   return useQuery({
     queryKey: ['listings', id, kind],

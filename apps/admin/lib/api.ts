@@ -180,6 +180,18 @@ export interface Paged<T> {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
+export interface VerificationRowDto {
+  id: string;
+  userId: string;
+  kind: 'GUIDE' | 'COUNSELOR';
+  method: 'MANUAL' | 'STRIPE_IDENTITY' | 'IDME';
+  status: 'PENDING' | 'PROCESSING' | 'VERIFIED' | 'FAILED' | 'CANCELED';
+  lastError: string | null;
+  verifiedAt: string | null;
+  updatedAt: string;
+  user: { id: string; name: string; email: string };
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
@@ -238,6 +250,15 @@ export const adminApi = {
   // `kind` selects the guide or counselor submission queue; omitted = guide.
   listings: (p: { q?: string; status?: string; service?: string; kind?: string; page?: number } = {}) =>
     request<Paged<ListingDto>>('GET', `/admin/listings${qs({ ...p, limit: 100 })}`),
+  // ── Identity verification ──────────────────────────────────────────────────
+  // Stripe Identity proves who someone is; it does NOT prove enrolment. Manual
+  // remains the authority for that, which is why the override below exists.
+  verifications: (params: { status?: string; kind?: string } = {}) =>
+    request<{ data: VerificationRowDto[] }>('GET', `/admin/verifications${qs(params)}`),
+  verificationRefresh: (userId: string, kind: 'GUIDE' | 'COUNSELOR' = 'GUIDE') =>
+    request<VerificationRowDto>('POST', `/admin/verifications/${userId}/refresh?kind=${kind}`),
+  verificationManual: (userId: string, verified: boolean, note: string | undefined, kind: 'GUIDE' | 'COUNSELOR' = 'GUIDE') =>
+    request<VerificationRowDto>('POST', `/admin/verifications/${userId}/manual?kind=${kind}`, { verified, note }),
   listingDetail: (id: string, kind: 'GUIDE' | 'COUNSELOR' = 'GUIDE') =>
     request<ListingDetailDto>('GET', `/admin/listings/${id}?kind=${kind}`),
   listingModerate: (id: string, status: string, kind?: 'GUIDE' | 'COUNSELOR') =>

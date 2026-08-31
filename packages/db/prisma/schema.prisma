@@ -63,6 +63,26 @@ enum ApplicantKind {
   COUNSELOR
 }
 
+// How an applicant's identity/enrolment was checked.
+//
+// These are NOT equivalent: STRIPE_IDENTITY proves a government ID is genuine and
+// matches a selfie — it says nothing about enrolment. Only IDME can confirm someone is
+// actually a student. MANUAL is an admin reading the uploaded document, and remains the
+// fallback for anyone automated checks cannot handle (international students especially).
+enum VerificationMethod {
+  MANUAL
+  STRIPE_IDENTITY
+  IDME
+}
+
+enum VerificationStatus {
+  PENDING // session created, applicant has not finished
+  PROCESSING // submitted, provider still checking
+  VERIFIED
+  FAILED // provider rejected, or admin declined
+  CANCELED
+}
+
 enum BookingStatus {
   PENDING_PAYMENT // card not yet authorized — hidden from the guide until the hold clears
   PENDING
@@ -125,38 +145,39 @@ enum DevicePlatform {
 // ----------------------------------------------------------------------------
 
 model User {
-  id              String         @id @default(cuid())
-  role            UserRole? // null until decided by onboarding (BUYER = book tours, SELLER = guide)
-  email           String         @unique
-  name            String         @default("")
-  passwordHash    String         @map("password_hash")
-  status          UserStatus     @default(ACTIVE)
-  emailVerifiedAt DateTime?      @map("email_verified_at")
-  adminRoleName   AdminRoleName? @map("admin_role_name")
-  profileJson     Json?          @map("profile_json") // website profile fields (all optional)
+  id                   String         @id @default(cuid())
+  role                 UserRole? // null until decided by onboarding (BUYER = book tours, SELLER = guide)
+  email                String         @unique
+  name                 String         @default("")
+  passwordHash         String         @map("password_hash")
+  status               UserStatus     @default(ACTIVE)
+  emailVerifiedAt      DateTime?      @map("email_verified_at")
+  adminRoleName        AdminRoleName? @map("admin_role_name")
+  profileJson          Json?          @map("profile_json") // website profile fields (all optional)
   // Stripe Connect (Express) — a guide's connected account for receiving payouts.
-  stripeAccountId      String?  @map("stripe_account_id")
-  stripePayoutsEnabled Boolean  @default(false) @map("stripe_payouts_enabled")
+  stripeAccountId      String?        @map("stripe_account_id")
+  stripePayoutsEnabled Boolean        @default(false) @map("stripe_payouts_enabled")
   // Stripe Customer — for saving the user's cards on file (guest payments).
-  stripeCustomerId     String?  @map("stripe_customer_id")
-  createdAt       DateTime       @default(now()) @map("created_at")
+  stripeCustomerId     String?        @map("stripe_customer_id")
+  createdAt            DateTime       @default(now()) @map("created_at")
 
   sellerProfile    SellerProfile?
   counselorProfile CounselorProfile?
-  devices         Device[]
-  listings        Listing[]      @relation("SellerListings")
-  buyerBookings   Booking[]      @relation("BuyerBookings")
-  sellerBookings  Booking[]      @relation("SellerBookings")
-  buyerConvos     Conversation[] @relation("BuyerConversations")
-  sellerConvos    Conversation[] @relation("SellerConversations")
-  messages        Message[]
-  buyerReviews    Review[]       @relation("BuyerReviews")
-  sellerReviews   Review[]       @relation("SellerReviews")
-  documents       Document[]
-  applications    Application[]
-  payouts         Payout[]
-  refundsCreated  Refund[]
-  auditLogs       AuditLog[]
+  verifications    IdentityVerification[]
+  devices          Device[]
+  listings         Listing[]              @relation("SellerListings")
+  buyerBookings    Booking[]              @relation("BuyerBookings")
+  sellerBookings   Booking[]              @relation("SellerBookings")
+  buyerConvos      Conversation[]         @relation("BuyerConversations")
+  sellerConvos     Conversation[]         @relation("SellerConversations")
+  messages         Message[]
+  buyerReviews     Review[]               @relation("BuyerReviews")
+  sellerReviews    Review[]               @relation("SellerReviews")
+  documents        Document[]
+  applications     Application[]
+  payouts          Payout[]
+  refundsCreated   Refund[]
+  auditLogs        AuditLog[]
 
   @@index([role, status])
   @@map("users")
@@ -172,7 +193,7 @@ model SellerProfile {
   school            School?           @relation(fields: [schoolId], references: [id], onDelete: SetNull)
   major             String?
   gradYear          Int?              @map("grad_year")
-  bio               String?        @db.Text
+  bio               String?           @db.Text
   enrollmentDocId   String?           @unique @map("enrollment_doc_id")
   enrollmentDoc     Document?         @relation("EnrollmentDoc", fields: [enrollmentDocId], references: [id], onDelete: SetNull)
   applicationStatus ApplicationStatus @default(NOT_SUBMITTED) @map("application_status")
@@ -195,11 +216,11 @@ model CounselorProfile {
   photo             String?
   phone             String?
   // Professional identity.
-  headline          String?           // e.g. "Independent college admissions counselor"
-  organization      String?           // firm or practice name; null for solo counselors
+  headline          String? // e.g. "Independent college admissions counselor"
+  organization      String? // firm or practice name; null for solo counselors
   website           String?
   yearsExperience   Int?              @map("years_experience")
-  credentials       String?           // e.g. "M.Ed., IECA Professional Member"
+  credentials       String? // e.g. "M.Ed., IECA Professional Member"
   specialtiesJson   Json?             @map("specialties_json") // string[] — e.g. ["Essays", "Financial aid"]
   bio               String?           @db.Text
   // Proof of credential, reviewed by admin — the counselor equivalent of a guide's
@@ -212,6 +233,37 @@ model CounselorProfile {
   ratingCount       Int               @default(0) @map("rating_count")
 
   @@map("counselor_profiles")
+}
+
+/// An identity/enrolment check for one applicant, by one provider.
+///
+/// Deliberately its own table rather than columns on SellerProfile/CounselorProfile:
+/// a user may hold both roles, each needing its own check, and a provider-agnostic row
+/// means adding ID.me later is a new `method` value rather than a schema migration.
+model IdentityVerification {
+  id         String             @id @default(cuid())
+  userId     String             @map("user_id")
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Which application this check backs — a user can need one per role.
+  kind       ApplicantKind      @default(GUIDE)
+  method     VerificationMethod
+  status     VerificationStatus @default(PENDING)
+  /// Provider's own id (Stripe VerificationSession id, ID.me subject). Unique so a
+  /// webhook can find the row without trusting anything in its payload.
+  sessionId  String?            @unique @map("session_id")
+  /// Why the provider rejected it, or the admin's note on a manual decision.
+  lastError  String?            @map("last_error") @db.Text
+  /// Redacted provider outcome. NEVER the document images or raw ID numbers.
+  reportJson Json?              @map("report_json")
+  /// Admin who made a MANUAL decision; null for automated outcomes.
+  decidedBy  String?            @map("decided_by")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+  verifiedAt DateTime?          @map("verified_at")
+
+  @@unique([userId, kind])
+  @@index([status])
+  @@map("identity_verifications")
 }
 
 model Device {
@@ -255,18 +307,18 @@ model AuditLog {
 // ----------------------------------------------------------------------------
 
 model School {
-  id         String   @id @default(cuid())
-  name       String
-  slug       String   @unique // auto-generated from name; drives /universities/{slug}
-  image      String? // campus photo (banner + card + logo)
-  location   String? // e.g. "Stanford, CA"
-  state      String? // e.g. "California"
-  tags       Json?    @db.Json // popular programs, e.g. ["Engineering", "Business"] (null = none)
-  toursFromCents Int?  @map("tours_from_cents") // starting tour price, integer cents
-  seoContent String?  @db.Text @map("seo_content")
-  lat        Float? // campus coordinates — drive the pin on the website's explore map
-  lng        Float?
-  enabled    Boolean  @default(true)
+  id             String  @id @default(cuid())
+  name           String
+  slug           String  @unique // auto-generated from name; drives /universities/{slug}
+  image          String? // campus photo (banner + card + logo)
+  location       String? // e.g. "Stanford, CA"
+  state          String? // e.g. "California"
+  tags           Json?   @db.Json // popular programs, e.g. ["Engineering", "Business"] (null = none)
+  toursFromCents Int?    @map("tours_from_cents") // starting tour price, integer cents
+  seoContent     String? @map("seo_content") @db.Text
+  lat            Float? // campus coordinates — drive the pin on the website's explore map
+  lng            Float?
+  enabled        Boolean @default(true)
 
   sellerProfiles SellerProfile[]
   listings       Listing[]
@@ -289,7 +341,7 @@ model Listing {
   school      School?       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   serviceType ServiceType   @map("service_type")
   title       String
-  description String?      @db.Text
+  description String?       @db.Text
   status      ListingStatus @default(ACTIVE)
 
   options  ListingOption[]
@@ -302,11 +354,11 @@ model Listing {
 }
 
 model ListingOption {
-  id              String    @id @default(cuid())
-  listingId       String    @map("listing_id")
-  listing         Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  durationMinutes Int       @map("duration_minutes")
-  priceCents      Int       @map("price_cents")
+  id              String  @id @default(cuid())
+  listingId       String  @map("listing_id")
+  listing         Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  durationMinutes Int     @map("duration_minutes")
+  priceCents      Int     @map("price_cents")
 
   bookings Booking[]
 
@@ -329,19 +381,19 @@ model ServicePriceBound {
 // ----------------------------------------------------------------------------
 
 model Booking {
-  id                    String        @id @default(cuid())
+  id                    String         @id @default(cuid())
   // Human-friendly sequential reference shown to users as "B-1", "B-2", … while the
   // cuid `id` stays the internal/routing key.
-  bookingNo             Int           @unique @default(autoincrement()) @map("booking_no")
-  buyerId               String        @map("buyer_id")
-  buyer                 User          @relation("BuyerBookings", fields: [buyerId], references: [id], onDelete: Restrict)
-  sellerId              String        @map("seller_id")
-  seller                User          @relation("SellerBookings", fields: [sellerId], references: [id], onDelete: Restrict)
+  bookingNo             Int            @unique @default(autoincrement()) @map("booking_no")
+  buyerId               String         @map("buyer_id")
+  buyer                 User           @relation("BuyerBookings", fields: [buyerId], references: [id], onDelete: Restrict)
+  sellerId              String         @map("seller_id")
+  seller                User           @relation("SellerBookings", fields: [sellerId], references: [id], onDelete: Restrict)
   // Which marketplace this booking came from. Stamped at creation and never derived:
   // one user can be both a guide and a counselor, and `serviceType` can't tell them
   // apart either (a guide may also sell "Professional consultation"). This is what
   // splits My bookings into "As guide" and "As counselor".
-  kind                  ApplicantKind @default(GUIDE)
+  kind                  ApplicantKind  @default(GUIDE)
   // Nullable: website "become a guide" listings live in User.profileJson, not the
   // Listing table, so a guide booking has no Listing/Option row — the snapshot
   // fields below (listingTitle, durationMinutes, grossCents…) carry what was booked.
@@ -349,27 +401,27 @@ model Booking {
   listing               Listing?       @relation(fields: [listingId], references: [id], onDelete: Restrict)
   optionId              String?        @map("option_id")
   option                ListingOption? @relation(fields: [optionId], references: [id], onDelete: Restrict)
-  listingTitle          String?        @db.Text @map("listing_title") // snapshot of what was booked
+  listingTitle          String?        @map("listing_title") @db.Text // snapshot of what was booked
   durationMinutes       Int?           @map("duration_minutes")
   serviceType           ServiceType    @map("service_type")
   schoolId              String?        @map("school_id")
   schoolName            String?        @map("school_name") // snapshot (guides have no Listing→School link)
   scheduledDate         DateTime       @map("scheduled_date")
-  scheduledTime         String?       @map("scheduled_time")
-  guestCount            Int           @default(1) @map("guest_count")
-  noteForGuide          String?       @db.Text @map("note_for_guide")
-  status                BookingStatus @default(PENDING)
-  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
-  grossCents            Int           @map("gross_cents")
-  commissionPctSnapshot Float?        @map("commission_pct_snapshot")
-  commissionCents       Int?          @map("commission_cents")
-  sellerNetCents        Int?          @map("seller_net_cents")
-  videoLink             String?       @map("video_link")
-  requestedAt           DateTime      @default(now()) @map("requested_at")
-  expiresAt             DateTime?     @map("expires_at")
-  confirmedAt           DateTime?     @map("confirmed_at")
-  completedAt           DateTime?     @map("completed_at")
-  reviewedAt            DateTime?     @map("reviewed_at")
+  scheduledTime         String?        @map("scheduled_time")
+  guestCount            Int            @default(1) @map("guest_count")
+  noteForGuide          String?        @map("note_for_guide") @db.Text
+  status                BookingStatus  @default(PENDING)
+  stripePaymentIntentId String?        @map("stripe_payment_intent_id")
+  grossCents            Int            @map("gross_cents")
+  commissionPctSnapshot Float?         @map("commission_pct_snapshot")
+  commissionCents       Int?           @map("commission_cents")
+  sellerNetCents        Int?           @map("seller_net_cents")
+  videoLink             String?        @map("video_link")
+  requestedAt           DateTime       @default(now()) @map("requested_at")
+  expiresAt             DateTime?      @map("expires_at")
+  confirmedAt           DateTime?      @map("confirmed_at")
+  completedAt           DateTime?      @map("completed_at")
+  reviewedAt            DateTime?      @map("reviewed_at")
 
   events  BookingEvent[]
   ledger  LedgerEntry[]
@@ -387,29 +439,29 @@ model Booking {
 }
 
 model BookingEvent {
-  id        String        @id @default(cuid())
-  bookingId String        @map("booking_id")
-  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  id        String         @id @default(cuid())
+  bookingId String         @map("booking_id")
+  booking   Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   fromState BookingStatus? @map("from_state")
-  toState   BookingStatus @map("to_state")
+  toState   BookingStatus  @map("to_state")
   actor     String
-  reason    String?  @db.Text
-  createdAt DateTime      @default(now()) @map("created_at")
+  reason    String?        @db.Text
+  createdAt DateTime       @default(now()) @map("created_at")
 
   @@index([bookingId])
   @@map("booking_events")
 }
 
 model LedgerEntry {
-  id             String          @id @default(cuid())
-  bookingId      String          @map("booking_id")
-  booking        Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  type           LedgerEntryType
-  grossCents     Int             @map("gross_cents")
-  commissionPct  Float           @map("commission_pct")
-  commissionCents Int            @map("commission_cents")
-  sellerNetCents Int             @map("seller_net_cents")
-  createdAt      DateTime        @default(now()) @map("created_at")
+  id              String          @id @default(cuid())
+  bookingId       String          @map("booking_id")
+  booking         Booking         @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  type            LedgerEntryType
+  grossCents      Int             @map("gross_cents")
+  commissionPct   Float           @map("commission_pct")
+  commissionCents Int             @map("commission_cents")
+  sellerNetCents  Int             @map("seller_net_cents")
+  createdAt       DateTime        @default(now()) @map("created_at")
 
   @@index([bookingId])
   @@map("ledger_entries")
@@ -431,15 +483,15 @@ model Payout {
 }
 
 model Refund {
-  id            String   @id @default(cuid())
-  bookingId     String   @map("booking_id")
-  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  amountCents   Int      @map("amount_cents")
-  stripeRefundId String? @map("stripe_refund_id")
-  reason        String?  @db.Text
-  createdBy     String   @map("created_by")
-  createdByUser User     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
-  createdAt     DateTime @default(now()) @map("created_at")
+  id             String   @id @default(cuid())
+  bookingId      String   @map("booking_id")
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  amountCents    Int      @map("amount_cents")
+  stripeRefundId String?  @map("stripe_refund_id")
+  reason         String?  @db.Text
+  createdBy      String   @map("created_by")
+  createdByUser  User     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([bookingId])
   @@map("refunds")
@@ -464,7 +516,7 @@ model Payment {
   cardExpYear           Int?      @map("card_exp_year")
   billingName           String?   @map("billing_name")
   billingEmail          String?   @map("billing_email")
-  receiptUrl            String?   @db.Text @map("receipt_url")
+  receiptUrl            String?   @map("receipt_url") @db.Text
   rawJson               Json      @map("raw_json") // full Stripe PaymentIntent payload
   authorizedAt          DateTime? @map("authorized_at")
   capturedAt            DateTime? @map("captured_at")
@@ -523,7 +575,7 @@ model Application {
   questionnaireVersionId String            @map("questionnaire_version_id")
   questionnaire          Questionnaire     @relation(fields: [questionnaireVersionId], references: [id], onDelete: Restrict)
   status                 ApplicationStatus @default(SUBMITTED)
-  reason                 String?     @db.Text
+  reason                 String?           @db.Text
   submittedAt            DateTime          @default(now()) @map("submitted_at")
 
   answers ApplicationAnswer[]
@@ -535,14 +587,14 @@ model Application {
 }
 
 model ApplicationAnswer {
-  id                   String      @id @default(cuid())
-  applicationId        String      @map("application_id")
-  application          Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  questionLabelSnapshot String     @map("question_label_snapshot")
-  optionsSnapshot      Json?       @map("options_snapshot")
-  value                String?
-  fileId               String?     @map("file_id")
-  file                 Document?   @relation("AnswerFile", fields: [fileId], references: [id], onDelete: SetNull)
+  id                    String      @id @default(cuid())
+  applicationId         String      @map("application_id")
+  application           Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionLabelSnapshot String      @map("question_label_snapshot")
+  optionsSnapshot       Json?       @map("options_snapshot")
+  value                 String?
+  fileId                String?     @map("file_id")
+  file                  Document?   @relation("AnswerFile", fields: [fileId], references: [id], onDelete: SetNull)
 
   @@index([applicationId])
   @@map("application_answers")
@@ -553,13 +605,13 @@ model ApplicationAnswer {
 // ----------------------------------------------------------------------------
 
 model Conversation {
-  id        String    @id @default(cuid())
-  buyerId   String    @map("buyer_id")
-  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
-  sellerId  String    @map("seller_id")
-  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
-  bookingId String?   @unique @map("booking_id")
-  booking   Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  id        String   @id @default(cuid())
+  buyerId   String   @map("buyer_id")
+  buyer     User     @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId  String   @map("seller_id")
+  seller    User     @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  bookingId String?  @unique @map("booking_id")
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   messages Message[]
 
@@ -574,7 +626,7 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderId       String       @map("sender_id")
   sender         User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
-  body           String?  @db.Text
+  body           String?      @db.Text
   imageId        String?      @map("image_id")
   image          Document?    @relation("MessageImage", fields: [imageId], references: [id], onDelete: SetNull)
   masked         Boolean      @default(false)
@@ -661,13 +713,13 @@ model AppConfig {
 }
 
 model Settings {
-  id                String  @id @default("singleton")
-  commissionPct     Float   @map("commission_pct")
-  refundWindowsJson Json    @map("refund_windows_json")
-  requestExpiryHours Int    @map("request_expiry_hours")
-  maskingEnabled    Boolean @default(true) @map("masking_enabled")
+  id                 String  @id @default("singleton")
+  commissionPct      Float   @map("commission_pct")
+  refundWindowsJson  Json    @map("refund_windows_json")
+  requestExpiryHours Int     @map("request_expiry_hours")
+  maskingEnabled     Boolean @default(true) @map("masking_enabled")
   // How many profile photos a guide must upload in become-a-guide (admin-set).
-  requiredPhotos    Int     @default(3) @map("required_photos")
+  requiredPhotos     Int     @default(3) @map("required_photos")
 
   @@map("settings")
 }
@@ -677,7 +729,7 @@ model NotificationTemplate {
   key     String              @unique
   channel NotificationChannel
   subject String?
-  body    String   @db.Text
+  body    String              @db.Text
 
   @@map("notification_templates")
 }
@@ -686,7 +738,7 @@ model PushCampaign {
   id          String          @id @default(cuid())
   segment     CampaignSegment
   title       String
-  body        String   @db.Text
+  body        String          @db.Text
   scheduledAt DateTime?       @map("scheduled_at")
   status      CampaignStatus  @default(DRAFT)
 

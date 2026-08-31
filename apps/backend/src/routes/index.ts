@@ -9,6 +9,7 @@ import { conversationsRouter } from './engagement.js';
 import { cmsRouter, appConfigRouter } from './content.js';
 import { contactRouter } from './contact.js';
 import { adminRouter } from './admin.js';
+import { verificationRouter } from './verification.js';
 
 export const apiV1 = Router();
 
@@ -26,4 +27,5 @@ apiV1.use('/conversations', conversationsRouter);
 apiV1.use('/cms', cmsRouter);
 apiV1.use('/app-config', appConfigRouter);
 apiV1.use('/contact', contactRouter);
+apiV1.use('/verification', verificationRouter);
 apiV1.use('/admin', adminRouter);

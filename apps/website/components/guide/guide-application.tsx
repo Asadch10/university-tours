@@ -17,6 +17,7 @@ import {
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { AvailabilityPicker } from '@/components/guide/availability-picker';
+import { IdentityVerification } from '@/components/verification/identity-verification';
 import {
   parseAvailability,
   cleanAvailability,
@@ -599,6 +600,17 @@ export function GuideApplication() {
                   />
                 </Field>
               ))}
+
+              {/* Identity vs. enrolment are two different proofs and are shown as such:
+                  Stripe confirms who you are, the student ID below is what proves you
+                  are enrolled. */}
+              <Field
+                id="f-identity"
+                label="Verify your identity"
+                desc="Optional but recommended — a verified identity badge helps families trust your listing. This confirms who you are; your student ID below is what confirms your enrolment."
+              >
+                <IdentityVerification kind="GUIDE" />
+              </Field>
 
               <Field id="f-idPhoto" label="Upload your student ID to confirm your eligibility" desc="Please upload a photo of your school-issued student ID that clearly shows your face and name. Your ID is confidential and will never be shared publicly." required error={fieldErrors.idPhoto}>
                 <button

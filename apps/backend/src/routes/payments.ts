@@ -7,6 +7,7 @@ import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
 import { stripe, isStripeEnabled } from '../lib/stripe.js';
 import { authorizeBookingPayment, expireUnpaidBooking } from '../services/booking.service.js';
+import { syncStripeSession } from '../services/verification.service.js';
 import { syncConnectAccount } from '../services/connect.service.js';
 
 export const webhooksRouter = Router();
@@ -48,6 +49,16 @@ webhooksRouter.post('/stripe', async (req: Request, res: Response) => {
         // Hold released / payment failed → expire the still-unpaid booking.
         const pi = event.data.object as Stripe.PaymentIntent;
         await expireUnpaidBooking(pi.id);
+        break;
+      }
+      case 'identity.verification_session.verified':
+      case 'identity.verification_session.processing':
+      case 'identity.verification_session.requires_input':
+      case 'identity.verification_session.canceled': {
+        // Identity check moved on. All four map through one function so our row is
+        // always whatever Stripe currently says, never a guess from the event name.
+        const vs = event.data.object as Stripe.Identity.VerificationSession;
+        await syncStripeSession(vs);
         break;
       }
       case 'account.updated': {

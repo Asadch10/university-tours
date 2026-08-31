@@ -27,6 +27,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import type { ListingStatus } from '@/lib/data';
 import { useListingDetail, useListingActions, useListings, LISTING_PREFIX, type ApplicantKind } from '@/lib/queries';
 import { usePageBreadcrumb } from '@/components/layout/breadcrumb';
+import { VerificationPanel } from '@/components/verification/verification-panel';
 import { formatDate } from '@/lib/utils';
 
 export default function ListingDetailPage() {
@@ -197,6 +198,10 @@ export default function ListingDetailPage() {
 
           {/* ── Right: moderation + account + guide profile ── */}
           <div className="space-y-5">
+            {/* Identity check sits above moderation on purpose: it is context for the
+                approve/suspend decision immediately below it. */}
+            <VerificationPanel userId={l.user.id} kind={kind} />
+
             {/* Moderation */}
             <Can perm="listings.moderate">
               <div className="rounded-xl border border-ink-200 p-4">

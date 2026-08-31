@@ -13,6 +13,7 @@ import {
 } from '@/lib/client-api';
 import { updateSessionUser } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
+import { IdentityVerification } from '@/components/verification/identity-verification';
 import { TOUR_TYPE_OPTIONS } from '@/lib/tour-types';
 import { AvailabilityPicker } from '@/components/guide/availability-picker';
 import {
@@ -503,6 +504,17 @@ export function CounselorApplication() {
               </Field>
             ))
           )}
+        </div>
+
+        {/* Same two-proof split as the guide flow: identity here, credentials via the
+            document the admin reviews. */}
+        <div className="mt-8">
+          <span className="mb-1.5 block text-sm font-semibold text-ink-800">Verify your identity</span>
+          <p className="mb-2 text-xs leading-relaxed text-ink-500">
+            Optional but recommended — families are more likely to book a counselor whose
+            identity is verified. Your credentials are reviewed separately by our team.
+          </p>
+          <IdentityVerification kind="COUNSELOR" />
         </div>
 
         {/* Agreement */}
