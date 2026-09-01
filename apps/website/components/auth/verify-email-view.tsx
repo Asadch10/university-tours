@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Loader2, MailCheck, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, MailCheck, AlertCircle, Smartphone } from 'lucide-react';
 import { authApi, ApiError, tokenStore } from '@/lib/client-api';
 import { updateSessionUser, signOut } from '@/lib/auth';
 
@@ -40,6 +40,11 @@ export function VerifyEmailView() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get('token');
+  // `?app=1` means the account was created in the mobile app, so this page was opened in
+  // the phone's browser purely to confirm the token. Continuing on the website would be a
+  // dead end — the browser has no session, and the app is already polling and will move
+  // the user on by itself — so the success state just tells them to switch back.
+  const fromApp = params.get('app') === '1';
 
   const [mode, setMode] = useState<Mode>(token ? 'verifying' : 'pending');
   const [errorMsg, setErrorMsg] = useState('');
@@ -116,7 +121,41 @@ export function VerifyEmailView() {
     );
   }
 
-  // ── Verified ─────────────────────────────────────────────────────────────
+  // ── Verified, from the mobile app ────────────────────────────────────────
+  if (mode === 'verified' && fromApp) {
+    return (
+      <Card>
+        <div className="flex flex-col py-2">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-verified">
+            <CheckCircle2 size={30} />
+          </div>
+          <h1 className="mt-7 font-display text-3xl font-bold leading-tight text-ink-900">
+            Email verified, {first}!
+          </h1>
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-600">
+            {email && <span className="font-semibold text-ink-900">{email}</span>} is confirmed.
+          </p>
+
+          <div className="mt-8 flex items-start gap-3.5 rounded-2xl border border-ink-200 bg-canvas-alt p-5">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-maroon-900 text-white">
+              <Smartphone size={19} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-ink-900">
+                Go back to the Campus Private Tours app
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-600">
+                It has already picked this up and will continue on its own. You can close
+                this page.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // ── Verified, on the website ─────────────────────────────────────────────
   if (mode === 'verified') {
     return (
       <Card>

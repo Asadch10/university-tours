@@ -52,15 +52,34 @@ function issueEmailVerifyToken(user: { id: string; email: string }): string {
 
 /** Build the website link the user clicks in the email. Lands on onboarding,
  *  which confirms the token and then walks the user through setup. */
-function buildVerifyUrl(token: string): string {
+/** Which app the person signed up in. Decides where the emailed link lands. */
+export type VerifyClient = 'web' | 'mobile';
+
+/**
+ * The URL behind "Verify my email".
+ *
+ * Both clients open a WEB page — the app cannot receive the link itself (it has no
+ * universal-link setup, and Expo Go could never claim one anyway). But the two need
+ * different destinations:
+ *
+ *   web    → /onboarding, which verifies and drops the user straight into onboarding.
+ *   mobile → /verify-email, which verifies and then just says "done, go back to the app".
+ *            Continuing on the website would be a dead end: the phone's browser has no
+ *            session, and the app is already waiting to move them on by itself.
+ */
+function buildVerifyUrl(token: string, client: VerifyClient): string {
   const base = config.APP_WEB_URL.replace(/\/+$/, '');
-  return `${base}/onboarding?token=${encodeURIComponent(token)}`;
+  const t = encodeURIComponent(token);
+  return client === 'mobile' ? `${base}/verify-email?token=${t}&app=1` : `${base}/onboarding?token=${t}`;
 }
 
 /** Fire off the verification email (best-effort — never throws to the caller). */
-async function dispatchVerificationEmail(user: { id: string; email: string; name: string }): Promise<void> {
+async function dispatchVerificationEmail(
+  user: { id: string; email: string; name: string },
+  client: VerifyClient = 'web',
+): Promise<void> {
   const token = issueEmailVerifyToken(user);
-  const verifyUrl = buildVerifyUrl(token);
+  const verifyUrl = buildVerifyUrl(token, client);
   await sendVerificationEmail({ to: user.email, name: user.name, verifyUrl }).catch((err) => {
     logger.error({ err, userId: user.id }, 'Verification email dispatch failed');
   });
@@ -92,12 +111,12 @@ export async function verifyEmail(token: string) {
 }
 
 /** Re-send the verification email for a logged-in user (no-op if already verified). */
-export async function resendVerification(userId: string) {
+export async function resendVerification(userId: string, client: VerifyClient = 'web') {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new HttpError(404, 'not_found', 'Account not found.');
   if (user.emailVerifiedAt) return { ok: true as const, alreadyVerified: true };
 
-  await dispatchVerificationEmail(user);
+  await dispatchVerificationEmail(user, client);
   return { ok: true as const, alreadyVerified: false };
 }
 
@@ -224,7 +243,7 @@ export async function login(email: string, password: string) {
   };
 }
 
-export async function register(email: string, password: string, name?: string) {
+export async function register(email: string, password: string, name?: string, client: VerifyClient = 'web') {
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (existing) throw new HttpError(409, 'email_in_use', 'Email already registered');
 
@@ -240,7 +259,7 @@ export async function register(email: string, password: string, name?: string) {
 
   // Send the "verify your email" message. Best-effort: a mail failure must not
   // block sign-up (the user can always resend from the verification screen).
-  await dispatchVerificationEmail(user);
+  await dispatchVerificationEmail(user, client);
 
   const accessToken = issueAccessToken({ sub: user.id, role: user.role });
   const { token: refreshToken } = issueRefreshToken(user.id);

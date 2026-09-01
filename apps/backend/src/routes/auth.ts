@@ -7,12 +7,21 @@ import { loginSchema } from '@ucpt/validation';
 
 export const authRouter = Router();
 
+/**
+ * Which client is asking, so the verification email links somewhere useful for it.
+ * Anything other than an explicit 'mobile' is treated as the website, so every existing
+ * caller keeps exactly the behaviour it already had.
+ */
+function verifyClient(body: unknown): 'web' | 'mobile' {
+  return (body as { client?: string } | null)?.client === 'mobile' ? 'mobile' : 'web';
+}
+
 authRouter.post('/register', asyncHandler(async (req, res) => {
   // Website sign-ups don't pick a role — it stays null until onboarding decides it.
   const { email, password, name } = req.body as { email?: string; password?: string; name?: string };
   if (!email || typeof email !== 'string') throw new HttpError(400, 'validation_error', 'A valid email is required');
   if (!password || password.length < 8) throw new HttpError(400, 'validation_error', 'Password must be at least 8 characters');
-  const result = await authService.register(email, password, name);
+  const result = await authService.register(email, password, name, verifyClient(req.body));
   res.status(201).json(result);
 }));
 
@@ -44,7 +53,7 @@ authRouter.post('/verify-email', asyncHandler(async (req, res) => {
 }));
 
 authRouter.post('/resend-verification', requireAuth, asyncHandler(async (req, res) => {
-  const result = await authService.resendVerification(req.user!.id);
+  const result = await authService.resendVerification(req.user!.id, verifyClient(req.body));
   res.json(result);
 }));
 

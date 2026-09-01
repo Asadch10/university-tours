@@ -31,10 +31,22 @@ async function persist(res: AuthResponse) {
   await SecureStore.setItemAsync(USER_KEY, JSON.stringify(res.user));
 }
 
+/**
+ * Tells the backend which app is asking, so the "Verify my email" link in the email
+ * lands somewhere useful for THIS client. A mobile sign-up gets a page that confirms and
+ * says "go back to the app"; the website keeps sending people into its own onboarding.
+ */
+const CLIENT = 'mobile' as const;
+
 export const session = {
   // Role is omitted — the backend defaults new sign-ups to null until onboarding.
   async register(email: string, password: string, name?: string) {
-    const res = await api.request<AuthResponse>('POST', '/auth/register', { email, password, name });
+    const res = await api.request<AuthResponse>('POST', '/auth/register', {
+      email,
+      password,
+      name,
+      client: CLIENT,
+    });
     await persist(res);
     return res;
   },
@@ -55,9 +67,14 @@ export const session = {
       { token },
     );
   },
-  // Re-send the verification email to the signed-in user.
+  // Re-send the verification email to the signed-in user. Sends `client` too, so the
+  // resent link is the mobile one — not the website's onboarding link.
   resendVerification() {
-    return api.request<{ ok: true; alreadyVerified?: boolean }>('POST', '/auth/resend-verification');
+    return api.request<{ ok: true; alreadyVerified?: boolean }>(
+      'POST',
+      '/auth/resend-verification',
+      { client: CLIENT },
+    );
   },
   // Fresh account snapshot — includes `emailVerified`, used to poll for verification.
   me() {
