@@ -177,7 +177,7 @@ export function ManageListingScreen() {
 
       {/* ── Title bar + switcher ── */}
       <View style={s.topBar}>
-        <Text style={s.title}>Manage listing</Text>
+        <Text style={s.title}>{listing ? 'Manage listing' : 'Start earning'}</Text>
         {both && (
           <View style={s.segment}>
             {SECTIONS.map((x) => {
@@ -205,7 +205,13 @@ export function ManageListingScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={tc.maroon800} />
         }
       >
-        {!listing && <EmptyState section={section} onStart={startApplication} />}
+        {!listing && (
+          <EmptyState
+            onChoose={(which) =>
+              nav.navigate(which === 'guide' ? 'BecomeGuide' : 'BecomeCounselor')
+            }
+          />
+        )}
 
         {isDraft && (
           <DraftState
@@ -270,57 +276,68 @@ export function ManageListingScreen() {
 
 /* ═══ No listing yet ═══════════════════════════════════════════════════════ */
 
-function EmptyState({ section, onStart }: { section: Section; onStart: () => void }) {
+/**
+ * Nothing created yet.
+ *
+ * This used to be one "Start your listing" button that always opened the GUIDE form,
+ * which left a guest no way to reach the counselor application at all — the
+ * guide/counselor switcher only appears once both profiles exist. Both paths are offered
+ * here instead, worded exactly as they are at onboarding so the choice reads the same
+ * wherever it is made.
+ */
+function EmptyState({ onChoose }: { onChoose: (which: Section) => void }) {
   const s = useStyles(makeStyles);
   const tc = useThemeColors();
-  const guide = section === 'guide';
 
-  const perks: { icon: IoniconName; title: string; body: string }[] = guide
-    ? [
-        { icon: 'wallet-outline', title: 'Earn on your schedule', body: 'Host tours whenever it suits your classes.' },
-        { icon: 'videocam-outline', title: 'In person or over video', body: 'Walk families around campus, or answer questions from your dorm.' },
-        { icon: 'shield-checkmark-outline', title: 'Verified and trusted', body: 'Every listing is reviewed before it goes live.' },
-      ]
-    : [
-        { icon: 'people-outline', title: 'Reach families deciding now', body: 'Advise students actively choosing where to apply.' },
-        { icon: 'calendar-outline', title: 'Set your own hours', body: 'Take sessions only on the dates and times you offer.' },
-        { icon: 'shield-checkmark-outline', title: 'Credentials reviewed', body: 'Every counselor is verified before going live.' },
-      ];
+  const paths: { key: Section; icon: IoniconName; title: string; body: string }[] = [
+    {
+      key: 'guide',
+      icon: 'school-outline',
+      title: 'Become a guide',
+      body: 'Host private tour or video chat at your school and get paid.',
+    },
+    {
+      key: 'counselor',
+      icon: 'compass-outline',
+      title: 'Become a college counselor',
+      body: 'Advise families as an independent admissions professional.',
+    },
+  ];
 
   return (
     <View>
       <View style={s.hero}>
         <View style={s.heroGlow} />
         <View style={s.heroIcon}>
-          <Ionicons name={guide ? 'school-outline' : 'compass-outline'} size={26} color={tc.onBrand} />
+          <Ionicons name="sparkles-outline" size={24} color={tc.onBrand} />
         </View>
-        <Text style={s.heroTitle}>
-          {guide ? 'Share your campus with the students who come next' : 'Guide families through admissions'}
-        </Text>
+        <Text style={s.heroTitle}>Get booked by families planning campus visits</Text>
         <Text style={s.heroBody}>
-          {guide
-            ? 'Set up your listing once — tell your story, add photos, choose how you host. About 10 minutes.'
-            : 'Apply once — tell us about your practice, set your availability, start taking consultations.'}
+          Create your listing once. Our team reviews it, then guests can find and book you.
+          It takes about 10 minutes.
         </Text>
-        <Pressable style={({ pressed }) => [s.heroBtn, pressed && s.pressed]} onPress={onStart}>
-          <Text style={s.heroBtnText}>{guide ? 'Start your listing' : 'Start your application'}</Text>
-          <Ionicons name="arrow-forward" size={16} color={tc.maroon900} />
-        </Pressable>
       </View>
 
-      <View style={s.perkList}>
-        {perks.map((p) => (
-          <View key={p.title} style={s.perkRow}>
-            <View style={s.perkIcon}>
-              <Ionicons name={p.icon} size={18} color={tc.maroon800} />
+      <View style={s.pathList}>
+        {paths.map((x) => (
+          <Pressable
+            key={x.key}
+            style={({ pressed }) => [s.pathRow, pressed && s.pressed]}
+            onPress={() => onChoose(x.key)}
+          >
+            <View style={s.pathIcon}>
+              <Ionicons name={x.icon} size={21} color={tc.onBrand} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.perkTitle}>{p.title}</Text>
-              <Text style={s.perkBody}>{p.body}</Text>
+              <Text style={s.pathTitle}>{x.title}</Text>
+              <Text style={s.pathBody}>{x.body}</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={19} color={tc.ink300} />
+          </Pressable>
         ))}
       </View>
+
+      <Text style={s.pathFoot}>You can do both — add the second one any time.</Text>
     </View>
   );
 }
@@ -784,39 +801,35 @@ const makeStyles = (tc: Palette) =>
       marginTop: spacing(4),
     },
     heroBody: { fontSize: font(13.5), lineHeight: 20, color: '#ffffffb8', marginTop: spacing(2.5) },
-    heroBtn: {
+    pathList: { gap: spacing(3), marginTop: spacing(5) },
+    pathRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing(2),
-      height: 50,
-      backgroundColor: tc.ivory,
-      borderRadius: radius.lg,
-      marginTop: spacing(5),
-    },
-    heroBtnText: { fontSize: font(15), fontWeight: '800', color: tc.maroon900 },
-
-    perkList: { gap: spacing(3), marginTop: spacing(5) },
-    perkRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing(3),
+      gap: spacing(3.5),
+      minHeight: 78,
       backgroundColor: tc.white,
       borderWidth: 1,
       borderColor: tc.ink100,
       borderRadius: radius.lg,
-      padding: spacing(3.5),
+      paddingHorizontal: spacing(4),
+      paddingVertical: spacing(3.5),
     },
-    perkIcon: {
-      height: 40,
-      width: 40,
+    pathIcon: {
+      height: 46,
+      width: 46,
       borderRadius: radius.md,
-      backgroundColor: tc.maroon50,
+      backgroundColor: tc.maroon900,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    perkTitle: { fontSize: font(14), fontWeight: '700', color: tc.ink900 },
-    perkBody: { fontSize: font(12.5), lineHeight: 18, color: tc.ink500, marginTop: 2 },
+    pathTitle: { fontSize: font(15.5), fontWeight: '800', color: tc.ink900 },
+    pathBody: { fontSize: font(12.5), lineHeight: 18, color: tc.ink500, marginTop: 2 },
+    pathFoot: {
+      fontSize: font(12.5),
+      color: tc.ink500,
+      textAlign: 'center',
+      marginTop: spacing(4),
+    },
 
     /* Draft */
     card: {
