@@ -155,7 +155,7 @@ export function SettingsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.menuScroll}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>Profile</Text>
 
         {/* Profile card → opens the full profile screen */}
         <Pressable style={styles.profileCard} onPress={() => setShowProfile(true)}>

@@ -7,7 +7,7 @@ export { ExploreScreen } from './ExploreScreen';
 export { BrowseScreen } from './BrowseScreen';
 export { ManageListingScreen } from './ManageListingScreen';
 export { SettingsScreen } from './SettingsScreen';
-// No longer a tab — Settings hosts it as "My bookings".
+// No longer a tab — the Profile hub hosts it as "My bookings".
 export { MyToursScreen } from './MyToursScreen';
 
 // The two applications, pushed from onboarding and from Manage listing.

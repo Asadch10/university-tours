@@ -52,7 +52,27 @@ export async function getMyVerification(userId: string, kind: ApplicantKind = 'G
  * Reuses an unfinished session rather than creating a new one on every click — each
  * created session is billable, and a user refreshing the page should not cost money.
  */
-export async function startStripeVerification(userId: string, kind: ApplicantKind = 'GUIDE') {
+/** Which app started the check. Decides where Stripe sends the user afterwards. */
+export type VerifyClient = 'web' | 'mobile';
+
+/**
+ * Where Stripe returns the user once the hosted flow finishes.
+ *
+ * The web can go straight back into the app it never left. Mobile cannot: the flow runs
+ * in an in-app browser with no website session, so /manage-listing would bounce the user
+ * to /login and read as a failure even though the check succeeded. Mobile therefore gets
+ * a dedicated page that confirms and hands control back to the app.
+ */
+function returnUrlFor(client: VerifyClient): string {
+  const base = config.APP_WEB_URL.replace(/\/+$/, '');
+  return client === 'mobile' ? `${base}/verification-done?app=1` : `${base}/manage-listing?verified=1`;
+}
+
+export async function startStripeVerification(
+  userId: string,
+  kind: ApplicantKind = 'GUIDE',
+  client: VerifyClient = 'web',
+) {
   if (!isStripeEnabled()) {
     throw new HttpError(503, 'stripe_disabled', 'Identity verification is not configured');
   }
@@ -85,7 +105,7 @@ export async function startStripeVerification(userId: string, kind: ApplicantKin
     // without trusting anything the client sends.
     metadata: { userId, kind },
     options: { document: { require_matching_selfie: true, require_live_capture: true } },
-    return_url: `${config.APP_WEB_URL.replace(/\/+$/, '')}/manage-listing?verified=1`,
+    return_url: returnUrlFor(client),
   });
 
   await prisma.identityVerification.upsert({

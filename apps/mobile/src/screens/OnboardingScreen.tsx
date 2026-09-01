@@ -62,7 +62,7 @@ export function OnboardingScreen({ navigation }: Props) {
     navigation.reset({
       index: 1,
       routes: [
-        { name: 'Main', params: { screen: 'Manage listing' } },
+        { name: 'Main', params: { screen: 'Listing' } },
         { name: to === 'guide' ? 'BecomeGuide' : 'BecomeCounselor' },
       ],
     });

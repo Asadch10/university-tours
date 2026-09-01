@@ -12,6 +12,15 @@ function kindOf(req: { query: Record<string, unknown>; body?: unknown }): Applic
   return String(raw ?? '').toUpperCase() === 'COUNSELOR' ? 'COUNSELOR' : 'GUIDE';
 }
 
+/**
+ * Which app is asking. Anything but an explicit 'mobile' is treated as the website, so
+ * existing callers keep the behaviour they already had.
+ */
+function clientOf(req: { query: Record<string, unknown>; body?: unknown }): 'web' | 'mobile' {
+  const raw = req.query['client'] ?? (req.body as { client?: unknown } | undefined)?.client;
+  return String(raw ?? '') === 'mobile' ? 'mobile' : 'web';
+}
+
 export const verificationRouter = Router();
 
 // The applicant's own status — drives the button state in the application flow.
@@ -22,7 +31,7 @@ verificationRouter.get('/me', requireAuth, asyncHandler(async (req, res) => {
 // Start (or resume) a Stripe Identity session. Returns a client secret for
 // Stripe.js plus a hosted URL as a fallback for browsers that can't open the modal.
 verificationRouter.post('/stripe/start', requireAuth, asyncHandler(async (req, res) => {
-  res.status(201).json(await svc.startStripeVerification(req.user!.id, kindOf(req)));
+  res.status(201).json(await svc.startStripeVerification(req.user!.id, kindOf(req), clientOf(req)));
 }));
 
 // Pull the provider's current state on demand — a safety net for a missed webhook.

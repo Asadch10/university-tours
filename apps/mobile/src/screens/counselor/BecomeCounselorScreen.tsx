@@ -59,6 +59,7 @@ import {
   type IoniconName,
 } from '../apply/form-kit';
 import { AvailabilityPicker } from '../apply/AvailabilityPicker';
+import { IdentityVerification } from '../apply/IdentityVerification';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BecomeCounselor'>;
 
@@ -197,7 +198,7 @@ export function BecomeCounselorScreen({ navigation, route }: Props) {
   const goManage = () =>
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Main', params: { screen: 'Manage listing', params: { tab: 'counselor' } } }],
+      routes: [{ name: 'Main', params: { screen: 'Listing', params: { tab: 'counselor' } } }],
     });
 
   async function saveDraft() {
@@ -447,6 +448,13 @@ export function BecomeCounselorScreen({ navigation, route }: Props) {
                     />
                   </Field>
                 ))}
+
+                <Field
+                  label="Verify your identity"
+                  desc="Optional but recommended — families are more likely to book a counselor whose identity is verified. Your credentials are reviewed separately by our team."
+                >
+                  <IdentityVerification kind="COUNSELOR" />
+                </Field>
 
                 <View style={s.agreeBox}>
                   <CheckRow checked={agree} onToggle={() => setAgree((v) => !v)}>

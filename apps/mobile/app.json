@@ -68,7 +68,8 @@
         {
           "photosPermission": "Campus Private Tours needs access to your photos so you can add your listing photos and your student ID."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "apiBaseUrl": "https://www.university.tours",

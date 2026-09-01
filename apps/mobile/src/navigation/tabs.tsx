@@ -1,10 +1,14 @@
 // Role-aware bottom tabs (Part V §6).
-// Buyer: Home / Explore / Browse / Manage listing / Settings.
+// Buyer: Home / Explore / Browse / Listing / Profile.
 // Ambassador: Requests / Listings / Earnings / Messages / Profile.
 //
-// "Manage listing" sits where "My Tours" used to, matching the website header, where
-// Manage listing became its own top-level item and My tours was renamed My bookings and
-// folded into Settings. Bookings are still one tap away — Settings → My bookings.
+// "Listing" sits where "My Tours" used to, matching the website header, where Manage
+// listing became its own top-level item and My tours was renamed My bookings and folded
+// into Settings. Bookings are still one tap away — Settings → My bookings.
+//
+// The tab is one word on purpose: "Manage listing" wrapped or truncated in the tab bar,
+// and every other tab here is a single word. The screen itself still says "Manage
+// listing", which is the wording the website uses.
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -24,13 +28,13 @@ import { useThemeColors } from '../theme-context';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
-/** Buyer tab routes. `tab` opens Manage listing straight on one of its two profiles. */
+/** Buyer tab routes. `tab` opens Listing straight on one of its two profiles. */
 export type BuyerTabParamList = {
   Home: undefined;
   Explore: undefined;
   Browse: undefined;
-  'Manage listing': { tab?: 'guide' | 'counselor' } | undefined;
-  Settings: undefined;
+  'Listing': { tab?: 'guide' | 'counselor' } | undefined;
+  Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -73,14 +77,14 @@ export function BuyerTabs() {
         options={{ tabBarIcon: tabIcon('search-outline', 'search') }}
       />
       <Tab.Screen
-        name="Manage listing"
+        name="Listing"
         component={ManageListingScreen}
         options={{ tabBarIcon: tabIcon('briefcase-outline', 'briefcase') }}
       />
       <Tab.Screen
-        name="Settings"
+        name="Profile"
         component={SettingsScreen}
-        options={{ tabBarIcon: tabIcon('settings-outline', 'settings') }}
+        options={{ tabBarIcon: tabIcon('person-outline', 'person') }}
       />
     </Tab.Navigator>
   );
@@ -110,9 +114,9 @@ export function AmbassadorTabs() {
         options={{ tabBarIcon: tabIcon('chatbubble-outline', 'chatbubble') }}
       />
       <Tab.Screen
-        name="Settings"
+        name="Profile"
         component={SettingsScreen}
-        options={{ tabBarIcon: tabIcon('settings-outline', 'settings') }}
+        options={{ tabBarIcon: tabIcon('person-outline', 'person') }}
       />
     </Tab.Navigator>
   );

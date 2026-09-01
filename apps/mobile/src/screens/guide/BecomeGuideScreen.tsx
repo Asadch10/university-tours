@@ -63,6 +63,7 @@ import {
   type IoniconName,
 } from '../apply/form-kit';
 import { AvailabilityPicker } from '../apply/AvailabilityPicker';
+import { IdentityVerification } from '../apply/IdentityVerification';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BecomeGuide'>;
 type Step = 'details' | 'paid' | 'photos';
@@ -319,7 +320,7 @@ export function BecomeGuideScreen({ navigation }: Props) {
       // route behind — on the right tab — with no way back into the submitted form.
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Main', params: { screen: 'Manage listing', params: { tab: 'guide' } } }],
+        routes: [{ name: 'Main', params: { screen: 'Listing', params: { tab: 'guide' } } }],
       });
     } catch (e) {
       toast.error('Could not publish listing', friendlyError(e));
@@ -565,7 +566,15 @@ export function BecomeGuideScreen({ navigation }: Props) {
                 hint="Your ID is confidential and is never shown publicly."
               />
               <Card>
-                <Field first required error={errors.idPhoto}>
+                <Field
+                  first
+                  label="Verify your identity"
+                  desc="Optional but recommended — a verified identity badge helps families trust your listing. This confirms who you are; your student ID below is what confirms your enrolment."
+                >
+                  <IdentityVerification kind="GUIDE" />
+                </Field>
+
+                <Field required error={errors.idPhoto}>
                   <UploadRow
                     uri={idPhoto}
                     uploading={uploadingId}
