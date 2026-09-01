@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { font, colors, radius, spacing } from '../theme';
-import { session, friendlyError } from '../api/auth';
+import { session, friendlyError, type Role } from '../api/auth';
 import { useToast } from '../components/Toast';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useStyles, useThemeColors } from '../theme-context';
@@ -30,11 +30,19 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
   const [verifying, setVerifying] = useState(!!token);
   const done = useRef(false);
 
-  const goOnboarding = useCallback(() => {
-    if (done.current) return;
-    done.current = true;
-    navigation.replace('Onboarding');
-  }, [navigation]);
+  /**
+   * Verification cleared — now the SECOND gate. Onboarding assigns the account role, so a
+   * null role means it never ran; anyone who already has one (they onboarded on the
+   * website, or verified late) goes straight into the app instead of repeating it.
+   */
+  const goNext = useCallback(
+    (role: Role | null | undefined) => {
+      if (done.current) return;
+      done.current = true;
+      navigation.replace(role ? 'Main' : 'Onboarding');
+    },
+    [navigation],
+  );
 
   // Seed name/email from the session (present right after sign-up).
   useEffect(() => {
@@ -53,7 +61,10 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
       try {
         await session.verifyEmail(token);
         await session.setUser({ emailVerified: true });
-        goOnboarding();
+        // verifyEmail doesn't return the role, so read it before choosing the next screen.
+        const me = await session.me().catch(() => null);
+        if (me) await session.setUser({ role: me.role });
+        goNext(me?.role ?? null);
       } catch {
         toast.error('Verification failed', 'That link is invalid or has expired.');
       } finally {
@@ -70,8 +81,8 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
       try {
         const me = await session.me();
         if (me.emailVerified) {
-          await session.setUser({ emailVerified: true });
-          goOnboarding();
+          await session.setUser({ emailVerified: true, role: me.role });
+          goNext(me.role);
         } else if (opts?.manual) {
           toast.info('Not verified yet', 'Please tap the link in the email we sent you.');
         }
@@ -79,7 +90,7 @@ export function VerifyEmailScreen({ navigation, route }: Props) {
         /* transient — keep polling */
       }
     },
-    [goOnboarding, toast],
+    [goNext, toast],
   );
 
   useEffect(() => {

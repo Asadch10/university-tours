@@ -18,6 +18,7 @@ import { font, colors, radius, spacing } from '../theme';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { session, friendlyError } from '../api/auth';
 import { registerForPush } from '../api/push';
+import { resolveEntryRoute } from '../navigation/entry';
 import { useStyles, useThemeColors } from '../theme-context';
 import type { Palette } from '../theme';
 
@@ -64,9 +65,15 @@ export function AuthScreen({ navigation }: Props) {
         // New sign-ups verify their email, then onboard — same flow as the website.
         navigation.replace('VerifyEmail');
       } else {
-        await session.login(email.trim(), password);
+        const res = await session.login(email.trim(), password);
         void registerForPush(); // ask for notifications + register this device
-        navigation.replace('Main');
+        // Correct credentials are not enough to reach the app. An account that never
+        // verified its email, or never finished onboarding, has to clear that gate
+        // first — otherwise closing the app mid-sign-up let you back in past both.
+        const next = await resolveEntryRoute(res.user);
+        if (next === 'VerifyEmail') navigation.replace('VerifyEmail');
+        else if (next === 'Onboarding') navigation.replace('Onboarding');
+        else navigation.replace('Main');
       }
     } catch (e) {
       setError(friendlyError(e));
