@@ -19,6 +19,7 @@ import { guidesApi, communityGuideToGuide, type Guide } from '../api/guides';
 import { GuideCardSkeleton, UniCardSkeleton } from '../components/Skeleton';
 import { GuideCard } from './guide/GuideCard';
 import { GuideDetail } from './guide/GuideDetail';
+import { StatusSwitcher } from '../components/StatusSwitcher';
 import { useStyles, useThemeColors, useTheme } from '../theme-context';
 import type { Palette } from '../theme';
 
@@ -76,39 +77,43 @@ export function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
+      {/* Light glyphs in both themes — the bar sits on maroon, dark either way. */}
+      <StatusBar style="light" />
+      {/* ── Header ───────────────────────────────────────────────────────────
+          A real header bar: full-bleed, and OUTSIDE the ScrollView so it stays
+          put while the page scrolls under it. The hamburger is gone — it only
+          opened Settings, which already has its own tab. */}
+      <View style={styles.header}>
+        <StatusSwitcher />
+        <View style={styles.headerActions}>
+          {/* Light / dark switch — the app defaults to dark. */}
+          <Pressable
+            hitSlop={10}
+            onPress={toggleTheme}
+            style={styles.headerBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            <Ionicons
+              name={theme === 'dark' ? 'sunny-outline' : 'moon-outline'}
+              size={21}
+              color={tc.onBrand}
+            />
+          </Pressable>
+          <Pressable hitSlop={10} style={styles.headerBtn} accessibilityLabel="Notifications">
+            <Ionicons name="notifications-outline" size={21} color={tc.onBrand} />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.body}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => load({ refresh: true })} tintColor={tc.maroon800} />
         }
       >
-        {/* Top bar */}
-        <View style={styles.topBar}>
-          <Pressable hitSlop={8} onPress={() => nav.navigate('Settings')}>
-            <Ionicons name="menu" size={26} color={tc.ink900} />
-          </Pressable>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(4) }}>
-            {/* Light / dark switch — the app defaults to dark. */}
-            <Pressable
-              hitSlop={8}
-              onPress={toggleTheme}
-              accessibilityRole="button"
-              accessibilityLabel={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-            >
-              <Ionicons
-                name={theme === 'dark' ? 'sunny-outline' : 'moon-outline'}
-                size={23}
-                color={tc.ink900}
-              />
-            </Pressable>
-            <Pressable hitSlop={8}>
-              <Ionicons name="notifications-outline" size={23} color={tc.ink900} />
-            </Pressable>
-          </View>
-        </View>
-
         {/* Greeting */}
         <Text style={styles.greeting}>Hi, {firstName} 👋</Text>
         <Text style={styles.heading}>Where do you{'\n'}want to study?</Text>
@@ -177,7 +182,8 @@ export function HomeScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -196,10 +202,29 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => voi
 
 const makeStyles = (tc: Palette) =>
   StyleSheet.create({
-  safe: { flex: 1, backgroundColor: tc.white },
-  scroll: { paddingHorizontal: spacing(5), paddingBottom: spacing(10) },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing(2) },
-  greeting: { fontSize: font(15), color: tc.ink600, marginTop: spacing(3) },
+  // Maroon, so the colour runs up behind the status bar / notch too. Without this the
+  // top safe-area inset stays white and leaves a pale strip above the header.
+  safe: { flex: 1, backgroundColor: tc.maroon900 },
+  // The body sits on the normal surface — only the header is maroon.
+  body: { flex: 1, backgroundColor: tc.white },
+  scroll: { paddingHorizontal: spacing(5), paddingTop: spacing(4), paddingBottom: spacing(10) },
+  // Full-width: the header carries its OWN horizontal padding rather than inheriting the
+  // scroll content's inset, so the maroon runs edge to edge. No bottom hairline — the
+  // colour change is already the separation.
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing(3),
+    paddingLeft: spacing(5),
+    paddingRight: spacing(3),
+    paddingTop: spacing(1),
+    paddingBottom: spacing(3),
+    backgroundColor: tc.maroon900,
+  },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  headerBtn: { height: 40, width: 40, alignItems: 'center', justifyContent: 'center' },
+  greeting: { fontSize: font(15), color: tc.ink600 },
   heading: { fontSize: font(28), fontWeight: '800', color: tc.ink900, marginTop: spacing(2), lineHeight: 34 },
   searchRow: { flexDirection: 'row', gap: spacing(3), marginTop: spacing(5) },
   searchBox: {

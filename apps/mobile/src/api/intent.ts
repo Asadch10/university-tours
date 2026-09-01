@@ -26,23 +26,28 @@ export interface IntentOption {
   description: string;
   /** Read-only wording shown under Settings → College status. */
   statusText: string;
+  /** One word, for the status pill in the home header — `label` is far too long there. */
+  shortLabel: string;
 }
 
 export const INTENT_OPTIONS: IntentOption[] = [
   {
     key: 'guide',
+    shortLabel: 'Guide',
     label: 'Become a guide',
     description: 'Host private tour or video chat at your school and get paid.',
     statusText: 'Guide — you host private campus tours.',
   },
   {
     key: 'counselor',
+    shortLabel: 'Counselor',
     label: 'Become a college counselor',
     description: 'Advise families as an independent admissions professional.',
     statusText: 'College counselor — you advise families on admissions.',
   },
   {
     key: 'guest',
+    shortLabel: 'Guest',
     label: 'Browse guides / counselors (Guest)',
     description: 'Find a student guide or a counselor and book a session.',
     statusText: 'Guest — you book tours and consultations.',
