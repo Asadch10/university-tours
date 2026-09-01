@@ -10,6 +10,7 @@ import { session } from '../api/auth';
 import { unregisterForPush } from '../api/push';
 import { Skeleton } from '../components/Skeleton';
 import { ProfileScreen } from './ProfileScreen';
+import { MyToursScreen } from './MyToursScreen';
 import { ContactInformationSection } from './settings/ContactInformationSection';
 import { PasswordSection } from './settings/PasswordSection';
 import { PayoutsSection } from './settings/PayoutsSection';
@@ -22,6 +23,11 @@ import type { Palette } from '../theme';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 type SectionKey = 'contact' | 'password' | 'payouts' | 'payments' | 'college' | 'manage';
 
+/**
+ * My bookings moved here when Manage listing took its bottom-tab slot, mirroring the
+ * website's header. It is a whole screen, not a settings form, so it renders full-bleed
+ * (like the profile card) instead of inside the section detail's ScrollView.
+ */
 const SECTIONS: { key: SectionKey; label: string; icon: IoniconName }[] = [
   { key: 'contact', label: 'Contact information', icon: 'mail-outline' },
   { key: 'password', label: 'Password', icon: 'lock-closed-outline' },
@@ -48,6 +54,7 @@ export function SettingsScreen() {
   const nav = useNavigation<any>();
   const [active, setActive] = useState<SectionKey | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showBookings, setShowBookings] = useState(false);
   const [profile, setProfile] = useState<MyProfileDto | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -70,6 +77,11 @@ export function SettingsScreen() {
     await unregisterForPush(); // stop this device receiving pushes for the account
     await session.clear();
     goAuth();
+  }
+
+  // ── My bookings (full screen, from the row below the profile card) ──
+  if (showBookings) {
+    return <MyToursScreen onBack={() => setShowBookings(false)} />;
   }
 
   // ── Full profile screen (from the profile card) ──
@@ -113,6 +125,12 @@ export function SettingsScreen() {
           {active === 'college' && (
             <CollegeStatusSection
               profile={profile}
+              onNavigate={(key) => {
+                // Same destinations as the website's College status options.
+                const root = nav.getParent() ?? nav;
+                if (key === 'guest') nav.navigate('Browse');
+                else root.navigate(key === 'guide' ? 'BecomeGuide' : 'BecomeCounselor');
+              }}
               onSaved={({ role, intent }) =>
                 setProfile((p) =>
                   p
@@ -172,6 +190,17 @@ export function SettingsScreen() {
           )}
           <Ionicons name="chevron-forward" size={18} color={tc.ink300} />
         </Pressable>
+
+        {/* My bookings — its own group, so it reads as a destination not a setting */}
+        <View style={styles.menu}>
+          <Pressable onPress={() => setShowBookings(true)} style={styles.menuRow}>
+            <View style={styles.menuIcon}>
+              <Ionicons name="calendar-outline" size={19} color={tc.maroon800} />
+            </View>
+            <Text style={styles.menuLabel}>My bookings</Text>
+            <Ionicons name="chevron-forward" size={18} color={tc.ink300} />
+          </Pressable>
+        </View>
 
         {/* Section rows */}
         <View style={styles.menu}>

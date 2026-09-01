@@ -43,9 +43,29 @@ export function OnboardingScreen({ navigation }: Props) {
     fetchUniversities().then(setAllSchools).catch(() => {});
   }, []);
 
-  function goMain() {
+  /**
+   * Enter the app. `to` picks where onboarding hands off, matching the website:
+   * a guest lands on Browse to find someone to book, while a guide or counselor goes
+   * straight into their application form.
+   */
+  function enterApp(to: IntentKey) {
     void registerForPush(); // new users: ask for notifications on entering the app
-    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+
+    if (to === 'guest') {
+      // Reset rather than push, so Back can't return to onboarding.
+      navigation.reset({ index: 0, routes: [{ name: 'Main', params: { screen: 'Browse' } }] });
+      return;
+    }
+
+    // The tabs are still reset underneath, so closing the application form leaves the
+    // user in the app (on Manage listing) rather than back at the welcome screen.
+    navigation.reset({
+      index: 1,
+      routes: [
+        { name: 'Main', params: { screen: 'Manage listing' } },
+        { name: to === 'guide' ? 'BecomeGuide' : 'BecomeCounselor' },
+      ],
+    });
   }
 
   async function finish(intent: IntentKey, chosenSchools?: string[]) {
@@ -53,7 +73,7 @@ export function OnboardingScreen({ navigation }: Props) {
     try {
       const res = await intentApi.save(intent, chosenSchools);
       if (res.role) await session.setUser({ role: res.role });
-      goMain();
+      enterApp(intent);
     } catch (e) {
       toast.error('Something went wrong', friendlyError(e));
       setSaving(false);
@@ -62,7 +82,8 @@ export function OnboardingScreen({ navigation }: Props) {
 
   function intentContinue() {
     if (!selected) return;
-    // Guests get the schools-of-interest step; guides and counselors are done here.
+    // Guests get the schools-of-interest step; guides and counselors go straight to
+    // their application, where the school is asked for in context.
     if (selected === 'guest') {
       setStep('schools');
       return;

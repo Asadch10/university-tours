@@ -77,7 +77,15 @@ function serviceMeta(t: BookingServiceType): { icon: IoniconName; label: string 
   return { icon: 'walk', label: SERVICE_LABEL.CAMPUS_TOUR };
 }
 
-export function MyToursScreen() {
+/**
+ * My bookings.
+ *
+ * Now reached from Settings rather than a bottom tab — Manage listing took its place,
+ * mirroring the website's header, where "My tours" became "My bookings" and the listing
+ * moved out on its own. `onBack` is passed when Settings hosts it, which is what draws
+ * the back arrow; standalone, it renders exactly as before.
+ */
+export function MyToursScreen({ onBack }: { onBack?: () => void } = {}) {
   const tc = useThemeColors();
   const styles = useStyles(makeStyles);
   const [view, setView] = useState<ViewKey>('guest');
@@ -137,7 +145,14 @@ export function MyToursScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.title}>My tours</Text>
+        <View style={styles.titleRow}>
+          {onBack && (
+            <Pressable onPress={onBack} hitSlop={8} style={styles.headerBack}>
+              <Ionicons name="arrow-back" size={22} color={tc.ink900} />
+            </Pressable>
+          )}
+          <Text style={styles.title}>My bookings</Text>
+        </View>
         {/* Perspective switch */}
         <View style={styles.segment}>
           {VIEWS.map((v) => {
@@ -379,7 +394,7 @@ function BookingDetail({
       <ScrollView contentContainerStyle={styles.detailScroll}>
         <Pressable style={styles.backBtn} onPress={onBack} hitSlop={8}>
           <Ionicons name="arrow-back" size={18} color={tc.maroon900} />
-          <Text style={styles.backText}>Back to My tours</Text>
+          <Text style={styles.backText}>Back to My bookings</Text>
         </Pressable>
 
         <View style={styles.detailCard}>
@@ -448,7 +463,7 @@ function BookingDetail({
               />
               <Text style={styles.inputHint}>
                 Create the meeting for the scheduled time, paste the link, then confirm. {otherFirst} gets it by email
-                and here in My tours.
+                and here in My bookings.
               </Text>
             </View>
           )}
@@ -481,7 +496,7 @@ function BookingDetail({
                 {existingReview.text ? <Text style={styles.reviewText}>“{existingReview.text}”</Text> : null}
               </View>
             ) : isHost ? (
-              <Text style={styles.note}>No review yet — {otherFirst} can leave one from their My tours.</Text>
+              <Text style={styles.note}>No review yet — {otherFirst} can leave one from their My bookings.</Text>
             ) : (
               <View style={styles.inputBox}>
                 <Text style={styles.inputLabelPlain}>Leave a review for {otherFirst}</Text>
@@ -588,6 +603,8 @@ const makeStyles = (tc: Palette) =>
   StyleSheet.create({
   safe: { flex: 1, backgroundColor: tc.white },
   header: { paddingHorizontal: spacing(5), paddingTop: spacing(2), paddingBottom: spacing(3) },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
+  headerBack: { height: 36, width: 32, alignItems: 'flex-start', justifyContent: 'center' },
   title: { fontSize: font(28), fontWeight: '800', color: tc.ink900 },
   segment: {
     flexDirection: 'row',

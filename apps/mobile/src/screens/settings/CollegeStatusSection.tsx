@@ -15,9 +15,16 @@ const OPTIONS = INTENT_OPTIONS;
 export function CollegeStatusSection({
   profile,
   onSaved,
+  onNavigate,
 }: {
   profile: MyProfileDto | null;
   onSaved?: (next: { role: MyProfileDto['role']; intent: string }) => void;
+  /**
+   * Where the saved choice leads — the mobile equivalent of the website option's
+   * `href`. Changing your status to guide or counselor should open that application,
+   * not just quietly flip a preference.
+   */
+  onNavigate?: (key: IntentKey) => void;
 }) {
   const styles = useStyles(makeStyles);
   const [selected, setSelected] = useState<IntentKey>('guest');
@@ -41,6 +48,7 @@ export function CollegeStatusSection({
       // so re-opening this section reflects the new choice instead of reverting.
       onSaved?.({ role: res.role ?? profile?.role ?? null, intent: selected });
       toast.success('College status updated', 'Your preference has been saved.');
+      onNavigate?.(selected);
     } catch (e) {
       toast.error('Could not save', friendlyError(e));
     } finally {

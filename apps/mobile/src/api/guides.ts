@@ -115,7 +115,8 @@ export const TIME_SLOTS: string[] = (() => {
   return slots;
 })();
 
-const sortTimes = (times: string[]): string[] =>
+/** Sort time labels by canonical slot order (earliest first). */
+export const sortTimes = (times: string[]): string[] =>
   [...times].sort((a, b) => TIME_SLOTS.indexOf(a) - TIME_SLOTS.indexOf(b));
 
 const isDateStr = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);

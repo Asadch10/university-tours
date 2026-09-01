@@ -62,7 +62,13 @@
           "enableGooglePay": false
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Campus Private Tours needs access to your photos so you can add your listing photos and your student ID."
+        }
+      ]
     ],
     "extra": {
       "apiBaseUrl": "https://www.university.tours",

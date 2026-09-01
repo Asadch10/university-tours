@@ -32,7 +32,7 @@ export const INTENT_OPTIONS: IntentOption[] = [
   {
     key: 'guide',
     label: 'Become a guide',
-    description: 'Host private campus tours at your school and get paid.',
+    description: 'Host private tour or video chat at your school and get paid.',
     statusText: 'Guide — you host private campus tours.',
   },
   {

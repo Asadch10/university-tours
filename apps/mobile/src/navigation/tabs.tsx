@@ -1,6 +1,10 @@
 // Role-aware bottom tabs (Part V §6).
-// Buyer: Home / Explore / Browse / My Tours / Settings.
+// Buyer: Home / Explore / Browse / Manage listing / Settings.
 // Ambassador: Requests / Listings / Earnings / Messages / Profile.
+//
+// "Manage listing" sits where "My Tours" used to, matching the website header, where
+// Manage listing became its own top-level item and My tours was renamed My bookings and
+// folded into Settings. Bookings are still one tap away — Settings → My bookings.
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
@@ -8,7 +12,7 @@ import {
   HomeScreen,
   ExploreScreen,
   BrowseScreen,
-  MyToursScreen,
+  ManageListingScreen,
   SettingsScreen,
   MessagesScreen,
   RequestsScreen,
@@ -19,6 +23,15 @@ import { font, type Palette } from '../theme';
 import { useThemeColors } from '../theme-context';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+/** Buyer tab routes. `tab` opens Manage listing straight on one of its two profiles. */
+export type BuyerTabParamList = {
+  Home: undefined;
+  Explore: undefined;
+  Browse: undefined;
+  'Manage listing': { tab?: 'guide' | 'counselor' } | undefined;
+  Settings: undefined;
+};
 
 const Tab = createBottomTabNavigator();
 
@@ -60,9 +73,9 @@ export function BuyerTabs() {
         options={{ tabBarIcon: tabIcon('search-outline', 'search') }}
       />
       <Tab.Screen
-        name="My Tours"
-        component={MyToursScreen}
-        options={{ tabBarIcon: tabIcon('calendar-outline', 'calendar') }}
+        name="Manage listing"
+        component={ManageListingScreen}
+        options={{ tabBarIcon: tabIcon('briefcase-outline', 'briefcase') }}
       />
       <Tab.Screen
         name="Settings"
